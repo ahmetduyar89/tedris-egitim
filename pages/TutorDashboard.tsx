@@ -444,23 +444,18 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         if (!deletingStudent) return;
 
         try {
-            // 1. Delete from students table (This removes them from the dashboard)
-            const { error: studentError } = await supabase
-                .from('students')
-                .delete()
-                .eq('id', deletingStudent.id);
+            // Use the Edge Function to delete the student completely (including Auth user)
+            const { data, error } = await supabase.functions.invoke('delete-student', {
+                body: { studentId: deletingStudent.id }
+            });
 
-            if (studentError) throw studentError;
+            if (error) {
+                console.error('Edge function error:', error);
+                throw new Error(error.message || 'Öğrenci silinirken sunucu hatası oluştu.');
+            }
 
-            // 2. Try to delete from users table (To clean up the profile)
-            // Note: This requires the "Tutors can delete their student users" policy
-            const { error: userError } = await supabase
-                .from('users')
-                .delete()
-                .eq('id', deletingStudent.id);
-
-            if (userError) {
-                console.warn('Could not delete user profile (might be missing permissions), but student record was deleted:', userError);
+            if (data && data.error) {
+                throw new Error(data.error);
             }
 
             setStudents(prev => prev.filter(s => s.id !== deletingStudent.id));
@@ -469,7 +464,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 setCurrentView('students');
             }
             setDeletingStudent(null);
-            alert('Öğrenci başarıyla silindi.');
+            alert('Öğrenci ve hesabı başarıyla silindi.');
         } catch (error: any) {
             console.error('Error deleting student:', error);
             alert(error.message || 'Öğrenci silinirken bir hata oluştu.');

@@ -27,55 +27,65 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
   const loadAssignment = async () => {
     try {
       console.log('🔍 Assignment yükleniyor:', assignmentId);
-      const doc = await db.collection('question_bank_assignments').doc(assignmentId).get();
 
-      if (!doc.exists) {
-        console.error('❌ Assignment bulunamadı:', assignmentId);
+      // Use direct Supabase query instead of dbAdapter
+      const { data: assignmentDataRaw, error: assignmentError } = await supabase
+        .from('question_bank_assignments')
+        .select('*')
+        .eq('id', assignmentId)
+        .single();
+
+      if (assignmentError || !assignmentDataRaw) {
+        console.error('❌ Assignment bulunamadı:', assignmentId, assignmentError);
         alert('Test bulunamadı. Bu test silinmiş veya size atanmamış olabilir.');
         onBack();
         return;
       }
 
-      const data = doc.data();
-      console.log('✅ Assignment verisi:', data);
+      console.log('✅ Assignment verisi:', assignmentDataRaw);
 
-      const assignmentData: QuestionBankAssignment = {
-        id: doc.id,
-        questionBankId: data.question_bank_id || data.questionBankId,
-        studentId: data.student_id || data.studentId,
-        teacherId: data.teacher_id || data.teacherId,
-        assignedAt: data.assigned_at || data.assignedAt,
-        applicationDate: data.application_date || data.applicationDate,
-        timeLimitMinutes: data.time_limit_minutes || data.timeLimitMinutes,
-        startedAt: data.started_at || data.startedAt,
-        completedAt: data.completed_at || data.completedAt,
-        answers: data.answers || {},
-        score: data.score,
-        totalCorrect: data.total_correct || data.totalCorrect,
-        totalQuestions: data.total_questions || data.totalQuestions,
-        status: data.status,
-        aiFeedback: data.ai_feedback || data.aiFeedback
+      const assignment: QuestionBankAssignment = {
+        id: assignmentDataRaw.id,
+        questionBankId: assignmentDataRaw.question_bank_id,
+        studentId: assignmentDataRaw.student_id,
+        teacherId: assignmentDataRaw.teacher_id,
+        assignedAt: assignmentDataRaw.assigned_at,
+        applicationDate: assignmentDataRaw.application_date,
+        timeLimitMinutes: assignmentDataRaw.time_limit_minutes,
+        startedAt: assignmentDataRaw.started_at,
+        completedAt: assignmentDataRaw.completed_at,
+        answers: assignmentDataRaw.answers || {},
+        score: assignmentDataRaw.score,
+        totalCorrect: assignmentDataRaw.total_correct,
+        totalQuestions: assignmentDataRaw.total_questions,
+        status: assignmentDataRaw.status,
+        aiFeedback: assignmentDataRaw.ai_feedback
       };
 
-      console.log('🔍 Soru bankası yükleniyor:', assignmentData.questionBankId);
-      const qbDoc = await db.collection('question_banks').doc(assignmentData.questionBankId).get();
+      console.log('🔍 Soru bankası yükleniyor:', assignment.questionBankId);
 
-      if (!qbDoc.exists) {
-        console.error('❌ Soru bankası bulunamadı:', assignmentData.questionBankId);
+      // Use direct Supabase query for question bank
+      const { data: qbData, error: qbError } = await supabase
+        .from('question_banks')
+        .select('*')
+        .eq('id', assignment.questionBankId)
+        .single();
+
+      if (qbError || !qbData) {
+        console.error('❌ Soru bankası bulunamadı:', assignment.questionBankId, qbError);
         console.error('❌ Öğrenci erişim yetkisi olmayabilir veya soru bankası silinmiş olabilir');
         alert('Soru bankası bulunamadı. Lütfen öğretmeninizle iletişime geçin.');
         onBack();
         return;
       }
 
-      const qbData = qbDoc.data();
       console.log('✅ Soru bankası RAW verisi:', qbData);
       console.log('✅ Questions field type:', typeof qbData.questions);
       console.log('✅ Questions is array?:', Array.isArray(qbData.questions));
       console.log('✅ Questions keys (if object):', qbData.questions && typeof qbData.questions === 'object' ? Object.keys(qbData.questions) : 'N/A');
       console.log('✅ Soru bankası özet:', {
         title: qbData.title,
-        totalQuestions: qbData.total_questions || qbData.totalQuestions,
+        totalQuestions: qbData.total_questions,
         questionsArrayLength: qbData.questions?.length,
         hasQuestionsArray: Array.isArray(qbData.questions),
         firstQuestionSample: qbData.questions?.[0]
@@ -153,39 +163,39 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
         alert(`Uyarı: ${emptyQuestions.length} soruda metin eksik. Bu soruları atlayabilirsiniz.`);
       }
 
-      setAssignment(assignmentData);
+      setAssignment(assignment);
       setQuestionBankTitle(qbData.title || 'Test');
       setQuestions(questionsList);
-      setAnswers(assignmentData.answers);
+      setAnswers(assignment.answers);
 
       console.log('✅ State güncellendi:', {
-        assignmentId: assignmentData.id,
+        assignmentId: assignment.id,
         questionCount: questionsList.length,
         title: qbData.title,
-        status: assignmentData.status
+        status: assignment.status
       });
 
       // Test zaten tamamlanmışsa geri dön
-      if (assignmentData.status === 'Tamamlandı' || assignmentData.completedAt) {
+      if (assignment.status === 'Tamamlandı' || assignment.completedAt) {
         alert('Bu test zaten tamamlanmış. Sonuçları görmek için tamamlanan testler bölümünü kontrol edin.');
         onBack();
         return;
       }
 
-      if (assignmentData.status === 'Atandı') {
+      if (assignment.status === 'Atandı') {
         await db.collection('question_bank_assignments').doc(assignmentId).update({
           started_at: new Date().toISOString(),
           status: 'Devam Ediyor'
         });
 
-        if (assignmentData.timeLimitMinutes) {
-          setTimeRemaining(assignmentData.timeLimitMinutes * 60);
+        if (assignment.timeLimitMinutes) {
+          setTimeRemaining(assignment.timeLimitMinutes * 60);
         }
-      } else if (assignmentData.status === 'Devam Ediyor' && assignmentData.timeLimitMinutes && assignmentData.startedAt) {
-        const startTime = new Date(assignmentData.startedAt).getTime();
+      } else if (assignment.status === 'Devam Ediyor' && assignment.timeLimitMinutes && assignment.startedAt) {
+        const startTime = new Date(assignment.startedAt).getTime();
         const currentTime = Date.now();
         const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-        const totalSeconds = assignmentData.timeLimitMinutes * 60;
+        const totalSeconds = assignment.timeLimitMinutes * 60;
         const remaining = totalSeconds - elapsedSeconds;
 
         if (remaining > 0) {
@@ -421,11 +431,10 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
                 {currentQuestion.options?.map((option, idx) => (
                   <label
                     key={idx}
-                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      answers[currentQuestion.id] === option
-                        ? 'border-primary bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[currentQuestion.id] === option
+                      ? 'border-primary bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -445,11 +454,10 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
                 {['Doğru', 'Yanlış'].map(option => (
                   <label
                     key={option}
-                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      answers[currentQuestion.id] === option
-                        ? 'border-primary bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${answers[currentQuestion.id] === option
+                      ? 'border-primary bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -512,11 +520,10 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
 
             <button
               onClick={() => toggleMark(currentQuestion.id)}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                markedQuestions.has(currentQuestion.id)
-                  ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400'
-                  : 'bg-gray-100 text-gray-600 border-2 border-gray-300 hover:bg-gray-200'
-              }`}
+              className={`px-6 py-2 rounded-lg font-semibold transition-all ${markedQuestions.has(currentQuestion.id)
+                ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400'
+                : 'bg-gray-100 text-gray-600 border-2 border-gray-300 hover:bg-gray-200'
+                }`}
             >
               {markedQuestions.has(currentQuestion.id) ? '🚩 İşaretli' : 'İşaretle'}
             </button>
@@ -547,15 +554,14 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
               <button
                 key={q.id}
                 onClick={() => setCurrentQuestionIndex(idx)}
-                className={`aspect-square rounded-lg font-semibold text-sm transition-all ${
-                  idx === currentQuestionIndex
-                    ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
-                    : answers[q.id]
+                className={`aspect-square rounded-lg font-semibold text-sm transition-all ${idx === currentQuestionIndex
+                  ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
+                  : answers[q.id]
                     ? 'bg-green-100 text-green-700 hover:bg-green-200'
                     : markedQuestions.has(q.id)
-                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                      ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {idx + 1}
               </button>

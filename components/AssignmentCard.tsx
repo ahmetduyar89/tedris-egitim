@@ -104,6 +104,12 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onGrade, on
                         Puan: {score}%
                     </div>
                 )}
+                {status === AssignmentStatus.Graded && !isTeacherView && assignment.submission?.teacherFeedback && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                        <p className="text-xs font-semibold text-blue-800 mb-1">Öğretmen Geri Bildirimi:</p>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{assignment.submission.teacherFeedback}</p>
+                    </div>
+                )}
             </div>
         </div>
     );

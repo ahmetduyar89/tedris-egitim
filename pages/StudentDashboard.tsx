@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { User, Test, WeeklyProgram, Task, TaskStatus, ReviewPackage, Student, DailyMessage, Assignment, AssignmentStatus, Submission, AIHomeworkAnalysis, ContentLibraryItem, ContentAssignment, ContentType, Notification } from '../types';
+import { User, Test, WeeklyProgram, Task, TaskStatus, ReviewPackage, Student, DailyMessage, Assignment, AssignmentStatus, Submission, AIHomeworkAnalysis, ContentLibraryItem, ContentAssignment, ContentType, Notification, Subject } from '../types';
 import Header from '../components/Header';
 import WeeklySchedule from '../components/WeeklySchedule';
 import TestTakingPage from './TestTakingPage';
@@ -313,7 +313,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             return {
               id: doc.id,
               title: 'Soru Bankası Testi (Yüklenemedi)',
-              subject: '',
+              subject: Subject.Mathematics,
               unit: '',
               questions: [],
               studentId: user.id,
@@ -321,6 +321,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
               completed: data.status === 'Tamamlandı',
               score: data.score || 0,
               duration: data.time_limit_minutes || data.timeLimitMinutes || 60,
+              dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
               submissionDate: data.completed_at || data.completedAt,
               isQuestionBankTest: true,
               questionBankAssignmentId: doc.id
@@ -351,6 +352,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             completed: data.status === 'Tamamlandı',
             score: data.score || 0,
             duration: data.time_limit_minutes || data.timeLimitMinutes || 60,
+            dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
             submissionDate: data.completed_at || data.completedAt,
             isQuestionBankTest: true,
             questionBankAssignmentId: doc.id
@@ -360,7 +362,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           return {
             id: doc.id,
             title: 'Soru Bankası Testi (Hata)',
-            subject: '',
+            subject: Subject.Mathematics,
             unit: '',
             questions: [],
             studentId: user.id,
@@ -368,6 +370,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             completed: data.status === 'Tamamlandı',
             score: data.score || 0,
             duration: data.time_limit_minutes || data.timeLimitMinutes || 60,
+            dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
             submissionDate: data.completed_at || data.completedAt,
             isQuestionBankTest: true,
             questionBankAssignmentId: doc.id

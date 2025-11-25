@@ -1358,7 +1358,16 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                     ) : (
                         <div className="bg-card-background p-6 rounded-xl shadow-md text-center">
                             <h2 className="text-2xl font-bold font-poppins text-text-primary mb-4">Haftalık Program Takibi</h2>
-                            <p className="text-gray-500">Öğrenciye henüz bir haftalık program atanmamış.</p>
+                            <p className="text-gray-500 mb-4">Öğrenciye henüz bir haftalık program atanmamış.</p>
+                            <button
+                                onClick={() => {
+                                    setProgramToEdit({ days: [] });
+                                    setIsEditingProgram(true);
+                                }}
+                                className="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors"
+                            >
+                                + Manuel Haftalık Plan Oluştur
+                            </button>
                         </div>
                     )}
                 </div>

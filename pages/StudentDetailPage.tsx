@@ -18,7 +18,7 @@ import EditFlashcardModal from '../components/EditFlashcardModal';
 import OverallAnalytics from '../components/OverallAnalytics';
 import QuestionBankResultModal from '../components/QuestionBankResultModal';
 import { createNotification } from '../services/notificationService';
-import { db } from '../services/dbAdapter';
+import { db, supabase } from '../services/dbAdapter';
 import CreatePDFTestModal from '../components/CreatePDFTestModal';
 import PDFTestResultModal from '../components/PDFTestResultModal';
 import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmission } from '../services/pdfTestService';
@@ -105,32 +105,38 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                     console.log('[StudentDetailPage] Checking submissions for assignment:', doc.id);
 
                     try {
-                        const submissionsSnapshot = await db.collection('submissions')
-                            .where('assignment_id', '==', doc.id)
-                            .orderBy('submitted_at', 'desc')
-                            .limit(1)
-                            .get();
+                        // Use direct Supabase query instead of dbAdapter to avoid conversion issues
+                        const { data: submissionsData, error: submissionsError } = await supabase
+                            .from('submissions')
+                            .select('*')
+                            .eq('assignment_id', doc.id)
+                            .order('submitted_at', { ascending: false })
+                            .limit(1);
 
-                        console.log('[StudentDetailPage] Submissions found:', submissionsSnapshot.docs.length);
+                        if (submissionsError) {
+                            console.error('[StudentDetailPage] Error fetching submissions:', submissionsError);
+                            throw submissionsError;
+                        }
 
-                        if (!submissionsSnapshot.empty) {
-                            const submissionDoc = submissionsSnapshot.docs[0];
-                            const submissionData = submissionDoc.data();
+                        console.log('[StudentDetailPage] Submissions found:', submissionsData?.length || 0);
+
+                        if (submissionsData && submissionsData.length > 0) {
+                            const submissionData = submissionsData[0];
                             console.log('[StudentDetailPage] Submission data:', submissionData);
 
-                            // Map the data correctly - dbAdapter might not be converting properly
+                            // Map the data correctly from snake_case
                             assignment.submission = {
-                                id: submissionDoc.id,
+                                id: submissionData.id,
                                 assignmentId: doc.id,
-                                studentId: submissionData.studentId || submissionData.student_id,
-                                submissionText: submissionData.submissionText || submissionData.submission_text,
-                                fileUrl: submissionData.fileUrl || submissionData.file_url,
-                                submittedAt: submissionData.submittedAt || submissionData.submitted_at,
+                                studentId: submissionData.student_id,
+                                submissionText: submissionData.submission_text,
+                                fileUrl: submissionData.file_url,
+                                submittedAt: submissionData.submitted_at,
                                 status: submissionData.status,
-                                aiScore: submissionData.aiScore || submissionData.ai_score ? Number(submissionData.aiScore || submissionData.ai_score) : undefined,
-                                aiAnalysis: submissionData.aiAnalysis || submissionData.ai_analysis,
-                                teacherScore: submissionData.teacherScore || submissionData.teacher_score ? Number(submissionData.teacherScore || submissionData.teacher_score) : undefined,
-                                teacherFeedback: submissionData.teacherFeedback || submissionData.teacher_feedback
+                                aiScore: submissionData.ai_score ? Number(submissionData.ai_score) : undefined,
+                                aiAnalysis: submissionData.ai_analysis,
+                                teacherScore: submissionData.teacher_score ? Number(submissionData.teacher_score) : undefined,
+                                teacherFeedback: submissionData.teacher_feedback
                             };
                         }
                     } catch (error) {

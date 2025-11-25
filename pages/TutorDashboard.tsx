@@ -444,31 +444,23 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         if (!deletingStudent) return;
 
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            // 1. Delete from students table (This removes them from the dashboard)
+            const { error: studentError } = await supabase
+                .from('students')
+                .delete()
+                .eq('id', deletingStudent.id);
 
-            if (!session) {
-                alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
-                return;
-            }
+            if (studentError) throw studentError;
 
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const apiUrl = `${supabaseUrl}/functions/v1/delete-student`;
+            // 2. Try to delete from users table (To clean up the profile)
+            // Note: This requires the "Tutors can delete their student users" policy
+            const { error: userError } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', deletingStudent.id);
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    studentId: deletingStudent.id,
-                }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Öğrenci silinirken bir hata oluştu');
+            if (userError) {
+                console.warn('Could not delete user profile (might be missing permissions), but student record was deleted:', userError);
             }
 
             setStudents(prev => prev.filter(s => s.id !== deletingStudent.id));
@@ -478,9 +470,9 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
             }
             setDeletingStudent(null);
             alert('Öğrenci başarıyla silindi.');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting student:', error);
-            alert(error instanceof Error ? error.message : 'Öğrenci silinirken bir hata oluştu.');
+            alert(error.message || 'Öğrenci silinirken bir hata oluştu.');
         }
     };
 

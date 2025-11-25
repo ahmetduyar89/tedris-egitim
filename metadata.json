@@ -1,0 +1,7 @@
+{
+  "name": "Özel Ders Takip Sistemi",
+  "description": "An AI-powered student tracking and control system for private tutors, based on the Mastery Learning Model. This system helps teachers create tests, analyze student performance, and generate personalized weekly study plans.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

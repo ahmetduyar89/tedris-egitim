@@ -283,37 +283,23 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
         selectedAnswer: answers[q.id] || ''
       }));
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-question-bank-test`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            assignmentId: assignmentId,
-            answers: formattedAnswers
-          })
+      const { data: result, error: invokeError } = await supabase.functions.invoke('submit-question-bank-test', {
+        body: {
+          assignmentId: assignmentId,
+          answers: formattedAnswers
         }
-      );
+      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = 'Test gönderilemedi';
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error || errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
-        }
-        throw new Error(errorMessage);
+      if (invokeError) {
+        console.error('Function invoke error:', invokeError);
+        throw new Error(invokeError.message || 'Test gönderilemedi');
       }
 
-      const result = await response.json();
-
-      if (result.success) {
+      // result is already the JSON response body
+      if (result && result.success) {
+        // Continue with success logic (no change needed here as result structure matches)
         const { score, correctCount, totalQuestions, percentage, updatedModules, masteryUpdated } = result.result;
+
 
         let alertMessage = `🎉 Test Tamamlandı!\n\n` +
           `📊 Puanınız: ${score}/100\n` +

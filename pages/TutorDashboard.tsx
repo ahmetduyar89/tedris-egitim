@@ -36,38 +36,72 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
             return;
         }
 
-        if (!confirm('Öğrenci hesabı oluşturulurken güvenlik gereği oturumunuz kapatılacaktır. İşlemden sonra tekrar giriş yapmanız gerekecek. Devam etmek istiyor musunuz?')) {
-            return;
-        }
-
         try {
-            // 1. Create auth user (this will sign out the current user)
-            const { data: authData, error: signUpError } = await supabase.auth.signUp({
-                email: email.trim(),
-                password: password.trim(),
+            // 1. Use direct fetch to Supabase Auth API to avoid triggering global auth state changes
+            // This is the most isolated way to create a user without affecting the current session
+            const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
+            const response = await fetch(authUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    password: password.trim(),
+                })
             });
 
-            if (signUpError) throw signUpError;
+            const authData = await response.json();
 
-            if (authData.user) {
-                // 2. Add to public.users table
-                const { error: userError } = await supabase
+            if (!response.ok) {
+                throw new Error(authData.msg || authData.error_description || 'Kayıt oluşturulamadı');
+            }
+
+            if (authData.user || authData.id) {
+                const userId = authData.user?.id || authData.id;
+
+                // 2. We need to insert data into tables.
+                // Since we can't use the main supabase client (it's logged in as tutor)
+                // and we can't easily get a client for the new user without logging in (which we want to avoid),
+                // we will use the "Allow profile creation during registration" policy we created.
+
+                // To do this, we need a client authenticated as the NEW user.
+                // We can create a temporary client using the access token we just got.
+
+                const { createClient } = await import('@supabase/supabase-js');
+                const tempClient = createClient(
+                    import.meta.env.VITE_SUPABASE_URL,
+                    import.meta.env.VITE_SUPABASE_ANON_KEY,
+                    {
+                        global: { headers: { Authorization: `Bearer ${authData.access_token}` } },
+                        auth: {
+                            persistSession: false,
+                            autoRefreshToken: false,
+                            detectSessionInUrl: false,
+                            storage: { getItem: () => null, setItem: () => { }, removeItem: () => { } }
+                        }
+                    }
+                );
+
+                // 3. Add to public.users table
+                const { error: userError } = await tempClient
                     .from('users')
                     .insert([{
-                        id: authData.user.id,
+                        id: userId,
                         email: email.trim(),
                         name: name.trim(),
                         role: UserRole.Student,
-                        status: 'approved' // Students are auto-approved
+                        status: 'approved'
                     }]);
 
                 if (userError) throw userError;
 
-                // 3. Add to students table
-                const { error: studentError } = await supabase
+                // 4. Add to students table
+                const { error: studentError } = await tempClient
                     .from('students')
                     .insert([{
-                        id: authData.user.id,
+                        id: userId,
                         name: name.trim(),
                         grade: grade,
                         tutor_id: tutor.id,
@@ -78,8 +112,22 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
 
                 if (studentError) throw studentError;
 
-                alert('Öğrenci başarıyla oluşturuldu! Lütfen öğretmen hesabınızla tekrar giriş yapın.');
-                window.location.reload(); // Force reload to clear any stale state
+                // 5. Success!
+                const newStudent: Student = {
+                    id: userId,
+                    name: name.trim(),
+                    grade: grade,
+                    tutorId: tutor.id,
+                    level: 1,
+                    xp: 0,
+                    badges: [],
+                    learningLoopStatus: LearningLoopStatus.Initial,
+                    progressReports: [],
+                };
+
+                onStudentAdded(newStudent);
+                onClose();
+                alert('Öğrenci başarıyla oluşturuldu!');
             }
         } catch (error: any) {
             if (error.message?.includes('User already registered') || error.message?.includes('already exists')) {
@@ -296,8 +344,8 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
                         key={item.id}
                         onClick={() => setView(item.id as View)}
                         className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-colors ${isActive(item.id as 'students' | 'library')
-                                ? 'bg-primary/10 text-primary'
-                                : 'text-text-secondary hover:bg-gray-100'
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-text-secondary hover:bg-gray-100'
                             }`}
                     >
                         <span>{item.icon}</span>

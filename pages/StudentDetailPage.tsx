@@ -97,31 +97,43 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
             // Assignments with Submissions
             const assignmentsSnapshot = await db.collection('assignments').where('studentId', '==', student.id).get();
+            console.log('[StudentDetailPage] Found assignments:', assignmentsSnapshot.docs.length);
+
             const assignmentsList = await Promise.all(
                 assignmentsSnapshot.docs.map(async (doc: any) => {
                     const assignment = { id: doc.id, ...doc.data() } as Assignment;
+                    console.log('[StudentDetailPage] Checking submissions for assignment:', doc.id);
 
-                    const submissionsSnapshot = await db.collection('submissions')
-                        .where('assignment_id', '==', doc.id)
-                        .limit(1)
-                        .get();
+                    try {
+                        const submissionsSnapshot = await db.collection('submissions')
+                            .where('assignment_id', '==', doc.id)
+                            .orderBy('submitted_at', 'desc')
+                            .limit(1)
+                            .get();
 
-                    if (!submissionsSnapshot.empty) {
-                        const submissionDoc = submissionsSnapshot.docs[0];
-                        const submissionData = submissionDoc.data();
-                        assignment.submission = {
-                            id: submissionDoc.id,
-                            assignmentId: doc.id,
-                            studentId: submissionData.student_id,
-                            submissionText: submissionData.submission_text,
-                            fileUrl: submissionData.file_url,
-                            submittedAt: submissionData.submitted_at,
-                            status: submissionData.status,
-                            aiScore: submissionData.ai_score ? Number(submissionData.ai_score) : undefined,
-                            aiAnalysis: submissionData.ai_analysis,
-                            teacherScore: submissionData.teacher_score ? Number(submissionData.teacher_score) : undefined,
-                            teacherFeedback: submissionData.teacher_feedback
-                        };
+                        console.log('[StudentDetailPage] Submissions found:', submissionsSnapshot.docs.length);
+
+                        if (!submissionsSnapshot.empty) {
+                            const submissionDoc = submissionsSnapshot.docs[0];
+                            const submissionData = submissionDoc.data();
+                            console.log('[StudentDetailPage] Submission data:', submissionData);
+
+                            assignment.submission = {
+                                id: submissionDoc.id,
+                                assignmentId: doc.id,
+                                studentId: submissionData.student_id,
+                                submissionText: submissionData.submission_text,
+                                fileUrl: submissionData.file_url,
+                                submittedAt: submissionData.submitted_at,
+                                status: submissionData.status,
+                                aiScore: submissionData.ai_score ? Number(submissionData.ai_score) : undefined,
+                                aiAnalysis: submissionData.ai_analysis,
+                                teacherScore: submissionData.teacher_score ? Number(submissionData.teacher_score) : undefined,
+                                teacherFeedback: submissionData.teacher_feedback
+                            };
+                        }
+                    } catch (error) {
+                        console.error('[StudentDetailPage] Error fetching submissions for assignment', doc.id, error);
                     }
 
                     return assignment;

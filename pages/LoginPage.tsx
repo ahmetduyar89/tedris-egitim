@@ -97,6 +97,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
         if (signInError) throw signInError;
 
         if (authData.user) {
+          // Verify user exists in our users table
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
@@ -105,21 +106,39 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
 
           if (userError) throw userError;
 
-          if (userData) {
-            if (userData.role === 'tutor' && userData.status !== 'approved') {
-              if (userData.status === 'pending') {
-                setAuthError('Hesabınız henüz onaylanmadı. Lütfen yönetici onayını bekleyin.');
-              } else if (userData.status === 'rejected') {
-                setAuthError('Hesap kaydınız reddedildi. Lütfen yönetici ile iletişime geçin.');
-              }
+          if (!userData) {
+            // User record missing – probably deleted. Sign out and show error.
+            await supabase.auth.signOut();
+            setAuthError('Kullanıcı hesabı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
+            return;
+          }
+
+          if (userData.role === 'tutor' && userData.status !== 'approved') {
+            if (userData.status === 'pending') {
+              setAuthError('Hesabınız henüz onaylanmadı. Lütfen yönetici onayını bekleyin.');
+            } else if (userData.status === 'rejected') {
+              setAuthError('Hesap kaydınız reddedildi. Lütfen yönetici ile iletişime geçin.');
+            }
+            await supabase.auth.signOut();
+            return;
+          }
+
+          // For students, also ensure a student record exists
+          if (userData.role === 'student') {
+            const { data: studentData, error: studentError } = await supabase
+              .from('students')
+              .select('*')
+              .eq('id', authData.user.id)
+              .maybeSingle();
+            if (studentError) throw studentError;
+            if (!studentData) {
               await supabase.auth.signOut();
+              setAuthError('Öğrenci kaydı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
               return;
             }
-            onLogin(userData as User);
-          } else {
-            setAuthError('Kullanıcı veritabanında bulunamadı. Lütfen yönetici ile iletişime geçin.');
-            await supabase.auth.signOut();
           }
+
+          onLogin(userData as User);
         }
       }
     } catch (error: any) {

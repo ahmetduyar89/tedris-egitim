@@ -1361,7 +1361,10 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                             <p className="text-gray-500 mb-4">Öğrenciye henüz bir haftalık program atanmamış.</p>
                             <button
                                 onClick={() => {
-                                    setProgramToEdit({ days: [] });
+                                    const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+                                    setProgramToEdit({
+                                        days: dayNames.map(day => ({ day, tasks: [] }))
+                                    });
                                     setIsEditingProgram(true);
                                 }}
                                 className="bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition-colors"

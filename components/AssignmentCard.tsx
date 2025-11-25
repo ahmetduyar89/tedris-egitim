@@ -16,6 +16,11 @@ const statusConfig: { [key in AssignmentStatus]: { color: string, text: string }
 };
 
 const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onGrade, onOpen, onEdit }) => {
+    console.log('[AssignmentCard] Rendering assignment:', assignment.title, 'Has submission:', !!assignment.submission);
+    if (assignment.submission) {
+        console.log('[AssignmentCard] Submission details:', assignment.submission);
+    }
+
     const status = assignment.submission?.status || AssignmentStatus.Pending;
     const config = statusConfig[status];
     const isTeacherView = !!onGrade;
@@ -31,11 +36,11 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onGrade, on
             if (assignment.submission && (status === AssignmentStatus.Submitted || status === AssignmentStatus.Graded)) {
                 onGrade(assignment.submission);
             }
-        } else if(onOpen) {
+        } else if (onOpen) {
             onOpen(assignment);
         }
     };
-    
+
     const getActionText = () => {
         if (isTeacherView) {
             if (status === AssignmentStatus.Submitted) return "Değerlendir";
@@ -46,7 +51,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onGrade, on
             return "Görüntüle";
         }
     };
-    
+
     const actionText = getActionText();
 
     return (
@@ -84,19 +89,19 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onGrade, on
                 )}
             </div>
             <div className="mt-4">
-               {actionText && (
-                 <button 
-                    onClick={handleClick} 
-                    className="w-full bg-primary text-white py-2 rounded-lg font-semibold text-sm hover:bg-primary-dark transition-colors"
-                >
-                    {actionText}
-                </button>
-               )}
-               {status === AssignmentStatus.Graded && score !== null && (
-                 <div className="text-center mt-2 font-bold font-poppins text-lg text-success">
-                     Puan: {score}%
-                 </div>
-               )}
+                {actionText && (
+                    <button
+                        onClick={handleClick}
+                        className="w-full bg-primary text-white py-2 rounded-lg font-semibold text-sm hover:bg-primary-dark transition-colors"
+                    >
+                        {actionText}
+                    </button>
+                )}
+                {status === AssignmentStatus.Graded && score !== null && (
+                    <div className="text-center mt-2 font-bold font-poppins text-lg text-success">
+                        Puan: {score}%
+                    </div>
+                )}
             </div>
         </div>
     );

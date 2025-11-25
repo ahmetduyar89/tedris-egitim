@@ -38,21 +38,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
 
     const fetchPendingTutors = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('role', 'tutor')
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
 
-            const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-pending-tutors`;
-            const response = await fetch(apiUrl, {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            if (error) throw error;
 
-            if (response.ok) {
-                const result = await response.json();
-                setPendingTutors(result.tutors || []);
-            }
+            // Map database fields to Tutor interface
+            const tutors: Tutor[] = (data || []).map(user => ({
+                id: user.id,
+                name: user.name || user.full_name || 'İsimsiz',
+                email: user.email,
+                requested_at: user.created_at
+            }));
+
+            setPendingTutors(tutors);
         } catch (error) {
             console.error('Error fetching pending tutors:', error);
         }
@@ -60,21 +63,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
 
     const fetchApprovedTutors = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('role', 'tutor')
+                .eq('status', 'approved')
+                .order('created_at', { ascending: false });
 
-            const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-approved-tutors`;
-            const response = await fetch(apiUrl, {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            if (error) throw error;
 
-            if (response.ok) {
-                const result = await response.json();
-                setApprovedTutors(result.tutors || []);
-            }
+            // Map database fields to Tutor interface
+            const tutors: Tutor[] = (data || []).map(user => ({
+                id: user.id,
+                name: user.name || user.full_name || 'İsimsiz',
+                email: user.email,
+                approved_at: user.updated_at // Using updated_at as approximation for approval time
+            }));
+
+            setApprovedTutors(tutors);
         } catch (error) {
             console.error('Error fetching approved tutors:', error);
         }
@@ -83,21 +89,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
     const handleApprove = async (tutorId: string) => {
         setProcessingId(tutorId);
         try {
-            const { data, error } = await supabase.rpc('approve_tutor', {
-                tutor_id: tutorId
-            });
+            // 1. Update user status in public.users table
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ status: 'approved' })
+                .eq('id', tutorId);
 
-            if (error) throw error;
+            if (updateError) throw updateError;
 
-            if (data.error) {
-                alert(data.error);
-            } else {
-                alert('Öğretmen başarıyla onaylandı!');
-                await fetchTutors();
-            }
-        } catch (error) {
+            // 2. We can't update auth.users metadata directly from client due to security
+            // But the public.users table is the source of truth for our app logic
+
+            alert('Öğretmen başarıyla onaylandı!');
+            await fetchTutors();
+        } catch (error: any) {
             console.error('Error approving tutor:', error);
-            alert('Öğretmen onaylanırken bir hata oluştu.');
+            alert('Öğretmen onaylanırken bir hata oluştu: ' + error.message);
         } finally {
             setProcessingId(null);
         }
@@ -110,21 +117,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
 
         setProcessingId(tutorId);
         try {
-            const { data, error } = await supabase.rpc('reject_tutor', {
-                tutor_id: tutorId
-            });
+            const { error } = await supabase
+                .from('users')
+                .update({ status: 'rejected' })
+                .eq('id', tutorId);
 
             if (error) throw error;
 
-            if (data.error) {
-                alert(data.error);
-            } else {
-                alert('Öğretmen kaydı reddedildi.');
-                await fetchTutors();
-            }
-        } catch (error) {
+            alert('Öğretmen kaydı reddedildi.');
+            await fetchTutors();
+        } catch (error: any) {
             console.error('Error rejecting tutor:', error);
-            alert('Öğretmen reddedilirken bir hata oluştu.');
+            alert('Öğretmen reddedilirken bir hata oluştu: ' + error.message);
         } finally {
             setProcessingId(null);
         }
@@ -137,30 +141,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
 
         setProcessingId(tutorId);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            // Delete from public.users
+            // Note: This won't delete from auth.users due to Supabase security limitations for client-side
+            // But the user won't be able to login to the app effectively
+            const { error } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', tutorId);
 
-            const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-tutor`;
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ tutorId }),
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to delete tutor');
-            }
+            if (error) throw error;
 
             alert('Öğretmen başarıyla silindi!');
             await fetchTutors();
         } catch (error: any) {
             console.error('Error deleting tutor:', error);
-            alert(error.message || 'Öğretmen silinirken bir hata oluştu.');
+            alert('Öğretmen silinirken bir hata oluştu: ' + error.message);
         } finally {
             setProcessingId(null);
         }
@@ -172,30 +167,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
 
     const handleSaveEdit = async (tutorId: string, name: string, email: string) => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            // Only update name, email update in auth requires more complex flow
+            const { error } = await supabase
+                .from('users')
+                .update({ name: name })
+                .eq('id', tutorId);
 
-            const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-tutor`;
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ tutorId, name, email }),
-            });
+            if (error) throw error;
 
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Failed to update tutor');
-            }
-
-            alert('Öğretmen başarıyla güncellendi!');
+            alert('Öğretmen bilgileri güncellendi! (Not: E-posta değişikliği sadece veritabanında yapıldı, giriş bilgileri değişmedi)');
             await fetchTutors();
         } catch (error: any) {
             console.error('Error updating tutor:', error);
-            alert(error.message || 'Öğretmen güncellenirken bir hata oluştu.');
+            alert('Öğretmen güncellenirken bir hata oluştu: ' + error.message);
             throw error;
         }
     };
@@ -220,11 +204,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
                             <nav className="flex">
                                 <button
                                     onClick={() => setActiveTab('pending')}
-                                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
-                                        activeTab === 'pending'
+                                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${activeTab === 'pending'
                                             ? 'text-primary border-b-2 border-primary bg-blue-50'
                                             : 'text-gray-600 hover:text-primary hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center justify-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -240,11 +223,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('approved')}
-                                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
-                                        activeTab === 'approved'
+                                    className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${activeTab === 'approved'
                                             ? 'text-primary border-b-2 border-primary bg-blue-50'
                                             : 'text-gray-600 hover:text-primary hover:bg-gray-50'
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center justify-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

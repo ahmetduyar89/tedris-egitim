@@ -9,14 +9,14 @@ interface LoginPageProps {
 
 
 const TedrisLogo = () => (
-    <svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g style={{ mixBlendMode: 'multiply' }}>
-            <circle cx="20" cy="30" r="15" fill="#F05039" />
-            <circle cx="42" cy="30" r="15" fill="#F5C542" />
-            <circle cx="31" cy="15" r="15" fill="#2BB4A9" />
-        </g>
-        <text x="60" y="38" fontFamily="Poppins, sans-serif" fontSize="36" fontWeight="800" fill="#000000">TEDRİS</text>
-    </svg>
+  <svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g style={{ mixBlendMode: 'multiply' }}>
+      <circle cx="20" cy="30" r="15" fill="#F05039" />
+      <circle cx="42" cy="30" r="15" fill="#F5C542" />
+      <circle cx="31" cy="15" r="15" fill="#2BB4A9" />
+    </g>
+    <text x="60" y="38" fontFamily="Poppins, sans-serif" fontSize="36" fontWeight="800" fill="#000000">TEDRİS</text>
+  </svg>
 );
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) => {
@@ -43,8 +43,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
     try {
       if (isRegisterView) {
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
+          email: email.trim(),
+          password: password.trim(),
         });
 
         if (signUpError) throw signUpError;
@@ -52,8 +52,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
         if (authData.user) {
           const newUser = {
             id: authData.user.id,
-            name,
-            email,
+            name: name.trim(),
+            email: email.trim(),
             role,
           };
 
@@ -78,7 +78,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
               .from('students')
               .insert([{
                 id: authData.user.id,
-                name,
+                name: name.trim(),
                 grade: 1,
                 tutor_id: null,
               }]);
@@ -90,8 +90,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
         }
       } else {
         const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: email.trim(),
+          password: password.trim(),
         });
 
         if (signInError) throw signInError;
@@ -151,7 +151,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
           </svg>
         </button>
         <div className="flex justify-center mb-6">
-            <TedrisLogo />
+          <TedrisLogo />
         </div>
         <h1 className="text-3xl font-bold font-poppins text-text-primary mb-2 text-center">{isRegisterView ? 'Kayıt Ol' : 'Giriş Yap'}</h1>
         <p className="text-text-secondary mb-8 text-center">AI Destekli Tam Öğrenme Deneyimi</p>
@@ -160,25 +160,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
           {isRegisterView && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"/>
+              <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
             </div>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700">E-posta</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"/>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Şifre</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"/>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
           </div>
-           {isRegisterView && (
+          {isRegisterView && (
             <div>
-                <label className="block text-sm font-medium text-gray-700">Rol</label>
-                 <select value={role} onChange={e => setRole(e.target.value as UserRole)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                    <option value={UserRole.Tutor}>Öğretmen</option>
-                    {/* Öğrenci kaydı öğretmen tarafından yapıldığı için bu seçenek kaldırılabilir. */}
-                    {/* <option value={UserRole.Student}>Öğrenci</option> */}
-                </select>
+              <label className="block text-sm font-medium text-gray-700">Rol</label>
+              <select value={role} onChange={e => setRole(e.target.value as UserRole)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                <option value={UserRole.Tutor}>Öğretmen</option>
+                {/* Öğrenci kaydı öğretmen tarafından yapıldığı için bu seçenek kaldırılabilir. */}
+                {/* <option value={UserRole.Student}>Öğrenci</option> */}
+              </select>
             </div>
           )}
           {authError && <p className="text-red-500 text-sm text-center font-semibold bg-red-50 p-3 rounded-lg">{authError}</p>}

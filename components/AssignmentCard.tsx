@@ -22,6 +22,8 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onGrade, on
     }
 
     const status = assignment.submission?.status || AssignmentStatus.Pending;
+    console.log('[AssignmentCard] Status:', status, 'Expected Submitted:', AssignmentStatus.Submitted, 'Expected Graded:', AssignmentStatus.Graded);
+
     const config = statusConfig[status];
     const isTeacherView = !!onGrade;
 

@@ -118,18 +118,19 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                             const submissionData = submissionDoc.data();
                             console.log('[StudentDetailPage] Submission data:', submissionData);
 
+                            // Map the data correctly - dbAdapter might not be converting properly
                             assignment.submission = {
                                 id: submissionDoc.id,
                                 assignmentId: doc.id,
-                                studentId: submissionData.student_id,
-                                submissionText: submissionData.submission_text,
-                                fileUrl: submissionData.file_url,
-                                submittedAt: submissionData.submitted_at,
+                                studentId: submissionData.studentId || submissionData.student_id,
+                                submissionText: submissionData.submissionText || submissionData.submission_text,
+                                fileUrl: submissionData.fileUrl || submissionData.file_url,
+                                submittedAt: submissionData.submittedAt || submissionData.submitted_at,
                                 status: submissionData.status,
-                                aiScore: submissionData.ai_score ? Number(submissionData.ai_score) : undefined,
-                                aiAnalysis: submissionData.ai_analysis,
-                                teacherScore: submissionData.teacher_score ? Number(submissionData.teacher_score) : undefined,
-                                teacherFeedback: submissionData.teacher_feedback
+                                aiScore: submissionData.aiScore || submissionData.ai_score ? Number(submissionData.aiScore || submissionData.ai_score) : undefined,
+                                aiAnalysis: submissionData.aiAnalysis || submissionData.ai_analysis,
+                                teacherScore: submissionData.teacherScore || submissionData.teacher_score ? Number(submissionData.teacherScore || submissionData.teacher_score) : undefined,
+                                teacherFeedback: submissionData.teacherFeedback || submissionData.teacher_feedback
                             };
                         }
                     } catch (error) {

@@ -107,6 +107,8 @@ export interface Test {
   score?: number;
   analysis?: AIAnalysisReport;
   submissionDate?: string; // To track progress over time
+  isQuestionBankTest?: boolean;
+  questionBankAssignmentId?: string;
 }
 
 export type TestResultSummary = {
@@ -165,23 +167,23 @@ export interface WeeklyProgram {
 
 
 export enum ReviewPackageItemType {
-    Introduction = 'introduction', // Giriş ve Analoji
-    KeyConcepts = 'key-concepts', // Anahtar Kavramlar
-    InteractiveQuiz = 'interactive-quiz', // Etkileşimli Sınav
-    Summary = 'summary', // Özet ve Teşvik
+  Introduction = 'introduction', // Giriş ve Analoji
+  KeyConcepts = 'key-concepts', // Anahtar Kavramlar
+  InteractiveQuiz = 'interactive-quiz', // Etkileşimli Sınav
+  Summary = 'summary', // Özet ve Teşvik
 }
 
 export interface ReviewPackageItem {
-    id: string;
-    type: ReviewPackageItemType;
-    content: any;
+  id: string;
+  type: ReviewPackageItemType;
+  content: any;
 }
 
 export interface ReviewPackage {
-    id: string;
-    studentId: string;
-    topic: string;
-    items: ReviewPackageItem[];
+  id: string;
+  studentId: string;
+  topic: string;
+  items: ReviewPackageItem[];
 }
 
 export interface Notification {
@@ -228,16 +230,16 @@ export interface ContentAssignment {
 }
 
 export interface InteractiveContentComponent {
-    id: string;
-    type: 'text' | 'mcq' | 'fill-in-the-blank' | 'true-false';
-    content: any;
+  id: string;
+  type: 'text' | 'mcq' | 'fill-in-the-blank' | 'true-false';
+  content: any;
 }
 
 export interface InteractiveContent {
-    id: string;
-    teacherId: string;
-    title: string;
-    components: InteractiveContentComponent[];
+  id: string;
+  teacherId: string;
+  title: string;
+  components: InteractiveContentComponent[];
 }
 
 // --- Question Bank System ---

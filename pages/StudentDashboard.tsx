@@ -805,7 +805,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   }
 
   if (activeView === 'takingTest') {
-    const qbAssignmentId = activeTask?.metadata?.questionBankAssignmentId || activeTask?.metadata?.question_bank_assignment_id;
+    const qbAssignmentId = activeTask?.metadata?.questionBankAssignmentId ||
+      activeTask?.metadata?.question_bank_assignment_id ||
+      activeTest?.questionBankAssignmentId;
+
     if (qbAssignmentId) {
       return <QuestionBankTestPage user={user} assignmentId={qbAssignmentId} onBack={() => setActiveView('dashboard')} onComplete={handleTestComplete} />;
     } else if (activeTest) {

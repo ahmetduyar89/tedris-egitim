@@ -1,5 +1,5 @@
 import { generateContent } from './geminiService';
-import { Question, QuestionType } from '../types';
+import { QuestionBankQuestion, QuestionBankQuestionType } from '../types';
 
 export interface QuestionBankConfig {
   subject: string;
@@ -15,7 +15,7 @@ export interface QuestionBankConfig {
   };
 }
 
-export async function generateQuestionBank(config: QuestionBankConfig): Promise<Question[]> {
+export async function generateQuestionBank(config: QuestionBankConfig): Promise<QuestionBankQuestion[]> {
   const { subject, grade, unit, topic, difficulty, questionCounts } = config;
 
   const totalQuestions = Object.values(questionCounts).reduce((sum, count) => sum + (count || 0), 0);
@@ -128,7 +128,7 @@ SADECE JSON döndür, başka metin ekleme!`;
   }
 }
 
-export async function extractQuestionsFromPDF(pdfText: string, subject: string, grade: number, unit: string): Promise<Question[]> {
+export async function extractQuestionsFromPDF(pdfText: string, subject: string, grade: number, unit: string): Promise<QuestionBankQuestion[]> {
   const prompt = `Sen bir eğitim uzmanısın. Aşağıdaki metin bir PDF testinden alınmıştır. Lütfen bu testteki TÜM soruları, şıkları ve doğru cevapları tespit et.
 
 PDF İçeriği:
@@ -234,7 +234,7 @@ SADECE JSON döndür!`;
   }
 }
 
-export function calculateScore(questions: Question[], answers: Record<string, any>): { score: number; totalCorrect: number } {
+export function calculateScore(questions: QuestionBankQuestion[], answers: Record<string, any>): { score: number; totalCorrect: number } {
   const totalQuestions = questions.length;
   const pointsPerQuestion = totalQuestions > 0 ? 100 / totalQuestions : 0;
 
@@ -249,7 +249,7 @@ export function calculateScore(questions: Question[], answers: Record<string, an
   questions.forEach((question, idx) => {
     const answer = answers[question.id];
 
-    console.log(`\nSoru ${idx+1} [${question.type}]: ${pointsPerQuestion.toFixed(2)} puan`);
+    console.log(`\nSoru ${idx + 1} [${question.type}]: ${pointsPerQuestion.toFixed(2)} puan`);
 
     if (!answer) {
       console.log('  → Cevaplanmadı: 0 puan');

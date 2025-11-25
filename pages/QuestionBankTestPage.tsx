@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, QuestionBankAssignment, Question } from '../types';
+import { User, QuestionBankAssignment, QuestionBankQuestion } from '../types';
 import { db, supabase } from '../services/dbAdapter';
 import { calculateScore } from '../services/questionBankService';
 
@@ -13,7 +13,7 @@ interface QuestionBankTestPageProps {
 const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assignmentId, onBack, onComplete }) => {
   const [assignment, setAssignment] = useState<QuestionBankAssignment | null>(null);
   const [questionBankTitle, setQuestionBankTitle] = useState<string>('Test');
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QuestionBankQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [markedQuestions, setMarkedQuestions] = useState<Set<string>>(new Set());

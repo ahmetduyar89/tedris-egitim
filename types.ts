@@ -243,13 +243,13 @@ export interface InteractiveContent {
 }
 
 // --- Question Bank System ---
-export type QuestionType = 'multiple_choice' | 'open_ended' | 'matching' | 'true_false';
+export type QuestionBankQuestionType = 'multiple_choice' | 'open_ended' | 'matching' | 'true_false';
 export type QuestionBankSource = 'ai_generated' | 'pdf_import' | 'manual';
 export type QuestionBankAssignmentStatus = 'Atandı' | 'Devam Ediyor' | 'Tamamlandı';
 
-export interface Question {
+export interface QuestionBankQuestion {
   id: string;
-  type: QuestionType;
+  type: QuestionBankQuestionType;
   question: string;
   difficulty: number;
   points: number;
@@ -261,6 +261,10 @@ export interface Question {
   left_items?: string[];
   right_items?: string[];
   correct_pairs?: Record<string, string>;
+  aiEvaluation?: {
+    score: number;
+    feedback: string;
+  };
 }
 
 export interface QuestionBank {
@@ -272,7 +276,7 @@ export interface QuestionBank {
   unit: string;
   topic?: string;
   difficultyLevel: number;
-  questions: Question[];
+  questions: QuestionBankQuestion[];
   totalQuestions: number;
   source: QuestionBankSource;
   createdAt: string;

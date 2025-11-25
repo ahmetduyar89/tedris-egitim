@@ -36,53 +36,50 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
             return;
         }
 
+        if (!confirm('Öğrenci hesabı oluşturulurken güvenlik gereği oturumunuz kapatılacaktır. İşlemden sonra tekrar giriş yapmanız gerekecek. Devam etmek istiyor musunuz?')) {
+            return;
+        }
+
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (!session) {
-                setError('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
-                return;
-            }
-
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const apiUrl = `${supabaseUrl}/functions/v1/create-student`;
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    password,
-                    grade,
-                    tutorId: tutor.id,
-                }),
+            // 1. Create auth user (this will sign out the current user)
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
+                email: email.trim(),
+                password: password.trim(),
             });
 
-            const result = await response.json();
+            if (signUpError) throw signUpError;
 
-            if (!response.ok) {
-                throw new Error(result.error || 'Öğrenci oluşturulurken bir hata oluştu.');
-            }
+            if (authData.user) {
+                // 2. Add to public.users table
+                const { error: userError } = await supabase
+                    .from('users')
+                    .insert([{
+                        id: authData.user.id,
+                        email: email.trim(),
+                        name: name.trim(),
+                        role: UserRole.Student,
+                        status: 'approved' // Students are auto-approved
+                    }]);
 
-            if (result.success) {
-                const newStudent: Student = {
-                    id: result.student.id,
-                    name: result.student.name,
-                    grade: result.student.grade,
-                    tutorId: result.student.tutorId,
-                    level: 1,
-                    xp: 0,
-                    badges: [],
-                    learningLoopStatus: LearningLoopStatus.Initial,
-                    progressReports: [],
-                };
+                if (userError) throw userError;
 
-                onStudentAdded(newStudent);
-                onClose();
+                // 3. Add to students table
+                const { error: studentError } = await supabase
+                    .from('students')
+                    .insert([{
+                        id: authData.user.id,
+                        name: name.trim(),
+                        grade: grade,
+                        tutor_id: tutor.id,
+                        level: 1,
+                        xp: 0,
+                        learning_loop_status: LearningLoopStatus.Initial
+                    }]);
+
+                if (studentError) throw studentError;
+
+                alert('Öğrenci başarıyla oluşturuldu! Lütfen öğretmen hesabınızla tekrar giriş yapın.');
+                window.location.reload(); // Force reload to clear any stale state
             }
         } catch (error: any) {
             if (error.message?.includes('User already registered') || error.message?.includes('already exists')) {
@@ -103,9 +100,9 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"/>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
                     </div>
-                     <div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
                         <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
                             {[5, 6, 7, 8].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
@@ -177,7 +174,7 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"/>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
@@ -216,9 +213,9 @@ const ConfirmDeleteModal: React.FC<{ studentName: string; onConfirm: () => void;
 );
 
 interface TutorDashboardProps {
-  user: User;
-  onLogout: () => void;
-  onNavigateToContent: (contentId: string) => void;
+    user: User;
+    onLogout: () => void;
+    onNavigateToContent: (contentId: string) => void;
 }
 
 const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: () => void; onDelete: () => void }> = ({ student, onSelect, onEdit, onDelete }) => {
@@ -234,8 +231,8 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
 
     return (
         <div
-          className="bg-card-background p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
-          onClick={onSelect}
+            className="bg-card-background p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
+            onClick={onSelect}
         >
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -298,11 +295,10 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
                     <button
                         key={item.id}
                         onClick={() => setView(item.id as View)}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-colors ${
-                            isActive(item.id as 'students' | 'library')
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-colors ${isActive(item.id as 'students' | 'library')
                                 ? 'bg-primary/10 text-primary'
                                 : 'text-text-secondary hover:bg-gray-100'
-                        }`}
+                            }`}
                     >
                         <span>{item.icon}</span>
                         <span>{item.label}</span>
@@ -323,7 +319,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLoadingStudents, setIsLoadingStudents] = useState(true);
-  
+
     const loadStudents = useCallback(async () => {
         try {
             setIsLoadingStudents(true);
@@ -359,7 +355,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     }, [loadStudents]);
 
     const handleStudentAdded = async (newStudent: Student) => {
-      await loadStudents();
+        await loadStudents();
     };
 
     const handleEditStudent = (student: Student) => {
@@ -450,14 +446,14 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         setCurrentView('students');
         loadStudents(); // Reload students to see any updates
     };
-    
+
     const handleStudentUpdated = (updatedStudent: Student) => {
         setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
         if (selectedStudent?.id === updatedStudent.id) {
             setSelectedStudent(updatedStudent);
         }
     };
-    
+
     const handleNavigateToCreator = (contentId?: string) => {
         setEditingContentId(contentId || null);
         setCurrentView('createMaterial');
@@ -533,7 +529,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     return (
         <div className="flex h-screen bg-background">
             {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
-            
+
             <aside className={`fixed z-40 inset-y-0 left-0 w-64 bg-card-background flex flex-col border-r border-border p-4 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <SidebarContent currentView={currentView} setView={(view) => { setCurrentView(view); setIsSidebarOpen(false); }} />
             </aside>

@@ -131,19 +131,19 @@ export const getPDFTestsForStudent = async (studentId: string): Promise<PDFTest[
       const data = doc.data();
       return {
         id: doc.id,
-        teacherId: data.teacherId,
-        studentId: data.studentId,
+        teacherId: data.teacher_id || data.teacherId,
+        studentId: data.student_id || data.studentId,
         title: data.title,
         description: data.description || '',
-        pdfUrl: data.pdfUrl,
-        totalQuestions: data.totalQuestions,
-        answerKey: data.answerKey || {},
-        optionsPerQuestion: data.optionsPerQuestion,
-        durationMinutes: data.durationMinutes,
-        dueDate: data.dueDate,
+        pdfUrl: data.pdf_url || data.pdfUrl,
+        totalQuestions: data.total_questions || data.totalQuestions,
+        answerKey: data.answer_key || data.answerKey || {},
+        optionsPerQuestion: data.options_per_question || data.optionsPerQuestion,
+        durationMinutes: data.duration_minutes || data.durationMinutes,
+        dueDate: data.due_date || data.dueDate,
         subject: data.subject || '',
         unit: data.unit || '',
-        createdAt: data.createdAt,
+        createdAt: data.created_at || data.createdAt,
       };
     });
   } catch (error) {
@@ -162,19 +162,19 @@ export const getPDFTestsForTeacher = async (teacherId: string): Promise<PDFTest[
       const data = doc.data();
       return {
         id: doc.id,
-        teacherId: data.teacherId,
-        studentId: data.studentId,
+        teacherId: data.teacher_id || data.teacherId,
+        studentId: data.student_id || data.studentId,
         title: data.title,
         description: data.description || '',
-        pdfUrl: data.pdfUrl,
-        totalQuestions: data.totalQuestions,
-        answerKey: data.answerKey || {},
-        optionsPerQuestion: data.optionsPerQuestion,
-        durationMinutes: data.durationMinutes,
-        dueDate: data.dueDate,
+        pdfUrl: data.pdf_url || data.pdfUrl,
+        totalQuestions: data.total_questions || data.totalQuestions,
+        answerKey: data.answer_key || data.answerKey || {},
+        optionsPerQuestion: data.options_per_question || data.optionsPerQuestion,
+        durationMinutes: data.duration_minutes || data.durationMinutes,
+        dueDate: data.due_date || data.dueDate,
         subject: data.subject || '',
         unit: data.unit || '',
-        createdAt: data.createdAt,
+        createdAt: data.created_at || data.createdAt,
       };
     });
   } catch (error) {
@@ -196,26 +196,26 @@ export const getPDFTest = async (testId: string): Promise<PDFTest | null> => {
     const data = doc.data();
     console.log('[pdfTestService] PDF test data retrieved:', {
       id: doc.id,
-      hasPdfUrl: !!data.pdfUrl,
-      pdfUrl: data.pdfUrl,
-      totalQuestions: data.totalQuestions
+      hasPdfUrl: !!(data.pdf_url || data.pdfUrl),
+      pdfUrl: data.pdf_url || data.pdfUrl,
+      totalQuestions: data.total_questions || data.totalQuestions
     });
 
     return {
       id: doc.id,
-      teacherId: data.teacherId,
-      studentId: data.studentId,
+      teacherId: data.teacher_id || data.teacherId,
+      studentId: data.student_id || data.studentId,
       title: data.title,
       description: data.description || '',
-      pdfUrl: data.pdfUrl,
-      totalQuestions: data.totalQuestions,
-      answerKey: data.answerKey || {},
-      optionsPerQuestion: data.optionsPerQuestion,
-      durationMinutes: data.durationMinutes,
-      dueDate: data.dueDate,
+      pdfUrl: data.pdf_url || data.pdfUrl,
+      totalQuestions: data.total_questions || data.totalQuestions,
+      answerKey: data.answer_key || data.answerKey || {},
+      optionsPerQuestion: data.options_per_question || data.optionsPerQuestion,
+      durationMinutes: data.duration_minutes || data.durationMinutes,
+      dueDate: data.due_date || data.dueDate,
       subject: data.subject || '',
       unit: data.unit || '',
-      createdAt: data.createdAt,
+      createdAt: data.created_at || data.createdAt,
     };
   } catch (error) {
     console.error('[pdfTestService] Error fetching PDF test:', error);
@@ -236,18 +236,18 @@ export const startPDFTest = async (testId: string, studentId: string): Promise<P
       const data = doc.data();
       return {
         id: doc.id,
-        pdfTestId: data.pdfTestId,
-        studentId: data.studentId,
-        studentAnswers: data.studentAnswers || {},
-        startedAt: data.startedAt,
-        submittedAt: data.submittedAt,
-        timeSpentSeconds: data.timeSpentSeconds || 0,
-        scorePercentage: data.scorePercentage,
-        correctCount: data.correctCount || 0,
-        wrongCount: data.wrongCount || 0,
-        emptyCount: data.emptyCount || 0,
+        pdfTestId: data.pdf_test_id || data.pdfTestId,
+        studentId: data.student_id || data.studentId,
+        studentAnswers: data.student_answers || data.studentAnswers || {},
+        startedAt: data.started_at || data.startedAt,
+        submittedAt: data.submitted_at || data.submittedAt,
+        timeSpentSeconds: data.time_spent_seconds || data.timeSpentSeconds || 0,
+        scorePercentage: data.score_percentage || data.scorePercentage,
+        correctCount: data.correct_count || data.correctCount || 0,
+        wrongCount: data.wrong_count || data.wrongCount || 0,
+        emptyCount: data.empty_count || data.emptyCount || 0,
         status: data.status,
-        createdAt: data.createdAt,
+        createdAt: data.created_at || data.createdAt,
       };
     }
 
@@ -297,18 +297,18 @@ export const startPDFTest = async (testId: string, studentId: string): Promise<P
         const data = doc.data();
         return {
           id: doc.id,
-          pdfTestId: data.pdfTestId,
-          studentId: data.studentId,
-          studentAnswers: data.studentAnswers || {},
-          startedAt: data.startedAt,
-          submittedAt: data.submittedAt,
-          timeSpentSeconds: data.timeSpentSeconds || 0,
-          scorePercentage: data.scorePercentage,
-          correctCount: data.correctCount || 0,
-          wrongCount: data.wrongCount || 0,
-          emptyCount: data.emptyCount || 0,
+          pdfTestId: data.pdf_test_id || data.pdfTestId,
+          studentId: data.student_id || data.studentId,
+          studentAnswers: data.student_answers || data.studentAnswers || {},
+          startedAt: data.started_at || data.startedAt,
+          submittedAt: data.submitted_at || data.submittedAt,
+          timeSpentSeconds: data.time_spent_seconds || data.timeSpentSeconds || 0,
+          scorePercentage: data.score_percentage || data.scorePercentage,
+          correctCount: data.correct_count || data.correctCount || 0,
+          wrongCount: data.wrong_count || data.wrongCount || 0,
+          emptyCount: data.empty_count || data.emptyCount || 0,
           status: data.status,
-          createdAt: data.createdAt,
+          createdAt: data.created_at || data.createdAt,
         };
       }
     }
@@ -382,18 +382,18 @@ export const submitPDFTest = async (
 
     return {
       id: doc.id,
-      pdfTestId: data.pdfTestId,
-      studentId: data.studentId,
-      studentAnswers: data.studentAnswers || {},
-      startedAt: data.startedAt,
-      submittedAt: data.submittedAt,
-      timeSpentSeconds: data.timeSpentSeconds,
-      scorePercentage: data.scorePercentage,
-      correctCount: data.correctCount,
-      wrongCount: data.wrongCount,
-      emptyCount: data.emptyCount,
+      pdfTestId: data.pdf_test_id || data.pdfTestId,
+      studentId: data.student_id || data.studentId,
+      studentAnswers: data.student_answers || data.studentAnswers || {},
+      startedAt: data.started_at || data.startedAt,
+      submittedAt: data.submitted_at || data.submittedAt,
+      timeSpentSeconds: data.time_spent_seconds || data.timeSpentSeconds,
+      scorePercentage: data.score_percentage || data.scorePercentage,
+      correctCount: data.correct_count || data.correctCount,
+      wrongCount: data.wrong_count || data.wrongCount,
+      emptyCount: data.empty_count || data.emptyCount,
       status: data.status,
-      createdAt: data.createdAt,
+      createdAt: data.created_at || data.createdAt,
     };
   } catch (error) {
     console.error('Error submitting PDF test:', error);
@@ -421,18 +421,18 @@ export const getSubmissionForTest = async (
 
     return {
       id: doc.id,
-      pdfTestId: data.pdfTestId,
-      studentId: data.studentId,
-      studentAnswers: data.studentAnswers || {},
-      startedAt: data.startedAt,
-      submittedAt: data.submittedAt,
-      timeSpentSeconds: data.timeSpentSeconds,
-      scorePercentage: data.scorePercentage,
-      correctCount: data.correctCount,
-      wrongCount: data.wrongCount,
-      emptyCount: data.emptyCount,
+      pdfTestId: data.pdf_test_id || data.pdfTestId,
+      studentId: data.student_id || data.studentId,
+      studentAnswers: data.student_answers || data.studentAnswers || {},
+      startedAt: data.started_at || data.startedAt,
+      submittedAt: data.submitted_at || data.submittedAt,
+      timeSpentSeconds: data.time_spent_seconds || data.timeSpentSeconds,
+      scorePercentage: data.score_percentage || data.scorePercentage,
+      correctCount: data.correct_count || data.correctCount,
+      wrongCount: data.wrong_count || data.wrongCount,
+      emptyCount: data.empty_count || data.emptyCount,
       status: data.status,
-      createdAt: data.createdAt,
+      createdAt: data.created_at || data.createdAt,
     };
   } catch (error) {
     console.error('Error fetching submission:', error);
@@ -449,32 +449,33 @@ export const getSubmissionsForStudent = async (studentId: string): Promise<PDFTe
     const submissions = await Promise.all(
       snapshot.docs.map(async (doc: any) => {
         const data = doc.data();
+        const pdfTestId = data.pdf_test_id || data.pdfTestId;
 
-        if (!data.pdfTestId) {
+        if (!pdfTestId) {
           console.error('[pdfTestService] Missing pdfTestId for submission:', doc.id, data);
         }
 
         let pdfTest: PDFTest | undefined;
 
-        if (data.pdfTestId) {
-          const testDoc = await db.collection('pdf_tests').doc(data.pdfTestId).get();
+        if (pdfTestId) {
+          const testDoc = await db.collection('pdf_tests').doc(pdfTestId).get();
           if (testDoc.exists) {
             const testData = testDoc.data();
             pdfTest = {
               id: testDoc.id,
-              teacherId: testData.teacherId,
-              studentId: testData.studentId,
+              teacherId: testData.teacher_id || testData.teacherId,
+              studentId: testData.student_id || testData.studentId,
               title: testData.title,
               description: testData.description || '',
-              pdfUrl: testData.pdfUrl,
-              totalQuestions: testData.totalQuestions,
-              answerKey: testData.answerKey || {},
-              optionsPerQuestion: testData.optionsPerQuestion,
-              durationMinutes: testData.durationMinutes,
-              dueDate: testData.dueDate,
+              pdfUrl: testData.pdf_url || testData.pdfUrl,
+              totalQuestions: testData.total_questions || testData.totalQuestions,
+              answerKey: testData.answer_key || testData.answerKey || {},
+              optionsPerQuestion: testData.options_per_question || testData.optionsPerQuestion,
+              durationMinutes: testData.duration_minutes || testData.durationMinutes,
+              dueDate: testData.due_date || testData.dueDate,
               subject: testData.subject || '',
               unit: testData.unit || '',
-              createdAt: testData.createdAt,
+              createdAt: testData.created_at || testData.createdAt,
             };
           }
         } else {
@@ -483,18 +484,18 @@ export const getSubmissionsForStudent = async (studentId: string): Promise<PDFTe
 
         return {
           id: doc.id,
-          pdfTestId: data.pdfTestId,
-          studentId: data.studentId,
-          studentAnswers: data.studentAnswers || {},
-          startedAt: data.startedAt,
-          submittedAt: data.submittedAt,
-          timeSpentSeconds: data.timeSpentSeconds,
-          scorePercentage: data.scorePercentage,
-          correctCount: data.correctCount,
-          wrongCount: data.wrongCount,
-          emptyCount: data.emptyCount,
+          pdfTestId: pdfTestId,
+          studentId: data.student_id || data.studentId,
+          studentAnswers: data.student_answers || data.studentAnswers || {},
+          startedAt: data.started_at || data.startedAt,
+          submittedAt: data.submitted_at || data.submittedAt,
+          timeSpentSeconds: data.time_spent_seconds || data.timeSpentSeconds,
+          scorePercentage: data.score_percentage || data.scorePercentage,
+          correctCount: data.correct_count || data.correctCount,
+          wrongCount: data.wrong_count || data.wrongCount,
+          emptyCount: data.empty_count || data.emptyCount,
           status: data.status,
-          createdAt: data.createdAt,
+          createdAt: data.created_at || data.createdAt,
           pdfTest,
         };
       })

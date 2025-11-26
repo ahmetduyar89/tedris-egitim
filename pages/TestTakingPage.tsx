@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Test, QuestionType, Student, Notification, TestResultSummary, Question, WeeklyProgram, Task } from '../types';
-import { generateTestAnalysis, generateCompletionTasks } from '../services/optimizedAIService';
+import { Test, QuestionType, Student, Notification, TestResultSummary, Question } from '../types';
+import { generateTestAnalysis } from '../services/optimizedAIService';
 import { createNotification } from '../services/notificationService';
 import { db } from '../services/dbAdapter';
 import { masteryScoreService } from '../services/masteryScoreService';
@@ -185,54 +185,8 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
       submittedTest.analysis.summary.wrong = total - aiCorrectCount;
       submittedTest.analysis.summary.scorePercent = aiScorePercent;
 
-      const weakTopics = analysisReport.analysis.weakTopics;
-      if (weakTopics && weakTopics.length > 0) {
-        const allCompletionTasks: Task[] = (await Promise.all(
-          weakTopics.map(topic => generateCompletionTasks(topic, test.subject).catch(e => {
-            console.error(`Failed to generate tasks for topic ${topic}:`, e);
-            return []; // Return empty array on error for a specific topic
-          }))
-        )).flat();
-
-        if (allCompletionTasks.length > 0) {
-          const programQuery = await db.collection('weeklyPrograms').where('studentId', '==', submittedTest.studentId).limit(1).get();
-          let studentProgram: WeeklyProgram | null = null;
-          let programId: string | null = null;
-
-          if (!programQuery.empty) {
-            const doc = programQuery.docs[0];
-            programId = doc.id;
-            studentProgram = { id: doc.id, ...doc.data() } as WeeklyProgram;
-          }
-
-          if (!studentProgram) {
-            studentProgram = {
-              id: '', // Firestore will generate this
-              studentId: submittedTest.studentId, week: 1,
-              days: Array.from({ length: 7 }, (_, i) => ({ day: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'][i], tasks: [] }))
-            };
-          }
-
-          const today = new Date().getDay();
-          const dayMap = [6, 0, 1, 2, 3, 4, 5];
-          const todayIndex = dayMap[today];
-
-          allCompletionTasks.forEach((task, i) => {
-            const targetDayIndex = (todayIndex + 1 + i) % 7;
-            if (!studentProgram!.days[targetDayIndex].tasks) {
-              studentProgram!.days[targetDayIndex].tasks = [];
-            }
-            studentProgram!.days[targetDayIndex].tasks.push(task);
-          });
-
-          if (programId) {
-            await db.collection('weeklyPrograms').doc(programId).update({ days: studentProgram.days });
-          } else {
-            const { id, ...programData } = studentProgram;
-            await db.collection('weeklyPrograms').add(programData);
-          }
-        }
-      }
+      // Automatic weekly program generation removed
+      // Teachers will manually create programs based on test results
     } catch (analysisError) {
       console.error("Failed to generate AI analysis:", analysisError);
     }

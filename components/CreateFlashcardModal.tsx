@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Subject, Flashcard } from '../types';
-import { generateFlashcards } from '../services/geminiService';
+import { generateFlashcards } from '../services/optimizedAIService';
 import { createNotification } from '../services/notificationService';
 import { db } from '../services/dbAdapter';
 
@@ -163,21 +163,19 @@ const CreateFlashcardModal: React.FC<CreateFlashcardModalProps> = ({ teacherId, 
           <div className="flex space-x-4 mb-6">
             <button
               onClick={() => setManualMode(false)}
-              className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                !manualMode
+              className={`flex-1 py-3 rounded-xl font-semibold transition-all ${!manualMode
                   ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                }`}
             >
               AI ile Oluştur
             </button>
             <button
               onClick={() => setManualMode(true)}
-              className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
-                manualMode
+              className={`flex-1 py-3 rounded-xl font-semibold transition-all ${manualMode
                   ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                }`}
             >
               Manuel Oluştur
             </button>

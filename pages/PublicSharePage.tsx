@@ -97,6 +97,7 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
             setError(null);
 
             console.log('[PublicSharePage] Loading content for token:', shareToken);
+            console.log('[PublicSharePage] Current URL:', window.location.href);
 
             const shareSnapshot = await db.collection('publicContentShares')
                 .where('shareToken', '==', shareToken)
@@ -104,6 +105,7 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                 .get();
 
             console.log('[PublicSharePage] Share snapshot result:', shareSnapshot);
+            console.log('[PublicSharePage] Number of shares found:', shareSnapshot.docs?.length || 0);
 
             if (shareSnapshot.empty) {
                 console.error('[PublicSharePage] No active share found for token:', shareToken);
@@ -122,8 +124,10 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                 return;
             }
 
+            console.log('[PublicSharePage] Fetching content with ID:', shareData.contentId);
             const contentDoc = await db.collection('contentLibrary').doc(shareData.contentId).get();
-            console.log('[PublicSharePage] Content doc result:', contentDoc);
+            console.log('[PublicSharePage] Content doc exists:', contentDoc.exists);
+            console.log('[PublicSharePage] Content doc data:', contentDoc.exists ? contentDoc.data() : null);
 
             if (!contentDoc.exists) {
                 console.error('[PublicSharePage] Content not found for ID:', shareData.contentId);
@@ -133,7 +137,13 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
             }
 
             const content = { id: contentDoc.id, ...contentDoc.data() } as ContentLibraryItem;
-            console.log('[PublicSharePage] Content loaded:', content);
+            console.log('[PublicSharePage] Content loaded successfully:', {
+                id: content.id,
+                title: content.title,
+                fileType: content.fileType,
+                fileUrl: content.fileUrl,
+                hasInteractiveContent: !!content.interactiveContentId
+            });
             setContentItem(content);
 
             try {
@@ -162,12 +172,16 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
             console.log('[PublicSharePage] Content loading completed successfully');
         } catch (error) {
             console.error('[PublicSharePage] Error loading shared content:', error);
-            if (error && typeof error === 'object' && 'message' in error) {
-                console.error('[PublicSharePage] Error message:', (error as any).message);
-                console.error('[PublicSharePage] Error details:', (error as any).details);
-                console.error('[PublicSharePage] Error hint:', (error as any).hint);
+            if (error && typeof error === 'object') {
+                console.error('[PublicSharePage] Error details:', {
+                    message: (error as any).message,
+                    code: (error as any).code,
+                    details: (error as any).details,
+                    hint: (error as any).hint,
+                    stack: (error as any).stack
+                });
             }
-            setError('İçerik yüklenirken bir hata oluştu. Lütfen linkin doğruluğunu kontrol edin.');
+            setError(`İçerik yüklenirken bir hata oluştu: ${(error as any)?.message || 'Bilinmeyen hata'}`);
             setIsLoading(false);
         }
     };
@@ -179,44 +193,67 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                 if (iframe) {
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
                     if (iframeDoc) {
-                        const htmlWithDefaults = `
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <style>
-                                    body {
-                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
-                                        line-height: 1.6;
-                                        color: #333;
-                                        padding: 20px;
-                                        margin: 0;
-                                        background: white;
-                                    }
-                                    h1, h2, h3, h4, h5, h6 {
-                                        margin-top: 24px;
-                                        margin-bottom: 16px;
-                                        font-weight: 600;
-                                        line-height: 1.25;
-                                    }
-                                    h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                    h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                    h3 { font-size: 1.25em; }
-                                    p { margin-bottom: 16px; }
-                                    img { max-width: 100%; height: auto; }
-                                    table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
-                                    table th, table td { border: 1px solid #dfe2e5; padding: 8px 13px; }
-                                    table th { background-color: #f6f8fa; font-weight: 600; }
-                                </style>
-                            </head>
-                            <body>
-                                ${contentItem.htmlContent}
-                            </body>
-                            </html>
-                        `;
+                        // Check if content is already a full HTML document
+                        const isFullDocument = contentItem.htmlContent.trim().toLowerCase().startsWith('<!doctype') ||
+                            contentItem.htmlContent.trim().toLowerCase().startsWith('<html');
+
+                        let htmlToRender;
+
+                        if (isFullDocument) {
+                            // Content is already a full HTML document, use it as-is
+                            htmlToRender = contentItem.htmlContent;
+                        } else {
+                            // Content is HTML fragment, wrap it with default styling
+                            htmlToRender = `
+                                <!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <base href="about:blank">
+                                    <style>
+                                        body {
+                                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+                                            line-height: 1.6;
+                                            color: #333;
+                                            padding: 20px;
+                                            margin: 0;
+                                            background: white;
+                                        }
+                                        h1, h2, h3, h4, h5, h6 {
+                                            margin-top: 24px;
+                                            margin-bottom: 16px;
+                                            font-weight: 600;
+                                            line-height: 1.25;
+                                        }
+                                        h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                        h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                        h3 { font-size: 1.25em; }
+                                        p { margin-bottom: 16px; }
+                                        img { max-width: 100%; height: auto; }
+                                        table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+                                        table th, table td { border: 1px solid #dfe2e5; padding: 8px 13px; }
+                                        table th { background-color: #f6f8fa; font-weight: 600; }
+                                    </style>
+                                    <script>
+                                        // Suppress 404 errors from relative paths in console
+                                        window.addEventListener('error', function(e) {
+                                            if (e.target.tagName === 'IMG' || e.target.tagName === 'LINK' || e.target.tagName === 'SCRIPT') {
+                                                e.preventDefault();
+                                                console.warn('Resource not found (suppressed):', e.target.src || e.target.href);
+                                            }
+                                        }, true);
+                                    </script>
+                                </head>
+                                <body>
+                                    ${contentItem.htmlContent}
+                                </body>
+                                </html>
+                            `;
+                        }
+
                         iframeDoc.open();
-                        iframeDoc.write(htmlWithDefaults);
+                        iframeDoc.write(htmlToRender);
                         iframeDoc.close();
                     }
                 }

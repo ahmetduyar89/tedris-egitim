@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import * as Recharts from 'recharts';
-import { Student, Test, MapNode, MapNodeStatus, ContentRecommendation, Question } from '../types';
-import { recommendContentForTopic } from '../services/geminiService';
+import { Student, Test, MapNode, MapNodeStatus, ContentRecommendation, Question, QuestionType } from '../types';
+import { recommendContentForTopic } from '../services/optimizedAIService';
 import { db } from '../services/dbAdapter';
 
 const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } = Recharts;
@@ -102,26 +102,36 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             return null;
                         }
 
-                        const questionsList = Array.isArray(answers) ? answers.map((ans: any, idx: number) => ({
+                        const questionsList: Question[] = Array.isArray(answers) ? answers.map((ans: any, idx: number) => ({
                             id: ans.questionId || `q${idx}`,
                             text: ans.questionText || ans.question || 'Soru metni yok',
+                            type: QuestionType.MultipleChoice, // Default to MultipleChoice for QB questions
                             studentAnswer: ans.selectedAnswer || '',
                             correctAnswer: ans.correctAnswer || '',
                             isCorrect: ans.isCorrect || false,
                             topic: ans.topic || topicBreakdown[0]?.topic || qb.topic || qb.unit || 'Genel'
                         })) : [];
 
-                        return {
+                        const test: Test = {
                             id: doc.id,
                             title: qb.title || 'Soru Bankası Testi',
+                            studentId: student.id,
                             subject: qb.subject,
-                            submissionDate: assignment.completed_at,
+                            unit: qb.unit || 'Genel',
+                            duration: 0,
+                            dueDate: '',
+                            completed: true,
+                            submissionDate: assignment.completed_at || new Date().toISOString(),
                             score: assignment.score || 0,
                             questions: questionsList,
                             analysis: {
+                                summary: { correct: assignment.total_correct || 0, wrong: (assignment.total_questions || 0) - (assignment.total_correct || 0), scorePercent: assignment.score || 0 },
+                                analysis: { weakTopics: [], strongTopics: [], recommendations: [], overallComment: '' },
+                                questionEvaluations: questionsList,
                                 topicBreakdown: topicBreakdown
                             }
                         };
+                        return test;
                     })
                 );
 
@@ -152,9 +162,9 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             if (questionsInTestByTopic[topicName]) {
                                 aggregatedTopics[topicName].questions.push(...questionsInTestByTopic[topicName]);
                             }
-                            
+
                             const totalForTopicInTest = topicData.correct + topicData.wrong;
-                            if(totalForTopicInTest > 0) {
+                            if (totalForTopicInTest > 0) {
                                 aggregatedTopics[topicName].history[test.id] = { correct: topicData.correct, total: totalForTopicInTest, date: test.submissionDate! };
                             }
                         });
@@ -167,12 +177,12 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                         if (score >= 80) status = 'mastered';
                         else if (score >= 50) status = 'progress';
                         else status = 'weak';
-                        
+
                         const history = Object.values(data.history).map(h => ({
                             name: new Date(h.date).toLocaleDateString('tr-TR'),
                             score: h.total > 0 ? Math.round((h.correct / h.total) * 100) : 0,
                             date: h.date, // for sorting
-                        })).sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                        })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
                         return { name, status, score, questionCount: totalQuestions, history, questions: data.questions };
                     });
@@ -199,7 +209,7 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
             if (Array.isArray(recs)) {
                 setRecommendations(recs);
             } else {
-                setRecommendations([]); 
+                setRecommendations([]);
             }
         } catch (error) {
             console.error("Failed to get recommendations:", error);
@@ -218,13 +228,13 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
     return (
         <div className="bg-card-background p-6 rounded-2xl shadow-lg relative min-h-[500px]">
             <h2 className="text-2xl font-bold font-poppins text-accent mb-4">Tedris Harita 🗺️</h2>
-             {isLoading && <div className="text-center p-10">Harita yükleniyor...</div>}
-             {!isLoading && nodes.length === 0 && (
+            {isLoading && <div className="text-center p-10">Harita yükleniyor...</div>}
+            {!isLoading && nodes.length === 0 && (
                 <div className="text-center p-10 text-text-secondary">
                     Öğrenme haritanızı oluşturmak için lütfen bir test çözün.
                 </div>
             )}
-            
+
             <div className="flex flex-col md:flex-row justify-around gap-4">
                 {Object.entries(groupedNodes).map(([status, groupNodes]) => (
                     <div key={status} className="flex-1">
@@ -254,7 +264,7 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                     <p className={`font-semibold text-lg mb-4 ${statusConfig[selectedNode.status].textColor}`}>{statusConfig[selectedNode.status].label} ({selectedNode.score}%)</p>
 
                     {selectedNode.status !== 'mastered' && onGenerateReviewPackage && (
-                        <button 
+                        <button
                             onClick={() => { onGenerateReviewPackage(selectedNode.name); setSelectedNode(null); }}
                             className="w-full bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary-dark mb-6"
                         >
@@ -276,7 +286,7 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                     ) : (
                         <p className="text-sm text-gray-500">Gelişim grafiği için yeterli test verisi yok.</p>
                     )}
-                    
+
                     <h4 className="font-bold font-poppins text-gray-700 mb-3 mt-6">İlgili Sorular ({selectedNode.questions.length})</h4>
                     <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                         {selectedNode.questions.map((q, index) => (

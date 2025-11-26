@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Submission, AssignmentStatus, AIHomeworkAnalysis, Assignment } from '../types';
-import { evaluateHomework } from '../services/geminiService';
+import { evaluateHomework } from '../services/optimizedAIService';
 
 interface GradeSubmissionModalProps {
     submission: Submission;

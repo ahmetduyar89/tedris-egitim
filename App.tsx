@@ -1,13 +1,15 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react';
 import { User, UserRole } from './types';
 import LoginPage from './pages/LoginPage';
-import TutorDashboard from './pages/TutorDashboard';
-import StudentDashboard from './pages/StudentDashboard';
-import AdminDashboard from './pages/AdminDashboard';
 import LandingPage from './pages/LandingPage';
-import PublicSharePage from './pages/PublicSharePage';
-import ContentViewerPage from './pages/ContentViewerPage';
+// Lazy load heavy dashboard components
+const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const PublicSharePage = lazy(() => import('./pages/PublicSharePage'));
+const ContentViewerPage = lazy(() => import('./pages/ContentViewerPage'));
 import { supabase } from './services/dbAdapter';
+import ErrorBoundary from './components/ErrorBoundary';
 
 type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer';
 
@@ -213,7 +215,7 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setView('website');
   }, []);
-  
+
   const handleNavigateToAuth = useCallback(() => {
     setView('auth');
   }, []);
@@ -239,7 +241,7 @@ const App: React.FC = () => {
       return <div className="flex items-center justify-center min-h-screen">Yükleniyor...</div>;
     }
 
-    switch(view) {
+    switch (view) {
       case 'public-share':
         return shareToken ? <PublicSharePage shareToken={shareToken} /> : <div className="flex items-center justify-center min-h-screen">Geçersiz paylaşım linki</div>;
       case 'content-viewer':
@@ -264,8 +266,8 @@ const App: React.FC = () => {
         return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} />;
       case 'dashboard':
         if (!currentUser) {
-            setView('auth'); // Should not happen due to auth listener, but as a fallback
-            return null;
+          setView('auth'); // Should not happen due to auth listener, but as a fallback
+          return null;
         }
         if (currentUser.is_admin) {
           return <AdminDashboard onLogout={handleLogout} adminName={currentUser.name} />;
@@ -287,9 +289,13 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="bg-background min-h-screen font-sans text-text-primary">
-      {renderContent()}
-    </div>
+    <ErrorBoundary>
+      <div className="bg-background min-h-screen font-sans text-text-primary">
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Yükleniyor...</div>}>
+          {renderContent()}
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   );
 };
 

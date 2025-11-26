@@ -192,7 +192,7 @@ export interface Notification {
   message: string;
   read: boolean;
   timestamp: string;
-  entityType?: 'test' | 'assignment' | 'content' | 'submission'; // What is this notification about?
+  entityType?: 'test' | 'assignment' | 'content' | 'submission' | 'test_completed'; // What is this notification about?
   entityId?: string; // ID of the test/assignment etc.
 }
 
@@ -251,6 +251,7 @@ export interface QuestionBankQuestion {
   id: string;
   type: QuestionBankQuestionType;
   question: string;
+  topic?: string;
   difficulty: number;
   points: number;
   explanation?: string;
@@ -362,6 +363,7 @@ export interface Assignment {
 export interface AIHomeworkAnalysis {
   feedback: string;
   weakTopics: string[];
+  strongTopics?: string[];
 }
 
 export interface Submission {

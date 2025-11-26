@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Student, Subject, Assignment, AssignmentType, Test } from '../types';
-import { suggestHomework } from '../services/geminiService';
+import { suggestHomework } from '../services/optimizedAIService';
 import { db } from '../services/dbAdapter';
 
 interface CreateAssignmentModalProps {
@@ -38,10 +38,10 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
             if (!testsSnapshot.empty) {
                 const completedTests = testsSnapshot.docs.map((doc: any) => doc.data() as Test);
                 completedTests.sort((a, b) => new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime());
-                
+
                 const lastTest = completedTests[0];
-                if (lastTest && lastTest.analysis?.analysis?.weak_topics && lastTest.analysis.analysis.weak_topics.length > 0) {
-                    weakTopics = lastTest.analysis.analysis.weak_topics;
+                if (lastTest && lastTest.analysis?.analysis?.weakTopics && lastTest.analysis.analysis.weakTopics.length > 0) {
+                    weakTopics = lastTest.analysis.analysis.weakTopics;
                 }
             }
 
@@ -85,7 +85,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-2xl font-bold">Yeni Ödev Oluştur</h2>
                     <button onClick={handleAiSuggest} disabled={isAiLoading} className="bg-blue-100 text-primary px-3 py-1 rounded-lg text-sm font-semibold flex items-center disabled:opacity-50">
-                       {isAiLoading ? 'Öneriliyor...' : 'AI Ödev Öner'}
+                        {isAiLoading ? 'Öneriliyor...' : 'AI Ödev Öner'}
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">

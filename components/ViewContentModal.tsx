@@ -26,11 +26,11 @@ const InteractiveContentRenderer: React.FC<{ interactiveContent: InteractiveCont
             {interactiveContent.components.map(comp => {
                 const { id, type, content } = comp;
                 const isChecked = showFeedback[id];
-                
+
                 return (
                     <div key={id} className="p-4 bg-gray-50 rounded-lg border">
                         {type === 'text' && <div className="prose" dangerouslySetInnerHTML={{ __html: content.text.replace(/\n/g, '<br/>') }} />}
-                        
+
                         {type === 'mcq' && (
                             <div>
                                 <p className="font-semibold mb-3">{content.question}</p>
@@ -54,16 +54,16 @@ const InteractiveContentRenderer: React.FC<{ interactiveContent: InteractiveCont
                                 {!isChecked && <button onClick={() => checkAnswer(id)} className="mt-3 text-sm bg-primary text-white px-3 py-1 rounded-md">Kontrol Et</button>}
                             </div>
                         )}
-                        
+
                         {type === 'fill-in-the-blank' && (
-                             <div>
+                            <div>
                                 <p className="mb-3">{content.sentence.replace('___', '______')}</p>
                                 <input type="text" onChange={e => handleAnswerChange(id, e.target.value)} disabled={isChecked} className="p-2 border rounded-md" />
                                 {!isChecked && <button onClick={() => checkAnswer(id)} className="ml-2 text-sm bg-primary text-white px-3 py-1 rounded-md">Kontrol Et</button>}
                                 {isChecked && <span className={`ml-2 font-semibold ${answers[id] === content.answer ? 'text-success' : 'text-error'}`}>{answers[id] === content.answer ? 'Doğru!' : `Yanlış (Doğrusu: ${content.answer})`}</span>}
                             </div>
                         )}
-                        
+
                         {type === 'true-false' && (
                             <div>
                                 <p className="font-semibold mb-3">{content.statement}</p>
@@ -121,72 +121,97 @@ const ViewContentModal: React.FC<ViewContentModalProps> = ({ isOpen, onClose, co
                 if (iframe) {
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
                     if (iframeDoc) {
-                        const htmlWithDefaults = `
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <meta charset="UTF-8">
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                <style>
-                                    body {
-                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
-                                        line-height: 1.6;
-                                        color: #333;
-                                        padding: 20px;
-                                        margin: 0;
-                                        background: white;
-                                    }
-                                    h1, h2, h3, h4, h5, h6 {
-                                        margin-top: 24px;
-                                        margin-bottom: 16px;
-                                        font-weight: 600;
-                                        line-height: 1.25;
-                                    }
-                                    h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                    h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                    h3 { font-size: 1.25em; }
-                                    p { margin-bottom: 16px; }
-                                    img { max-width: 100%; height: auto; }
-                                    table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
-                                    table th, table td { border: 1px solid #dfe2e5; padding: 8px 13px; }
-                                    table th { background-color: #f6f8fa; font-weight: 600; }
-                                    code {
-                                        background-color: #f6f8fa;
-                                        padding: 2px 6px;
-                                        border-radius: 3px;
-                                        font-family: 'Courier New', monospace;
-                                    }
-                                    pre {
-                                        background-color: #f6f8fa;
-                                        padding: 16px;
-                                        border-radius: 6px;
-                                        overflow-x: auto;
-                                        margin-bottom: 16px;
-                                    }
-                                    pre code {
-                                        background: none;
-                                        padding: 0;
-                                    }
-                                    ul, ol { margin-bottom: 16px; padding-left: 2em; }
-                                    li { margin-bottom: 4px; }
-                                    blockquote {
-                                        border-left: 4px solid #dfe2e5;
-                                        padding-left: 16px;
-                                        margin-left: 0;
-                                        color: #6a737d;
-                                    }
-                                    a { color: #0366d6; text-decoration: none; }
-                                    a:hover { text-decoration: underline; }
-                                </style>
-                            </head>
-                            <body>
-                                ${contentItem.htmlContent}
-                            </body>
-                            </html>
-                        `;
+                        // Check if content is already a full HTML document
+                        const isFullDocument = contentItem.htmlContent.trim().toLowerCase().startsWith('<!doctype') ||
+                            contentItem.htmlContent.trim().toLowerCase().startsWith('<html');
+
+                        let htmlToRender;
+
+                        if (isFullDocument) {
+                            // Content is already a full HTML document, use it as-is
+                            htmlToRender = contentItem.htmlContent;
+                            console.log('Rendering full HTML document as-is');
+                        } else {
+                            // Content is HTML fragment, wrap it with default styling
+                            htmlToRender = `
+                                <!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <base href="about:blank">
+                                    <style>
+                                        body {
+                                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+                                            line-height: 1.6;
+                                            color: #333;
+                                            padding: 20px;
+                                            margin: 0;
+                                            background: white;
+                                        }
+                                        h1, h2, h3, h4, h5, h6 {
+                                            margin-top: 24px;
+                                            margin-bottom: 16px;
+                                            font-weight: 600;
+                                            line-height: 1.25;
+                                        }
+                                        h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                        h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                        h3 { font-size: 1.25em; }
+                                        p { margin-bottom: 16px; }
+                                        img { max-width: 100%; height: auto; }
+                                        table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+                                        table th, table td { border: 1px solid #dfe2e5; padding: 8px 13px; }
+                                        table th { background-color: #f6f8fa; font-weight: 600; }
+                                        code {
+                                            background-color: #f6f8fa;
+                                            padding: 2px 6px;
+                                            border-radius: 3px;
+                                            font-family: 'Courier New', monospace;
+                                        }
+                                        pre {
+                                            background-color: #f6f8fa;
+                                            padding: 16px;
+                                            border-radius: 6px;
+                                            overflow-x: auto;
+                                            margin-bottom: 16px;
+                                        }
+                                        pre code {
+                                            background: none;
+                                            padding: 0;
+                                        }
+                                        ul, ol { margin-bottom: 16px; padding-left: 2em; }
+                                        li { margin-bottom: 4px; }
+                                        blockquote {
+                                            border-left: 4px solid #dfe2e5;
+                                            padding-left: 16px;
+                                            margin-left: 0;
+                                            color: #6a737d;
+                                        }
+                                        a { color: #0366d6; text-decoration: none; }
+                                        a:hover { text-decoration: underline; }
+                                    </style>
+                                    <script>
+                                        // Suppress 404 errors from relative paths in console
+                                        window.addEventListener('error', function(e) {
+                                            if (e.target.tagName === 'IMG' || e.target.tagName === 'LINK' || e.target.tagName === 'SCRIPT') {
+                                                e.preventDefault();
+                                                console.warn('Resource not found (suppressed):', e.target.src || e.target.href);
+                                            }
+                                        }, true);
+                                    </script>
+                                </head>
+                                <body>
+                                    ${contentItem.htmlContent}
+                                </body>
+                                </html>
+                            `;
+                            console.log('Rendering HTML fragment with wrapper');
+                        }
+
                         console.log('Writing to iframe, document ready');
                         iframeDoc.open();
-                        iframeDoc.write(htmlWithDefaults);
+                        iframeDoc.write(htmlToRender);
                         iframeDoc.close();
                         console.log('HTML written to iframe successfully');
                     } else {
@@ -200,7 +225,7 @@ const ViewContentModal: React.FC<ViewContentModalProps> = ({ isOpen, onClose, co
             return () => clearTimeout(timer);
         }
     }, [isOpen, contentItem]);
-    
+
     if (!isOpen) return null;
 
     const renderContent = () => {
@@ -215,7 +240,7 @@ const ViewContentModal: React.FC<ViewContentModalProps> = ({ isOpen, onClose, co
             );
         }
 
-        switch(contentItem.fileType) {
+        switch (contentItem.fileType) {
             case ContentType.PDF:
                 return (
                     <div className="bg-white rounded-xl shadow-lg overflow-hidden" style={{ height: 'calc(100vh - 120px)' }}>
@@ -231,7 +256,7 @@ const ViewContentModal: React.FC<ViewContentModalProps> = ({ isOpen, onClose, co
             case ContentType.Image:
                 return (
                     <div className="bg-white rounded-xl shadow-lg p-8 flex items-center justify-center" style={{ minHeight: '600px' }}>
-                        <img src={contentItem.fileUrl} alt={contentItem.title} className="max-w-full max-h-full object-contain rounded-lg shadow-md"/>
+                        <img src={contentItem.fileUrl} alt={contentItem.title} className="max-w-full max-h-full object-contain rounded-lg shadow-md" />
                     </div>
                 );
             case ContentType.HTML:

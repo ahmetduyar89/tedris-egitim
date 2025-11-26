@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Student, ChatMessage } from '../types';
-import { explainTopic, checkAnswer } from '../services/geminiService';
+import { explainTopic, checkAnswer } from '../services/optimizedAIService';
 import ChatMessageComponent from '../components/ChatMessage';
 
 interface AIAssistantPageProps {
@@ -28,7 +28,7 @@ const AIAssistantPage: React.FC<AIAssistantPageProps> = ({ student, onBack }) =>
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
-    
+
     useEffect(() => {
         // Greet the user with a welcome message
         setMessages([{
@@ -73,7 +73,7 @@ const AIAssistantPage: React.FC<AIAssistantPageProps> = ({ student, onBack }) =>
             // Simple heuristic to decide which AI function to call
             if (inputImage || inputText.toLowerCase().includes('doğru mu') || inputText.toLowerCase().includes('çözdüm')) {
                 const imageBase64 = inputImage ? await fileToBase64(inputImage) : undefined;
-                
+
                 let questionForAi = inputText;
                 // If the user only uploaded an image without text, create a clear instruction for the AI.
                 if (inputImage && !inputText.trim()) {
@@ -109,17 +109,17 @@ const AIAssistantPage: React.FC<AIAssistantPageProps> = ({ student, onBack }) =>
             setIsLoading(false);
         }
     };
-    
+
     return (
         <div className="flex flex-col h-screen bg-background">
             <header className="bg-card-background shadow-md p-4 flex justify-between items-center z-10">
                 <div className="flex items-center space-x-3">
                     <button onClick={onBack} className="text-primary hover:text-primary-dark">
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
                     </button>
                     <h1 className="text-xl font-bold text-text-primary">AI Asistan</h1>
                 </div>
-                 <div className="text-sm font-semibold text-accent">Online</div>
+                <div className="text-sm font-semibold text-accent">Online</div>
             </header>
 
             <main className="flex-grow p-4 overflow-y-auto">

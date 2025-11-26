@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Student, Subject, QuestionType, Difficulty, Question, Test } from '../types';
 import { CURRICULUM } from '../constants';
-import { generateTestQuestions } from '../services/geminiService';
+import { generateTestQuestions } from '../services/optimizedAIService';
 import { db } from '../services/dbAdapter';
 
 interface TestCreationModalProps {
-  student: Student;
-  onClose: () => void;
-  onTestCreated: (newTest: Test) => void;
+    student: Student;
+    onClose: () => void;
+    onTestCreated: (newTest: Test) => void;
 }
 
 interface TopicSelection {
@@ -112,7 +112,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
             setIsLoading(false);
         }
     }, [student.grade, topics, questionType, difficulty, totalQuestions]);
-    
+
     const handleAssignTest = async () => {
         const testData: Omit<Test, 'id'> = {
             studentId: student.id,
@@ -163,7 +163,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
     const deleteQuestion = (id: string) => {
         setGeneratedQuestions(prev => prev.filter(q => q.id !== id));
     };
-    
+
     const groupedQuestions = useMemo(() => {
         return generatedQuestions.reduce((acc, q) => {
             const topicKey = q.topic || 'Diğer Konular';
@@ -179,9 +179,9 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
         <>
             <h2 className="text-2xl font-bold font-poppins mb-4">AI Destekli Karma Test Oluştur</h2>
             <div className="space-y-4">
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-gray-700">Test Başlığı</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"/>
+                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
                 </div>
                 <div className="border-t pt-4">
                     <h3 className="text-lg font-semibold mb-2">Konular ve Soru Sayıları</h3>
@@ -194,7 +194,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
                                 <select value={topic.unit} onChange={e => handleTopicChange(topic.id, 'unit', e.target.value)} className="col-span-5 p-2 border border-gray-300 rounded-md text-sm">
                                     {(CURRICULUM[topic.subject]?.[student.grade] || []).map(u => <option key={u} value={u}>{u}</option>)}
                                 </select>
-                                <input type="number" value={topic.count} onChange={e => handleTopicChange(topic.id, 'count', e.target.value)} min="1" className="col-span-2 p-2 border border-gray-300 rounded-md text-center text-sm"/>
+                                <input type="number" value={topic.count} onChange={e => handleTopicChange(topic.id, 'count', e.target.value)} min="1" className="col-span-2 p-2 border border-gray-300 rounded-md text-center text-sm" />
                                 <button onClick={() => handleRemoveTopic(topic.id)} disabled={topics.length <= 1} className="col-span-1 text-red-500 disabled:text-gray-300 hover:text-red-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 mx-auto"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                                 </button>
@@ -220,7 +220,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
             </div>
             {error && <p className="text-red-500 mt-4">{error}</p>}
             <div className="mt-6 flex justify-between items-center">
-                 <span className="font-bold text-lg">Toplam Soru: {totalQuestions}</span>
+                <span className="font-bold text-lg">Toplam Soru: {totalQuestions}</span>
                 <div className="flex space-x-3">
                     <button onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600">İptal</button>
                     <button onClick={handleGenerateTest} disabled={isLoading} className="bg-primary text-white px-4 py-2 rounded-xl disabled:bg-gray-400 flex items-center hover:bg-primary-dark">
@@ -271,8 +271,8 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
                                     )}
                                     {q.type === QuestionType.OpenEnded && (
                                         <div className="pl-4">
-                                             <label className="text-xs font-semibold text-gray-500">Doğru Cevap</label>
-                                             <textarea
+                                            <label className="text-xs font-semibold text-gray-500">Doğru Cevap</label>
+                                            <textarea
                                                 value={q.correctAnswer}
                                                 onChange={(e) => handleCorrectAnswerTextChange(q.id, e.target.value)}
                                                 className="w-full p-2 border border-gray-200 rounded-lg text-sm mt-1"

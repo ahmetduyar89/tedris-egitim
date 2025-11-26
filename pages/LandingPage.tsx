@@ -68,18 +68,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       <header className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-gray-100 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
           <TedrisLogo />
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={onNavigateToAuth}
-              className="hidden sm:block text-gray-600 hover:text-primary font-medium transition-colors"
+              className="text-sm sm:text-base text-gray-600 hover:text-primary font-medium transition-colors"
             >
               Giriş Yap
             </button>
             <button
               onClick={onNavigateToAuth}
-              className="bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-2.5 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5"
+              className="bg-primary hover:bg-primary-dark text-white font-semibold px-4 py-2 sm:px-6 sm:py-2.5 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm sm:text-base"
             >
-              Ücretsiz Başla
+              <span className="sm:hidden">Başla</span>
+              <span className="hidden sm:inline">Öğretmen Başvurusu</span>
             </button>
           </div>
         </div>
@@ -88,7 +89,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       {/* Hero Section */}
       <main className="pt-32 pb-20 px-4 relative overflow-hidden">
         {/* Background Elements - Optimized for performance */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-slate-50 to-slate-50 -z-10"></div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full min-h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-slate-50 to-slate-50 -z-10"></div>
         <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl -z-10"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl -z-10"></div>
 
@@ -102,7 +103,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
               <span className="text-gray-600 font-medium text-sm">Yapay Zeka Destekli Eğitim Platformu</span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold font-poppins leading-tight mb-6 tracking-tight text-gray-900">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold font-poppins leading-tight mb-6 tracking-tight text-gray-900">
               Eğitimin Geleceği <br />
               <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">
                 Bugünden Hazır
@@ -140,7 +141,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             </div>
 
             {/* Floating Stats - Static for better performance */}
-            <div className="absolute -left-4 top-1/4 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden lg:block transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+            <div className="absolute -left-4 top-1/4 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden lg:block transform -rotate-3 hover:rotate-0 transition-transform duration-300 z-10">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">🚀</div>
                 <div>
@@ -235,8 +236,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
               <button
                 onClick={() => setActiveTab('teacher')}
                 className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'teacher'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 Öğretmen Paneli
@@ -244,8 +245,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
               <button
                 onClick={() => setActiveTab('student')}
                 className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 ${activeTab === 'student'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 Öğrenci Paneli

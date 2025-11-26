@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 export const createNotification = async (
     recipientId: string,
     message: string,
-    entityType?: 'test' | 'assignment' | 'content' | 'submission',
+    entityType?: Notification['entityType'],
     entityId?: string
 ): Promise<void> => {
     try {

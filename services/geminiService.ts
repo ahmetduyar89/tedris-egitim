@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Difficulty, Question, QuestionType, Subject, AIAnalysisReport, ReviewPackageItem, ReviewPackageItemType, WeeklyProgram, Task, TaskStatus, Assignment, AssignmentType, ContentRecommendation } from '../types';
+import { cacheService } from './cacheService';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -49,9 +50,9 @@ const testGenerationSchema = {
                 properties: {
                     text: { type: Type.STRING, description: 'The question text.' },
                     topic: { type: Type.STRING, description: 'The specific curriculum topic for this question (e.g., "Isı ve Sıcaklık").' },
-                    type: { type: Type.STRING, enum: [QuestionType.MultipleChoice, QuestionType.OpenEnded], description: 'The type of question.'},
-                    options: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of 4 options for multiple choice questions.'},
-                    correctAnswer: { type: Type.STRING, description: 'The correct answer. For multiple choice, it is the text of the correct option.'}
+                    type: { type: Type.STRING, enum: [QuestionType.MultipleChoice, QuestionType.OpenEnded], description: 'The type of question.' },
+                    options: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'An array of 4 options for multiple choice questions.' },
+                    correctAnswer: { type: Type.STRING, description: 'The correct answer. For multiple choice, it is the text of the correct option.' }
                 },
                 required: ['text', 'topic', 'type', 'correctAnswer']
             }
@@ -74,14 +75,14 @@ const analysisGenerationSchema = {
         analysis: {
             type: Type.OBJECT,
             properties: {
-                weak_topics: { type: Type.ARRAY, description: "An array of 1-3 specific sub-topics where the student is weak.", items: { type: Type.STRING }},
-                strong_topics: { type: Type.ARRAY, description: "An array of 1-3 specific sub-topics where the student is strong.", items: { type: Type.STRING }},
-                recommendations: { type: Type.ARRAY, description: "A concrete, 3-point action plan for the student.", items: { type: Type.STRING }},
-                overall_comment: { type: Type.STRING, description: "A concise pedagogical comment on the student's performance."}
+                weak_topics: { type: Type.ARRAY, description: "An array of 1-3 specific sub-topics where the student is weak.", items: { type: Type.STRING } },
+                strong_topics: { type: Type.ARRAY, description: "An array of 1-3 specific sub-topics where the student is strong.", items: { type: Type.STRING } },
+                recommendations: { type: Type.ARRAY, description: "A concrete, 3-point action plan for the student.", items: { type: Type.STRING } },
+                overall_comment: { type: Type.STRING, description: "A concise pedagogical comment on the student's performance." }
             },
             required: ['weak_topics', 'strong_topics', 'recommendations', 'overall_comment']
         },
-        evaluation_tag: { type: Type.STRING, description: "A short, encouraging evaluation tag in Turkish (e.g., 'İlerleme gösteriyor', 'Harika Başarı', 'Tekrar Gerekli')."},
+        evaluation_tag: { type: Type.STRING, description: "A short, encouraging evaluation tag in Turkish (e.g., 'İlerleme gösteriyor', 'Harika Başarı', 'Tekrar Gerekli')." },
         topic_breakdown: {
             type: Type.ARRAY,
             description: "An array breaking down performance by topic. Include all topics from the test.",
@@ -152,7 +153,7 @@ const reviewPackageGenerationSchema = {
                     question: { type: Type.STRING },
                     options: { type: Type.ARRAY, description: "Exactly 4 options.", items: { type: Type.STRING } },
                     correctAnswer: { type: Type.STRING, description: "The text of the correct option." },
-                    explanation: { type: Type.STRING, description: "A short explanation for why the correct answer is right."}
+                    explanation: { type: Type.STRING, description: "A short explanation for why the correct answer is right." }
                 },
                 required: ['question', 'options', 'correctAnswer', 'explanation']
             }
@@ -252,31 +253,31 @@ const homeworkEvaluationSchema = {
 };
 
 const completionTasksGenerationSchema = {
-  type: Type.OBJECT,
-  properties: {
-    tasks: {
-      type: Type.ARRAY,
-      description: "An array of 2-3 short, completion micro-tasks.",
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          description: { type: Type.STRING, description: "A short, actionable task description for the student in Turkish." },
-          duration: { type: Type.NUMBER, description: "Estimated duration in minutes." }
-        },
-        required: ['description', 'duration']
-      }
-    }
-  },
-  required: ['tasks']
+    type: Type.OBJECT,
+    properties: {
+        tasks: {
+            type: Type.ARRAY,
+            description: "An array of 2-3 short, completion micro-tasks.",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    description: { type: Type.STRING, description: "A short, actionable task description for the student in Turkish." },
+                    duration: { type: Type.NUMBER, description: "Estimated duration in minutes." }
+                },
+                required: ['description', 'duration']
+            }
+        }
+    },
+    required: ['tasks']
 };
 
 const progressReportGenerationSchema = {
-  type: Type.OBJECT,
-  properties: {
-    ai_comment: { type: Type.STRING, description: "A short, insightful comment in Turkish comparing the two performances. Highlight progress and remaining weak areas." },
-    focus_topics: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A list of 1-2 topics the student should focus on next, based on the most recent report." }
-  },
-  required: ['ai_comment', 'focus_topics']
+    type: Type.OBJECT,
+    properties: {
+        ai_comment: { type: Type.STRING, description: "A short, insightful comment in Turkish comparing the two performances. Highlight progress and remaining weak areas." },
+        focus_topics: { type: Type.ARRAY, items: { type: Type.STRING }, description: "A list of 1-2 topics the student should focus on next, based on the most recent report." }
+    },
+    required: ['ai_comment', 'focus_topics']
 };
 
 const contentRecommendationSchema = {
@@ -314,7 +315,7 @@ export const generateTestQuestions = async (
 ): Promise<Question[]> => {
     ensureAiInitialized();
     try {
-        const topicDescriptions = topics.map(t => 
+        const topicDescriptions = topics.map(t =>
             `- Ders: ${t.subject}, Ünite: "${t.unit}", Soru Sayısı: ${t.count}`
         ).join('\n');
 
@@ -339,7 +340,7 @@ export const generateTestQuestions = async (
             - Questions should be appropriate for the specified grade level and curriculum.
             - **Crucially, each question MUST be tagged with the specific 'topic' from the curriculum unit it belongs to.** This is vital for analysis.
         `;
-        
+
         const response = await ai!.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -415,7 +416,7 @@ export const generateTestAnalysis = async (
                 responseSchema: analysisGenerationSchema
             }
         });
-        
+
         const jsonStr = response.text.trim();
         const data = JSON.parse(jsonStr);
 
@@ -472,7 +473,7 @@ export const generateReviewPackage = async (topic: string, grade: number): Promi
             3.  'interactive_quiz': 2-3 multiple-choice questions with 4 options each, the correct answer, and a short explanation for why it's correct.
             4.  'summary': A concise summary and an encouraging closing message.
         `;
-        
+
         const response = await ai!.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -491,7 +492,7 @@ export const generateReviewPackage = async (topic: string, grade: number): Promi
             { id: `item-quiz-${Date.now()}`, type: ReviewPackageItemType.InteractiveQuiz, content: { questions: data.interactive_quiz } },
             { id: `item-summary-${Date.now()}`, type: ReviewPackageItemType.Summary, content: data.summary },
         ];
-        
+
         return items;
 
     } catch (error) {
@@ -507,7 +508,7 @@ export const generateWeeklyProgram = async (
     report: AIAnalysisReport
 ): Promise<Omit<WeeklyProgram, 'id' | 'studentId' | 'week'>> => {
     ensureAiInitialized();
-     try {
+    try {
         const prompt = `
             You are an expert Learning Planning Specialist AI for Turkish middle school students.
             Based on the provided student test report, create a balanced, 1-week study plan.
@@ -535,7 +536,7 @@ export const generateWeeklyProgram = async (
 
         const jsonStr = response.text.trim();
         const data = JSON.parse(jsonStr);
-        
+
         const structuredProgram = {
             days: data.days.map((day: any) => ({
                 day: day.day,
@@ -548,38 +549,43 @@ export const generateWeeklyProgram = async (
                 }))
             }))
         };
-        
+
         return structuredProgram;
 
-     } catch (error) {
+    } catch (error) {
         console.error("Error generating weekly program:", error);
         throw new Error("AI weekly program generation failed.");
-     }
+    }
 };
 
 
 export const explainTopic = async (topic: string, grade: number): Promise<{ topic: string; explanation: string; example: string; hint: string; }> => {
     ensureAiInitialized();
-    try {
-        const prompt = `Explain the topic "${topic}" for a ${grade}th-grade student in Turkish using simple language. Your output MUST be a JSON object that conforms to the provided schema. Include one example question and a tip.`;
-        const response = await ai!.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: { responseMimeType: "application/json", responseSchema: explanationSchema }
-        });
-        const jsonStr = response.text.trim();
-        return JSON.parse(jsonStr);
-    } catch (error) {
-        console.error("Error explaining topic:", error);
-        throw new Error("AI failed to explain the topic.");
-    }
+    const cacheKey = `explain-topic-${topic}-${grade}`;
+
+    return cacheService.remember(cacheKey, async () => {
+        try {
+            const prompt = `Explain the topic "${topic}" for a ${grade}th-grade student in Turkish using simple language. Your output MUST be a JSON object that conforms to the provided schema. Include one example question and a tip.`;
+            const response = await ai!.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: { responseMimeType: "application/json", responseSchema: explanationSchema }
+            });
+            const jsonStr = response.text.trim();
+            return JSON.parse(jsonStr);
+        } catch (error) {
+            console.error("Error explaining topic:", error);
+            throw new Error("AI failed to explain the topic.");
+        }
+    }, 86400); // Cache for 24 hours
 };
 
 export const checkAnswer = async (question: string, studentAnswerText: string, studentImageBase64?: string): Promise<{ isCorrect: boolean; feedback: string; }> => {
     ensureAiInitialized();
     try {
         const promptParts: any[] = [
-            { text: `You are a helpful and encouraging AI Tutor for Turkish students.
+            {
+                text: `You are a helpful and encouraging AI Tutor for Turkish students.
             A student has submitted an answer to the following question: "${question}"
             Their submitted answer is: "${studentAnswerText}"
             Analyze their submitted answer (text and/or image).
@@ -598,7 +604,7 @@ export const checkAnswer = async (question: string, studentAnswerText: string, s
                 }
             });
         }
-        
+
         const response = await ai!.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts: promptParts },
@@ -616,7 +622,7 @@ export const checkAnswer = async (question: string, studentAnswerText: string, s
 };
 
 
-export const suggestHomework = async (grade: number, subject: Subject, weakTopics: string[]): Promise<{title: string, description: string, type: AssignmentType}[]> => {
+export const suggestHomework = async (grade: number, subject: Subject, weakTopics: string[]): Promise<{ title: string, description: string, type: AssignmentType }[]> => {
     ensureAiInitialized();
     try {
         const prompt = `Generate 3 diverse and relevant homework assignments in Turkish for a ${grade}th-grade ${subject} student. The assignments should target these weak topics: ${weakTopics.join(', ')}. The output MUST be a JSON object that conforms to the provided schema. Provide a mix of assignment types.`;
@@ -670,7 +676,7 @@ export const generateCompletionTasks = async (topic: string, subject?: Subject):
     ensureAiInitialized();
     try {
         const prompt = `Generate 2-3 short, completion micro-tasks in Turkish for a student who is weak in the following topic: "${topic}". The output MUST be a JSON object that conforms to the provided schema. The tasks should be simple and actionable (e.g., 'Watch a video about X', 'Solve 5 practice questions on Y').`;
-        
+
         const response = await ai!.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -679,10 +685,10 @@ export const generateCompletionTasks = async (topic: string, subject?: Subject):
                 responseSchema: completionTasksGenerationSchema
             }
         });
-        
+
         const jsonStr = response.text.trim();
         const data = JSON.parse(jsonStr);
-        
+
         return data.tasks.map((task: any): Task => ({
             id: `completion-task-${Date.now()}-${Math.random()}`,
             description: task.description,
@@ -738,32 +744,36 @@ export const generateProgressReport = async (lastReport: AIAnalysisReport, curre
 
 export const recommendContentForTopic = async (topic: string, grade: number): Promise<ContentRecommendation[]> => {
     ensureAiInitialized();
-    try {
-        const prompt = `
-            You are an AI Learning Assistant. A ${grade}th-grade student is struggling with the topic: "${topic}".
-            Suggest 2-3 relevant learning materials in Turkish to help them.
-            Your output MUST be a JSON object conforming to the provided schema.
-            For 'source', prioritize 'Kütüphane' if the content could exist in a local library, otherwise use 'Web'.
-            Keep descriptions short and encouraging.
-        `;
-        
-        const response = await ai!.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: contentRecommendationSchema
-            }
-        });
-        
-        const jsonStr = response.text.trim();
-        const data = JSON.parse(jsonStr);
-        return data.recommendations;
+    const cacheKey = `recommend-content-${topic}-${grade}`;
 
-    } catch (error) {
-        console.error("Error recommending content:", error);
-        throw new Error("AI failed to recommend content for the topic.");
-    }
+    return cacheService.remember(cacheKey, async () => {
+        try {
+            const prompt = `
+                You are an AI Learning Assistant. A ${grade}th-grade student is struggling with the topic: "${topic}".
+                Suggest 2-3 relevant learning materials in Turkish to help them.
+                Your output MUST be a JSON object conforming to the provided schema.
+                For 'source', prioritize 'Kütüphane' if the content could exist in a local library, otherwise use 'Web'.
+                Keep descriptions short and encouraging.
+            `;
+
+            const response = await ai!.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: contentRecommendationSchema
+                }
+            });
+
+            const jsonStr = response.text.trim();
+            const data = JSON.parse(jsonStr);
+            return data.recommendations;
+
+        } catch (error) {
+            console.error("Error recommending content:", error);
+            throw new Error("AI failed to recommend content for the topic.");
+        }
+    }, 86400); // Cache for 24 hours
 };
 
 export const generateInteractiveComponent = async (
@@ -785,8 +795,8 @@ export const generateInteractiveComponent = async (
     `;
 
     let responseSchema: any;
-    
-    switch(componentType) {
+
+    switch (componentType) {
         case 'fill-in-the-blank':
             prompt += `\nComponent Type to Generate: 'fill-in-the-blank'. Create a sentence and identify the key word to be the answer. Use '___' for the blank.`;
             responseSchema = {

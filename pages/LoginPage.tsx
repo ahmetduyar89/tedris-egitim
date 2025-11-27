@@ -158,53 +158,95 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="p-10 bg-card-background rounded-2xl shadow-xl max-w-md w-full relative">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 via-slate-50 to-accent/10 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+      <div className="p-10 bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full relative border border-white/50 mx-4">
         <button
           onClick={onNavigateToWebsite}
-          className="absolute top-4 left-4 text-gray-500 hover:text-primary"
+          className="absolute top-6 left-6 text-gray-500 hover:text-primary transition-all duration-300 hover:scale-110"
           title="Ana Sayfaya Dön"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
         </button>
-        <div className="flex justify-center mb-6">
+
+        <div className="flex justify-center mb-8">
           <TedrisLogo />
         </div>
-        <h1 className="text-3xl font-bold font-poppins text-text-primary mb-2 text-center">{isRegisterView ? 'Kayıt Ol' : 'Giriş Yap'}</h1>
-        <p className="text-text-secondary mb-8 text-center">AI Destekli Tam Öğrenme Deneyimi</p>
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <h1 className="text-3xl font-bold font-poppins text-text-primary mb-2 text-center bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">
+          {isRegisterView ? 'Aramıza Katılın' : 'Tekrar Hoş Geldiniz'}
+        </h1>
+        <p className="text-text-secondary mb-8 text-center">
+          {isRegisterView ? 'Eğitimde yeni bir deneyim başlıyor' : 'Hesabınıza giriş yapın'}
+        </p>
+
+        <form onSubmit={handleAuth} className="space-y-5">
           {isRegisterView && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Ad Soyad</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none"
+                placeholder="Adınız ve soyadınız"
+              />
             </div>
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">E-posta</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">E-posta</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none"
+              placeholder="ornek@email.com"
+            />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Şifre</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700">Şifre</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none"
+              placeholder="••••••••"
+            />
           </div>
           {isRegisterView && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Rol</label>
-              <select value={role} onChange={e => setRole(e.target.value as UserRole)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Rol</label>
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value as UserRole)}
+                className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none bg-white"
+              >
                 <option value={UserRole.Tutor}>Öğretmen</option>
                 {/* Öğrenci kaydı öğretmen tarafından yapıldığı için bu seçenek kaldırılabilir. */}
                 {/* <option value={UserRole.Student}>Öğrenci</option> */}
               </select>
             </div>
           )}
-          {authError && <p className="text-red-500 text-sm text-center font-semibold bg-red-50 p-3 rounded-lg">{authError}</p>}
+          {authError && (
+            <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 flex-shrink-0 mt-0.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              <span>{authError}</span>
+            </div>
+          )}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary text-white font-bold py-3 px-4 rounded-xl hover:bg-primary-dark transition duration-300 ease-in-out transform hover:-translate-y-1 shadow-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+            className="w-full bg-gradient-to-r from-primary to-accent text-white font-bold py-3.5 px-4 rounded-xl hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 ease-in-out transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center mt-6"
           >
             {isLoading ? (
               <>
@@ -222,7 +264,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
 
         <p className="text-sm text-center text-gray-600 mt-6">
           {isRegisterView ? 'Zaten bir hesabınız var mı?' : 'Hesabınız yok mu?'}
-          <button onClick={() => { setIsRegisterView(!isRegisterView); setAuthError(''); }} className="font-medium text-primary hover:underline ml-1">
+          <button onClick={() => { setIsRegisterView(!isRegisterView); setAuthError(''); }} className="font-semibold text-primary hover:text-accent transition-colors ml-1">
             {isRegisterView ? 'Giriş Yapın' : 'Kayıt Olun'}
           </button>
         </p>

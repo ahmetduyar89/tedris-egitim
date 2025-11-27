@@ -104,15 +104,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             </div>
 
             <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold font-poppins leading-tight mb-6 tracking-tight text-gray-900">
-              Eğitimin Geleceği <br />
+              Öğretmenlerin{' '}
               <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">
-                Bugünden Hazır
+                Zaman Kazandığı
               </span>
+              <br />
+              Öğrencilerin{' '}
+              <span className="bg-gradient-to-r from-secondary via-accent to-primary text-transparent bg-clip-text">
+                Başarıya Ulaştığı
+              </span>
+              {' '}Platform
             </h1>
 
             <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
-              Öğretmenler için zaman kazandıran araçlar, öğrenciler için kişiselleştirilmiş öğrenme deneyimi.
-              Hepsi tek bir platformda.
+              Yapay zeka destekli test oluşturma, kişiselleştirilmiş öğrenme haritaları ve detaylı performans analizleri ile eğitimde yeni bir dönem başlıyor.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -132,9 +137,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           <div className="relative max-w-6xl mx-auto mt-12">
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-white">
               <img
-                src="/hero-dashboard.png"
-                alt="TEDRİS Platform Dashboard"
+                src="/teacher-dashboard.png"
+                alt="TEDRİS Öğretmen Paneli"
                 className="w-full h-auto"
+                onError={(e) => {
+                  e.currentTarget.src = '/hero-dashboard.png';
+                }}
               />
               {/* Overlay Gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-50/20 to-transparent pointer-events-none"></div>
@@ -168,10 +176,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       <section className="py-12 bg-white border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatCard value="10k+" label="Aktif Öğrenci" />
-            <StatCard value="500+" label="Okul & Kurum" />
-            <StatCard value="1M+" label="Çözülen Soru" />
-            <StatCard value="%98" label="Memnuniyet" />
+            <StatCard value="5.000+" label="Aktif Kullanıcı" />
+            <StatCard value="250+" label="Öğretmen" />
+            <StatCard value="50K+" label="Oluşturulan Test" />
+            <StatCard value="%92" label="Başarı Artışı" />
           </div>
         </div>
       </section>
@@ -258,37 +266,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             {activeTab === 'teacher' ? (
               <>
                 <ScreenshotCard
-                  title="Test Oluşturucu"
-                  description="Saniyeler içinde müfredata uygun testler hazırlayın."
-                  imageSrc="/hero-dashboard.png"
+                  title="Öğrenci Yönetimi"
+                  description="Tüm öğrencilerinizi tek ekrandan takip edin, performanslarını analiz edin."
+                  imageSrc="/teacher-dashboard.png"
                 />
                 <ScreenshotCard
-                  title="Sınıf Yönetimi"
-                  description="Tüm öğrencilerinizi tek ekrandan yönetin."
-                  imageSrc="/hero-dashboard.png"
+                  title="AI Destekli Test Oluşturma"
+                  description="Yapay zeka ile saniyeler içinde müfredata uygun testler hazırlayın."
+                  imageSrc="/test-creation.png"
                 />
                 <ScreenshotCard
-                  title="Raporlama"
-                  description="Detaylı gelişim raporları alın."
-                  imageSrc="/hero-dashboard.png"
+                  title="Detaylı Raporlama"
+                  description="Öğrenci gelişimini grafikler ve analizlerle takip edin."
+                  imageSrc="/learning-map.png"
                 />
               </>
             ) : (
               <>
                 <ScreenshotCard
-                  title="Öğrenci Paneli"
-                  description="Dersler ve ödevler tek bir yerde."
-                  imageSrc="/hero-dashboard.png"
+                  title="Kişisel Öğrenme Paneli"
+                  description="Dersleriniz, ödevleriniz ve ilerlemeniz tek bir yerde."
+                  imageSrc="/student-dashboard.png"
                 />
                 <ScreenshotCard
-                  title="AI Asistan"
-                  description="Anlamadığınız konuları anında sorun."
-                  imageSrc="/hero-dashboard.png"
+                  title="7/24 AI Asistan"
+                  description="Anlamadığınız konuları yapay zeka asistanınıza sorun."
+                  imageSrc="/ai-assistant.png"
                 />
                 <ScreenshotCard
-                  title="İlerleme Takibi"
-                  description="Gelişiminizi grafiklerle izleyin."
-                  imageSrc="/hero-dashboard.png"
+                  title="Öğrenme Haritası"
+                  description="Hangi konularda güçlü olduğunuzu görsel olarak takip edin."
+                  imageSrc="/learning-map.png"
                 />
               </>
             )}

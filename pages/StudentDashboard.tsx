@@ -245,6 +245,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   const [weeklyProgram, setWeeklyProgram] = useState<WeeklyProgram | null>(null);
   const [programId, setProgramId] = useState<string | null>(null);
 
+
+
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [activeTest, setActiveTest] = useState<Test | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
@@ -281,6 +283,51 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   const completedPDFTests = useMemo(() => {
     return pdfTestSubmissions.filter(s => s.status === 'completed' || s.status === 'time_expired');
   }, [pdfTestSubmissions]);
+
+  const mergedWeeklyProgram = useMemo(() => {
+    if (!weeklyProgram) return null;
+
+    // Deep clone the program to avoid mutating state
+    const programWithAssignments = {
+      ...weeklyProgram,
+      days: weeklyProgram.days.map(day => ({
+        ...day,
+        tasks: [...day.tasks]
+      }))
+    };
+
+    assignments.forEach(assignment => {
+      if (!assignment.dueDate) return;
+
+      const date = new Date(assignment.dueDate);
+      const dayName = date.toLocaleDateString('tr-TR', { weekday: 'long' });
+
+      // Find the day in the program (case-insensitive)
+      const dayIndex = programWithAssignments.days.findIndex(d => d.day.toLowerCase() === dayName.toLowerCase());
+
+      if (dayIndex !== -1) {
+        // Check if this assignment is already added to avoid duplicates
+        const existingTask = programWithAssignments.days[dayIndex].tasks.find(t => t.id === `assignment_${assignment.id}`);
+
+        if (!existingTask) {
+          const assignmentTask: Task = {
+            id: `assignment_${assignment.id}`,
+            title: assignment.title,
+            description: assignment.description,
+            type: 'Ödev',
+            subject: assignment.subject,
+            status: assignment.submission ? TaskStatus.Completed : TaskStatus.Assigned,
+            duration: 30, // Default duration for homework
+            metadata: { assignmentId: assignment.id }
+          };
+
+          programWithAssignments.days[dayIndex].tasks.push(assignmentTask);
+        }
+      }
+    });
+
+    return programWithAssignments;
+  }, [weeklyProgram, assignments]);
 
 
   const loadStudentData = useCallback(async () => {
@@ -834,7 +881,17 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} />}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            {weeklyProgram ? <WeeklySchedule program={weeklyProgram} onTaskClick={handleTaskClick} isInteractive={true} /> : <div className="bg-card-background p-6 rounded-2xl shadow-lg h-full flex items-center justify-center"><p>Henüz bir haftalık programın yok.</p></div>}
+            {mergedWeeklyProgram ? (
+              <div className="mb-8">
+                <WeeklySchedule
+                  program={mergedWeeklyProgram}
+                  onTaskClick={handleTaskClick}
+                  isInteractive={true}
+                />
+              </div>
+            ) : (
+              <div className="bg-card-background p-6 rounded-2xl shadow-lg h-full flex items-center justify-center"><p>Henüz bir haftalık programın yok.</p></div>
+            )}
           </div>
           <div className="space-y-8">
             {studentData && <ProfileCard student={studentData} />}

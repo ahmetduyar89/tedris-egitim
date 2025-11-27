@@ -56,7 +56,7 @@ const GradeSubmissionModal: React.FC<GradeSubmissionModalProps> = ({ submission,
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto p-4 bg-gray-50 rounded-lg">
                     <h3 className="font-semibold">Öğrenci Teslimi</h3>
                     <p className="whitespace-pre-wrap border p-2 rounded bg-white">{submission.submissionText || "Metin teslimi yok."}</p>
-                    {submission.fileUrl && <p><strong>Dosya:</strong> <a href="#" className="text-primary underline">{submission.fileUrl}</a></p>}
+                    {submission.fileUrl && <p><strong>Dosya:</strong> <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">Dosyayı Görüntüle</a></p>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div className="md:col-span-2">

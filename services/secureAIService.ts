@@ -227,3 +227,69 @@ export const generateInteractiveComponent = async (
     const response = await invokeAIFunction<any>('generateContent', { prompt, responseSchema });
     return response;
 };
+
+// Tanı Testi: Soru Üretimi
+export const generateDiagnosisQuestions = async (
+    subject: string,
+    grade: number,
+    modules: { id: string; name: string; code?: string }[],
+    questionsPerModule: number = 3,
+    difficulty: number = 3
+): Promise<any> => {
+    const responseSchema = {
+        type: "object",
+        properties: {
+            questions: {
+                type: "array",
+                items: {
+                    type: "object",
+                    properties: {
+                        module_id: { type: "string" },
+                        module_name: { type: "string" },
+                        question_text: { type: "string" },
+                        options: {
+                            type: "array",
+                            items: { type: "string" }
+                        },
+                        correct_answer: { type: "string" },
+                        difficulty: { type: "number" },
+                        explanation: { type: "string" }
+                    },
+                    required: ["module_id", "module_name", "question_text", "options", "correct_answer", "difficulty"]
+                }
+            }
+        },
+        required: ["questions"]
+    };
+
+    const response = await invokeAIFunction<{ questions: any[] }>('generateDiagnosisQuestions', {
+        subject,
+        grade,
+        modules,
+        questionsPerModule,
+        difficulty,
+        responseSchema
+    });
+
+    return response.questions;
+};
+
+// Tanı Testi: AI Analizi
+export const analyzeDiagnosisTest = async (
+    subject: string,
+    grade: number,
+    totalQuestions: number,
+    correctAnswers: number,
+    moduleResults: { moduleName: string; correct: number; total: number }[]
+): Promise<any> => {
+    const response = await invokeAIFunction<any>('analyzeDiagnosisTest', {
+        subject,
+        grade,
+        totalQuestions,
+        correctAnswers,
+        moduleResults
+    });
+
+    return response;
+};
+

@@ -317,19 +317,23 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
     );
 };
 
-type View = 'students' | 'studentDetail' | 'library' | 'createMaterial' | 'questionBank';
+import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
+
+type View = 'students' | 'studentDetail' | 'library' | 'createMaterial' | 'questionBank' | 'diagnosisTests';
 
 const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => void }> = ({ currentView, setView }) => {
     const navItems = [
         { id: 'students', label: 'Öğrencilerim', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-2.253 9.5 9.5 0 0 0-4.12-9.337 9.38 9.38 0 0 0-2.625-.372M6.375 19.128a9.38 9.38 0 0 1 2.625-.372 9.337 9.337 0 0 1 4.121-2.253 9.5 9.5 0 0 1-4.12 9.337 9.38 9.38 0 0 1-2.625-.372Zm12.75 0a9.337 9.337 0 0 0 4.121-2.253 9.5 9.5 0 0 0-4.12-9.337 9.38 9.38 0 0 0-2.625-.372M6.375 7.5a9.337 9.337 0 0 0 4.121-2.253 9.5 9.5 0 0 0-4.12-9.337 9.38 9.38 0 0 0-2.625-.372M12 15.75a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5Z" /></svg> },
+        { id: 'diagnosisTests', label: 'Tanı Testleri', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" /></svg> },
         { id: 'library', label: 'Kütüphane', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg> },
         { id: 'questionBank', label: 'Soru Bankası', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg> },
     ];
 
-    const isActive = (id: 'students' | 'library' | 'questionBank') => {
+    const isActive = (id: 'students' | 'library' | 'questionBank' | 'diagnosisTests') => {
         if (id === 'students') return ['students', 'studentDetail'].includes(currentView);
         if (id === 'library') return ['library', 'createMaterial'].includes(currentView);
         if (id === 'questionBank') return currentView === 'questionBank';
+        if (id === 'diagnosisTests') return currentView === 'diagnosisTests';
         return false;
     }
 
@@ -343,7 +347,7 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
                     <button
                         key={item.id}
                         onClick={() => setView(item.id as View)}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-colors ${isActive(item.id as 'students' | 'library')
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-colors ${isActive(item.id as any)
                             ? 'bg-primary/10 text-primary'
                             : 'text-text-secondary hover:bg-gray-100'
                             }`}
@@ -555,6 +559,8 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 return <CreateInteractiveMaterialPage user={user} onBack={handleBackToLibrary} contentIdForEdit={editingContentId} />;
             case 'questionBank':
                 return <QuestionBankPage user={user} onBack={() => setCurrentView('students')} onLogout={onLogout} />;
+            case 'diagnosisTests':
+                return <TeacherDiagnosisTestsPage user={user} onBack={() => setCurrentView('students')} />;
             case 'students':
             default:
                 return renderStudentsList();

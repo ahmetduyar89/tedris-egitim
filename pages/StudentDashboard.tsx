@@ -24,10 +24,17 @@ import MasteryMapVisualization from '../components/MasteryMapVisualization';
 import AdaptivePlanDashboard from '../components/AdaptivePlanDashboard';
 import DiagnosisTestModal from '../components/DiagnosisTestModal';
 import PDFTestTakingPage from './PDFTestTakingPage';
+import AssignedDiagnosisTestsModal from '../components/AssignedDiagnosisTestsModal';
 import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmission } from '../services/pdfTestService';
+import { diagnosisTestManagementService } from '../services/diagnosisTestManagementService';
+import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
+import StudentDiagnosisTestPage from './StudentDiagnosisTestPage';
+
+// ... (inside StudentDashboard component)
 
 
-type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest';
+
+type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest';
 type Tab = 'dashboard' | 'report' | 'homework' | 'library' | 'map' | 'flashcards';
 
 interface ToastProps {
@@ -62,7 +69,6 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
     </div>
   );
 };
-
 
 interface TestAreaProps {
   pendingTests: Test[];
@@ -165,8 +171,6 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
   );
 };
 
-
-
 interface HomeworkWidgetProps {
   assignments: Assignment[];
   onOpenAssignment: (assignment: Assignment) => void;
@@ -242,6 +246,35 @@ interface StudentDashboardProps {
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onNavigateToContent }) => {
   const [pendingTests, setPendingTests] = useState<Test[]>([]);
   const [completedTests, setCompletedTests] = useState<Test[]>([]);
+  const [pendingDiagnosisTests, setPendingDiagnosisTests] = useState<DiagnosisTestAssignment[]>([]);
+  const [activeDiagnosisTestId, setActiveDiagnosisTestId] = useState<string | null>(null);
+  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
+
+  useEffect(() => {
+    loadDiagnosisTests();
+  }, [user.id]);
+
+  const loadDiagnosisTests = async () => {
+    try {
+      const assignments = await diagnosisTestManagementService.getStudentAssignments(user.id);
+      const pending = assignments.filter(a => a.status === 'pending' || a.status === 'in_progress');
+      setPendingDiagnosisTests(pending);
+
+      // Eğer zorunlu ve beklemede olan test varsa modal göster
+      const mandatoryPending = pending.find(a => a.isMandatory && a.status === 'pending');
+      if (mandatoryPending) {
+        setShowDiagnosisModal(true);
+      }
+    } catch (error) {
+      console.error('Error loading diagnosis tests:', error);
+    }
+  };
+
+  const handleStartDiagnosisTest = (assignmentId: string) => {
+    setActiveDiagnosisTestId(assignmentId);
+    setActiveView('takingDiagnosisTest');
+    setShowDiagnosisModal(false);
+  };
   const [weeklyProgram, setWeeklyProgram] = useState<WeeklyProgram | null>(null);
   const [programId, setProgramId] = useState<string | null>(null);
 
@@ -252,7 +285,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [activePackage, setActivePackage] = useState<ReviewPackage | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'info' } | null>(null);
-  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
+  // showDiagnosisModal removed from here
 
   const [studentData, setStudentData] = useState<Student | null>(null);
   const [dailyMessage, setDailyMessage] = useState<DailyMessage | null>(null);
@@ -847,34 +880,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     }, 1500);
   };
 
-  if (activeView === 'takingPDFTest' && activePDFTestId) {
-    return <PDFTestTakingPage user={user} testId={activePDFTestId} onBack={() => { setActiveView('dashboard'); setActivePDFTestId(null); }} onComplete={handlePDFTestComplete} />;
-  }
-
-  if (activeView === 'takingTest') {
-    const qbAssignmentId = activeTask?.metadata?.questionBankAssignmentId ||
-      activeTask?.metadata?.question_bank_assignment_id ||
-      activeTest?.questionBankAssignmentId;
-
-    if (qbAssignmentId) {
-      return <QuestionBankTestPage user={user} assignmentId={qbAssignmentId} onBack={() => setActiveView('dashboard')} onComplete={handleTestComplete} />;
-    } else if (activeTest) {
-      return <TestTakingPage test={activeTest} onComplete={handleTestComplete} />;
-    }
-  }
-  if (activeView === 'viewReport' && activeTest) {
-    return <StudentTestReport test={activeTest} allCompletedTests={completedTests} onBack={() => setActiveView('dashboard')} />;
-  }
-  if (activeView === 'reviewPackage' && activePackage && activeTask) {
-    return <ReviewPackagePage reviewPackage={activePackage} task={activeTask} onComplete={handlePackageComplete} />;
-  }
-  if (activeView === 'aiAssistant' && studentData) {
-    return <AIAssistantPage student={studentData} onBack={() => setActiveView('dashboard')} />;
-  }
-  if (activeView === 'submitHomework' && activeAssignment) {
-    return <SubmitHomeworkPage assignment={activeAssignment} onBack={() => setActiveView('dashboard')} onSubmit={handleHomeworkSubmit} />;
-  }
-
   const renderDashboard = () => {
     return (
       <div className="p-4 md:p-8 space-y-8 animate-fade-in">
@@ -1087,11 +1092,64 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
 
   const tabClass = (tabName: Tab) => `px-4 py-2 font-semibold rounded-t-lg border-b-2 transition-colors relative ${activeTab === tabName ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-secondary/80 hover:border-gray-300'}`;
 
-  return (
-    <>
-      {newItemsPopupNotifications && (
-        <NewItemPopup notifications={newItemsPopupNotifications} onClose={handleClosePopup} />
-      )}
+  const handleDiagnosisTestComplete = () => {
+    setActiveView('dashboard');
+    loadDiagnosisTests(); // Refresh list
+    alert('Test tamamlandı! Sonuçların analiz ediliyor.');
+  };
+
+  const handleHomeworkSubmitSuccess = (submission: Submission) => {
+    setActiveView('dashboard');
+    loadStudentData(); // Reload assignments
+    setToast({ message: 'Ödev başarıyla teslim edildi!', type: 'success' });
+  };
+
+  const renderContent = () => {
+    if (activeView === 'takingTest') {
+      const qbAssignmentId = activeTask?.metadata?.questionBankAssignmentId ||
+        activeTask?.metadata?.question_bank_assignment_id ||
+        activeTest?.questionBankAssignmentId;
+
+      if (qbAssignmentId) {
+        return <QuestionBankTestPage user={user} assignmentId={qbAssignmentId} onBack={() => setActiveView('dashboard')} onComplete={handleTestComplete} />;
+      } else if (activeTest) {
+        return <TestTakingPage test={activeTest} onComplete={handleTestComplete} />;
+      }
+    }
+
+    if (activeView === 'takingPDFTest' && activePDFTestId) {
+      return <PDFTestTakingPage user={user} testId={activePDFTestId} onBack={() => setActiveView('dashboard')} onComplete={() => { setActiveView('dashboard'); loadStudentData(); }} />;
+    }
+
+    if (activeView === 'takingDiagnosisTest' && activeDiagnosisTestId) {
+      return (
+        <StudentDiagnosisTestPage
+          user={user}
+          assignmentId={activeDiagnosisTestId}
+          onBack={() => setActiveView('dashboard')}
+          onComplete={handleDiagnosisTestComplete}
+        />
+      );
+    }
+
+    if (activeView === 'reviewPackage' && activePackage && activeTask) {
+      return <ReviewPackagePage reviewPackage={activePackage} task={activeTask} onComplete={handlePackageComplete} />;
+    }
+
+    if (activeView === 'aiAssistant' && studentData) {
+      return <AIAssistantPage student={studentData} onBack={() => setActiveView('dashboard')} />;
+    }
+
+    if (activeView === 'submitHomework' && activeAssignment) {
+      return <SubmitHomeworkPage assignment={activeAssignment} onBack={() => setActiveView('dashboard')} onSubmit={handleHomeworkSubmit} />;
+    }
+
+    if (activeView === 'viewReport' && activeTest) {
+      return <StudentTestReport test={activeTest} allCompletedTests={completedTests} onBack={() => setActiveView('dashboard')} />;
+    }
+
+    // Dashboard View
+    return (
       <div className="flex flex-col h-screen bg-background">
         <Header user={user} onLogout={onLogout} />
 
@@ -1177,6 +1235,23 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           </svg>
         </button>
       </div>
+    );
+  };
+
+  return (
+    <>
+      {newItemsPopupNotifications && (
+        <NewItemPopup notifications={newItemsPopupNotifications} onClose={handleClosePopup} />
+      )}
+
+      {renderContent()}
+
+      <AssignedDiagnosisTestsModal
+        isOpen={showDiagnosisModal}
+        onClose={() => setShowDiagnosisModal(false)}
+        assignments={pendingDiagnosisTests}
+        onStartTest={handleStartDiagnosisTest}
+      />
     </>
   );
 };

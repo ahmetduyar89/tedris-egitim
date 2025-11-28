@@ -9,6 +9,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 interface AIRequest {
@@ -19,7 +20,7 @@ interface AIRequest {
 serve(async (req) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+        return new Response('ok', { headers: corsHeaders, status: 200 })
     }
 
     try {
@@ -104,6 +105,12 @@ serve(async (req) => {
                 break
             case 'generateContent':
                 prompt = payload.prompt
+                break
+            case 'generateDiagnosisQuestions':
+                prompt = buildDiagnosisQuestionsPrompt(payload)
+                break
+            case 'analyzeDiagnosisTest':
+                prompt = buildDiagnosisAnalysisPrompt(payload)
                 break
             default:
                 throw new Error('Invalid action')
@@ -256,4 +263,109 @@ function buildCheckAnswerPrompt(payload: any): string {
 function buildSuggestHomeworkPrompt(payload: any): string {
     const { grade, subject, weakTopics } = payload
     return `Suggest 3 homework assignments for Grade ${grade} ${subject} focusing on: ${weakTopics.join(', ')}. Return JSON: { suggestions: [{ title: "", description: "", type: "" }] }`
+}
+
+function buildDiagnosisQuestionsPrompt(payload: any): string {
+    const { subject, grade, modules, questionsPerModule, difficulty } = payload
+
+    const moduleList = modules.map((m: any) => `- ${m.name} (Kod: ${m.code || 'N/A'})`).join('\n')
+
+    return `Sen bir ${subject} öğretmenisin. ${grade}. sınıf seviyesinde tanı testi soruları oluştur.
+
+MODÜLLER:
+${moduleList}
+
+GEREKSİNİMLER:
+- Her modül için ${questionsPerModule} adet soru
+- Zorluk seviyesi: ${difficulty}/5
+- Her soru öğrencinin o kazanımdaki yeterliliğini ölçmeli
+- 4 şıklı çoktan seçmeli sorular
+- Şıklar dengeli ve yanıltıcı olmalı
+- Türkçe ve net ifadeler
+- MEB müfredatına uygun
+- Her soru bağımsız olmalı (önceki soruya bağımlı olmamalı)
+
+JSON FORMATI:
+{
+  "questions": [
+    {
+      "module_id": "modül_kodu",
+      "module_name": "Modül Adı",
+      "question_text": "Soru metni burada",
+      "options": ["A) Şık 1", "B) Şık 2", "C) Şık 3", "D) Şık 4"],
+      "correct_answer": "A",
+      "difficulty": ${difficulty},
+      "explanation": "Doğru cevap neden A olduğunun kısa açıklaması"
+    }
+  ]
+}
+
+SADECE JSON döndür, başka metin ekleme!`
+}
+
+function buildDiagnosisAnalysisPrompt(payload: any): string {
+    const { subject, grade, totalQuestions, correctAnswers, moduleResults } = payload
+
+    const moduleResultsText = moduleResults.map((m: any) =>
+        `- ${m.moduleName}: ${m.correct}/${m.total} doğru (${Math.round(m.correct / m.total * 100)}%)`
+    ).join('\n')
+
+    const score = Math.round((correctAnswers / totalQuestions) * 100)
+
+    return `Sen bir eğitim danışmanısın. Öğrencinin tanı testi sonuçlarını detaylı analiz et.
+
+ÖĞRENCİ BİLGİLERİ:
+- Sınıf: ${grade}
+- Ders: ${subject}
+- Toplam Soru: ${totalQuestions}
+- Doğru Cevap: ${correctAnswers}
+- Genel Başarı: ${score}%
+
+MODÜL BAZINDA SONUÇLAR:
+${moduleResultsText}
+
+ANALİZ GEREKSİNİMLERİ:
+1. Genel Değerlendirme: Objektif, yapıcı, motive edici
+2. Yeterlilik Seviyesi: beginner/intermediate/advanced
+3. Güçlü Alanlar: En az 2, en fazla 3 alan (mastery score yüksek olanlar)
+4. Zayıf Alanlar: En az 2, en fazla 3 alan (öncelik sırasına göre)
+5. Her zayıf alan için gap analizi (neden zayıf, ne eksik)
+6. Somut öneriler (çalışma planı, kaynak, strateji)
+7. Öğrenme stili hakkında gözlemler (varsa)
+8. Motive edici kapanış mesajı
+
+JSON FORMATI:
+{
+  "overall_assessment": "Genel değerlendirme metni (3-4 cümle)",
+  "proficiency_level": "beginner|intermediate|advanced",
+  "strong_areas": [
+    {
+      "module_name": "Modül Adı",
+      "module_code": "kod",
+      "mastery_score": 0.85,
+      "comment": "Bu alanda neden güçlü olduğu"
+    }
+  ],
+  "weak_areas": [
+    {
+      "module_name": "Modül Adı",
+      "module_code": "kod",
+      "mastery_score": 0.45,
+      "gap_analysis": "Eksiklik analizi: Ne bilmiyor, neden zorlanıyor",
+      "priority": "high|medium|low"
+    }
+  ],
+  "recommendations": [
+    {
+      "type": "study_plan|practice|review|advanced",
+      "description": "Somut öneri açıklaması",
+      "modules": ["modül1", "modül2"],
+      "estimated_duration": "2 hafta"
+    }
+  ],
+  "learning_style_insights": "Öğrenme stili hakkında gözlemler (opsiyonel)",
+  "motivation_message": "Motive edici, pozitif kapanış mesajı"
+}
+
+SADECE JSON döndür, başka metin ekleme!`
 }

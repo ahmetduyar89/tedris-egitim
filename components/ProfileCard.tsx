@@ -1,6 +1,7 @@
 import React from 'react';
 import { Student } from '../types';
 import { calculateLevel } from '../services/motivationService';
+import { EnhancedPomodoroTimer } from './EnhancedPomodoroTimer';
 
 interface ProfileCardProps {
     student: Student;
@@ -24,9 +25,13 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ student }) => {
                             className="bg-success-brand h-4 rounded-full transition-all duration-500 ease-out flex items-center justify-end pr-2"
                             style={{ width: `${progressPercentage}%` }}
                         >
-                          <span className="text-yellow-800 text-[10px] font-bold">{Math.round(progressPercentage)}%</span>
+                            <span className="text-yellow-800 text-[10px] font-bold">{Math.round(progressPercentage)}%</span>
                         </div>
                     </div>
+                </div>
+
+                <div className="mt-4">
+                    <EnhancedPomodoroTimer studentId={student.id} />
                 </div>
 
                 {student.badges && student.badges.length > 0 && (

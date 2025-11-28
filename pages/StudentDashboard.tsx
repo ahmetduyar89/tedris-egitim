@@ -25,7 +25,6 @@ import AdaptivePlanDashboard from '../components/AdaptivePlanDashboard';
 import DiagnosisTestModal from '../components/DiagnosisTestModal';
 import PDFTestTakingPage from './PDFTestTakingPage';
 import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmission } from '../services/pdfTestService';
-import { XPBar } from '../components/Gamification/XPBar';
 
 
 type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest';
@@ -1095,11 +1094,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
       )}
       <div className="flex flex-col h-screen bg-background">
         <Header user={user} onLogout={onLogout} />
-        {studentData && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-            <XPBar xp={studentData.xp} level={studentData.level} />
-          </div>
-        )}
 
         <div className="sticky top-0 z-10 bg-card-background/95 backdrop-blur-sm border-b border-border shadow-sm">
           <div className="overflow-x-auto scrollbar-hide">

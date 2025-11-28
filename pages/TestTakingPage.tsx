@@ -5,6 +5,7 @@ import { createNotification } from '../services/notificationService';
 import { db } from '../services/dbAdapter';
 import { masteryScoreService } from '../services/masteryScoreService';
 import { adaptivePlanService } from '../services/adaptivePlanService';
+import { PomodoroTimer } from '../components/PomodoroTimer';
 
 // A custom confirmation modal to replace window.confirm
 interface ConfirmationModalProps {
@@ -378,7 +379,10 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
       <header className="bg-white shadow-md p-4 flex-shrink-0">
         <div className="flex justify-between items-center">
           <h1 className="text-xl md:text-2xl font-bold font-poppins text-text-primary">{test.title}</h1>
-          {testResult && <span className="font-semibold text-success">Test Tamamlandı</span>}
+          <div className="flex items-center space-x-4">
+            <PomodoroTimer />
+            {testResult && <span className="font-semibold text-success">Test Tamamlandı</span>}
+          </div>
         </div>
         {isTestCompleted && !testResult && (
           <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start space-x-3">

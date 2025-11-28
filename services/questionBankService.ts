@@ -1,4 +1,4 @@
-import { generateContent } from './geminiService';
+import { generateContent } from './secureAIService';
 import { QuestionBankQuestion, QuestionBankQuestionType } from '../types';
 
 export interface QuestionBankConfig {

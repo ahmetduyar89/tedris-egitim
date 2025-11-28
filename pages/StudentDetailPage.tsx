@@ -293,7 +293,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
             setToastMessage("AI analizi oluşturuluyor, lütfen bekleyin...");
             try {
-                const { generateTestAnalysis } = await import('../services/geminiService');
+                const { generateTestAnalysis } = await import('../services/optimizedAIService');
                 const analysisReport = await generateTestAnalysis(test.subject, test.unit, test.questions);
 
                 const updatedTest = {

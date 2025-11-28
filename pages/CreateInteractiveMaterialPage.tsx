@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, InteractiveContentComponent, InteractiveContent, ContentLibraryItem, ContentType, Subject } from '../types';
-import { generateInteractiveComponent } from '../services/geminiService';
+import { generateInteractiveComponent } from '../services/secureAIService';
 import { db } from '../services/dbAdapter';
 
 interface CreateInteractiveMaterialPageProps {
@@ -23,7 +23,7 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
     const [components, setComponents] = useState<InteractiveContentComponent[]>([]);
     const [aiLoadingType, setAiLoadingType] = useState<'mcq' | 'fill-in-the-blank' | 'true-false' | null>(null);
     const [interactiveContentId, setInteractiveContentId] = useState<string | null>(null);
-    
+
     const isEditing = !!contentIdForEdit;
 
     useEffect(() => {
@@ -38,7 +38,7 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                         const interactiveDoc = await db.collection('interactiveContent').doc(itemToEdit.interactiveContentId).get();
                         if (!interactiveDoc.exists) return;
                         const interactiveData = { id: interactiveDoc.id, ...interactiveDoc.data() } as InteractiveContent;
-                        
+
                         setTitle(interactiveData.title);
                         setComponents(interactiveData.components);
                         setSubject(itemToEdit.subject);
@@ -72,7 +72,7 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
         }
         setComponents([...components, newComponent]);
     };
-    
+
     const deleteComponent = (id: string) => {
         setComponents(components.filter(c => c.id !== id));
     };
@@ -80,7 +80,7 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
     const handleContentChange = (id: string, newContent: any) => {
         setComponents(components.map(c => c.id === id ? { ...c, content: newContent } : c));
     };
-    
+
     const handleAiAssist = async (type: 'mcq' | 'fill-in-the-blank' | 'true-false') => {
         setAiLoadingType(type);
         try {
@@ -139,12 +139,12 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                     interactiveContentId: interactiveRef.id, createdAt: new Date().toISOString(),
                 };
                 await db.collection('contentLibrary').add(newLibraryItem);
-                
+
                 alert("Etkileşimli materyal başarıyla kütüphaneye kaydedildi!");
             }
-        
+
             onBack();
-        } catch(e) {
+        } catch (e) {
             console.error("Error saving interactive content: ", e);
             alert("Materyal kaydedilirken bir hata oluştu.");
         }
@@ -161,10 +161,10 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                         <input type="text" placeholder="Soru metni" value={content.question} onChange={e => handleContentChange(id, { ...content, question: e.target.value })} className="w-full p-2 border rounded font-semibold" />
                         {content.options.map((opt: string, i: number) => (
                             <div key={i} className="flex items-center space-x-2">
-                                <input type="radio" name={`answer-${id}`} checked={content.answer === opt} onChange={() => handleContentChange(id, {...content, answer: opt})} />
-                                <input type="text" placeholder={`Seçenek ${i+1}`} value={opt} onChange={e => {
+                                <input type="radio" name={`answer-${id}`} checked={content.answer === opt} onChange={() => handleContentChange(id, { ...content, answer: opt })} />
+                                <input type="text" placeholder={`Seçenek ${i + 1}`} value={opt} onChange={e => {
                                     const newOptions = [...content.options]; newOptions[i] = e.target.value;
-                                    handleContentChange(id, {...content, options: newOptions})
+                                    handleContentChange(id, { ...content, options: newOptions })
                                 }} className="w-full p-2 border rounded" />
                             </div>
                         ))}
@@ -173,8 +173,8 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
             case 'fill-in-the-blank':
                 return (
                     <div className="space-y-2">
-                         <input type="text" placeholder="Boşluklu cümle (boşluk için ___ kullanın)" value={content.sentence} onChange={e => handleContentChange(id, { ...content, sentence: e.target.value })} className="w-full p-2 border rounded" />
-                         <input type="text" placeholder="Doğru Cevap" value={content.answer} onChange={e => handleContentChange(id, { ...content, answer: e.target.value })} className="w-full p-2 border rounded bg-gray-50" />
+                        <input type="text" placeholder="Boşluklu cümle (boşluk için ___ kullanın)" value={content.sentence} onChange={e => handleContentChange(id, { ...content, sentence: e.target.value })} className="w-full p-2 border rounded" />
+                        <input type="text" placeholder="Doğru Cevap" value={content.answer} onChange={e => handleContentChange(id, { ...content, answer: e.target.value })} className="w-full p-2 border rounded bg-gray-50" />
                     </div>
                 );
             case 'true-false':
@@ -182,8 +182,8 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                     <div className="space-y-3">
                         <input type="text" placeholder="Doğru veya yanlış ifade" value={content.statement} onChange={e => handleContentChange(id, { ...content, statement: e.target.value })} className="w-full p-2 border rounded" />
                         <div className="flex space-x-4">
-                            <label><input type="radio" name={`tf-${id}`} checked={content.answer === true} onChange={() => handleContentChange(id, {...content, answer: true})} /> Doğru</label>
-                            <label><input type="radio" name={`tf-${id}`} checked={content.answer === false} onChange={() => handleContentChange(id, {...content, answer: false})} /> Yanlış</label>
+                            <label><input type="radio" name={`tf-${id}`} checked={content.answer === true} onChange={() => handleContentChange(id, { ...content, answer: true })} /> Doğru</label>
+                            <label><input type="radio" name={`tf-${id}`} checked={content.answer === false} onChange={() => handleContentChange(id, { ...content, answer: false })} /> Yanlış</label>
                         </div>
                     </div>
                 );
@@ -200,12 +200,12 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                 </button>
                 <h2 className="text-3xl font-bold text-text-primary mb-2">{isEditing ? 'Materyali Düzenle' : 'Etkileşimli Materyal Oluşturucu'}</h2>
                 <p className="text-text-secondary mb-6">Öğrencileriniz için metinler ve çeşitli etkinlikler içeren dijital dersler tasarlayın.</p>
-                
+
                 <div className="bg-white p-6 rounded-xl shadow-md space-y-4 mb-6">
                     <input type="text" placeholder="Materyal Başlığı" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-3 border rounded-lg text-xl font-bold" />
                     <div className="grid grid-cols-2 gap-4">
                         <select value={subject} onChange={e => setSubject(e.target.value as Subject)} className="w-full p-2 border rounded-lg"><option value="" disabled>Ders Seçin</option>{Object.values(Subject).map(s => <option key={s} value={s}>{s}</option>)}</select>
-                        <select value={grade} onChange={e => setGrade(Number(e.target.value))} className="w-full p-2 border rounded-lg"><option value={0} disabled>Sınıf Seçin</option>{[5,6,7,8].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}</select>
+                        <select value={grade} onChange={e => setGrade(Number(e.target.value))} className="w-full p-2 border rounded-lg"><option value={0} disabled>Sınıf Seçin</option>{[5, 6, 7, 8].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}</select>
                     </div>
                 </div>
 
@@ -216,11 +216,11 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                                 <h4 className="font-semibold text-gray-600 flex items-center">{componentConfig[comp.type].icon}<span className="ml-2">{componentConfig[comp.type].label}</span></h4>
                                 <button onClick={() => deleteComponent(comp.id)} className="text-red-500 hover:text-red-700 p-1"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></button>
                             </div>
-                           {renderComponentEditor(comp)}
+                            {renderComponentEditor(comp)}
                         </div>
                     ))}
                 </div>
-                
+
                 <div className="mt-6 p-4 bg-white rounded-xl shadow-md space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <button onClick={() => addComponent('text')} className="bg-gray-200 px-3 py-2 rounded-lg font-semibold text-sm">Metin Ekle</button>
@@ -228,13 +228,13 @@ const CreateInteractiveMaterialPage: React.FC<CreateInteractiveMaterialPageProps
                         <button onClick={() => addComponent('fill-in-the-blank')} className="bg-gray-200 px-3 py-2 rounded-lg font-semibold text-sm">Boşluk Doldurma</button>
                         <button onClick={() => addComponent('true-false')} className="bg-gray-200 px-3 py-2 rounded-lg font-semibold text-sm">Doğru/Yanlış</button>
                     </div>
-                     <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                         <button onClick={() => handleAiAssist('mcq')} disabled={!!aiLoadingType} className="bg-blue-100 text-primary px-3 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 disabled:opacity-60 text-sm"><span>{aiLoadingType === 'mcq' ? '...' : 'AI Soru Üret'}</span></button>
                         <button onClick={() => handleAiAssist('fill-in-the-blank')} disabled={!!aiLoadingType} className="bg-blue-100 text-primary px-3 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 disabled:opacity-60 text-sm"><span>{aiLoadingType === 'fill-in-the-blank' ? '...' : 'AI Boşluk Doldurma'}</span></button>
                         <button onClick={() => handleAiAssist('true-false')} disabled={!!aiLoadingType} className="bg-blue-100 text-primary px-3 py-2 rounded-lg font-semibold flex items-center justify-center space-x-2 disabled:opacity-60 text-sm"><span>{aiLoadingType === 'true-false' ? '...' : 'AI Doğru/Yanlış'}</span></button>
                     </div>
                 </div>
-                
+
                 <div className="mt-8 text-right">
                     <button onClick={handleSave} className="bg-accent text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-yellow-600 transition-colors">Materyali Kaydet</button>
                 </div>

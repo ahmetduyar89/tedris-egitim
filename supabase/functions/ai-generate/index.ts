@@ -90,29 +90,61 @@ serve(async (req) => {
             case 'generateFlashcards':
                 prompt = buildFlashcardsPrompt(payload)
                 break
+            case 'generateCompletionTasks':
+                prompt = buildCompletionTasksPrompt(payload)
+                break
+            case 'generateProgressReport':
+                prompt = buildProgressReportPrompt(payload)
+                break
+            case 'checkAnswer':
+                prompt = buildCheckAnswerPrompt(payload)
+                break
+            case 'suggestHomework':
+                prompt = buildSuggestHomeworkPrompt(payload)
+                break
+            case 'generateContent':
+                prompt = payload.prompt
+                break
             default:
                 throw new Error('Invalid action')
         }
 
-        // Call Gemini API
+        // Make request to Gemini API
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
+        // const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}` // This line is a duplicate and can be removed if desired, but the instruction doesn't ask for it.
+
+        const requestBody: any = {
+            contents: [{
+                parts: [{
+                    text: prompt
+                }]
+            }],
+            generationConfig: {
+                temperature: 0.7,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 8192,
+                responseMimeType: payload.responseSchema ? "application/json" : undefined,
+                responseSchema: payload.responseSchema
+            }
+        };
+
+        // Handle image for checkAnswer
+        if (action === 'checkAnswer' && payload.studentImageBase64) {
+            requestBody.contents[0].parts.push({
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: payload.studentImageBase64
+                }
+            });
+        }
+
         const geminiResponse = await fetch(geminiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }],
-                generationConfig: {
-                    temperature: 0.7,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 8192,
-                }
-            })
+            body: JSON.stringify(requestBody)
         })
 
         if (!geminiResponse.ok) {
@@ -204,4 +236,24 @@ function buildHomeworkAnalysisPrompt(payload: any): string {
 function buildFlashcardsPrompt(payload: any): string {
     const { topic, grade, count } = payload
     return `Generate ${count} flashcards for "${topic}" (Grade ${grade}). Return JSON: { flashcards: [{ front_content: "", back_content: "", difficulty_level: 1-5 }] }`
+}
+
+function buildCompletionTasksPrompt(payload: any): string {
+    const { topic } = payload
+    return `Generate 2-3 short, completion micro-tasks in Turkish for a student who is weak in: "${topic}". Return JSON: { tasks: [{ description: "", duration: number }] }`
+}
+
+function buildProgressReportPrompt(payload: any): string {
+    const { lastReport, currentReport } = payload
+    return `Compare these two reports. Last: ${JSON.stringify(lastReport)}. Current: ${JSON.stringify(currentReport)}. Return JSON: { ai_comment: "", focus_topics: [] }`
+}
+
+function buildCheckAnswerPrompt(payload: any): string {
+    const { question, studentAnswerText } = payload
+    return `Check this answer. Question: "${question}". Answer: "${studentAnswerText}". Return JSON: { is_correct: boolean, feedback: "" }`
+}
+
+function buildSuggestHomeworkPrompt(payload: any): string {
+    const { grade, subject, weakTopics } = payload
+    return `Suggest 3 homework assignments for Grade ${grade} ${subject} focusing on: ${weakTopics.join(', ')}. Return JSON: { suggestions: [{ title: "", description: "", type: "" }] }`
 }

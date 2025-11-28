@@ -1,7 +1,7 @@
 // Optimized Gemini Service Wrapper
 // Adds rate limiting, caching, and error handling to existing geminiService
 
-import * as geminiService from './geminiService';
+import * as geminiService from './secureAIService';
 import { cacheService } from './cacheService';
 import { aiRateLimiter } from './rateLimiter';
 import { handleError, AppError, ErrorType, logError } from './errorHandler';
@@ -136,23 +136,11 @@ export async function explainTopic(
     // If not, I'll comment it out or implement it here using generateContent.
 
     // Fallback if not in geminiService:
-    if ((geminiService as any).explainTopic) {
-        return withOptimizations(
-            cacheKey,
-            () => (geminiService as any).explainTopic(topic, grade),
-            86400000 // 24 hours
-        );
-    } else {
-        // Implement using generateContent if available
-        return withOptimizations(
-            cacheKey,
-            async () => {
-                const prompt = `Explain "${topic}" for a ${grade}th grade student in Turkish. Keep it simple and engaging.`;
-                return geminiService.generateContent(prompt);
-            },
-            86400000
-        );
-    }
+    return withOptimizations(
+        cacheKey,
+        () => geminiService.explainTopic(topic, grade),
+        86400000 // 24 hours
+    );
 }
 
 /**

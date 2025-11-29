@@ -3,7 +3,11 @@
 // Client-side'dan sadece prompt gönderilir, API key asla expose olmaz
 
 // @ts-nocheck
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// Supabase Edge Function - AI Generate
+// Bu function Gemini API key'ini güvenli bir şekilde backend'de tutar
+// Client-side'dan sadece prompt gönderilir, API key asla expose olmaz
+
+// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -13,11 +17,11 @@ const corsHeaders = {
 }
 
 interface AIRequest {
-    action: 'generateTest' | 'analyzeTest' | 'generateWeeklyPlan' | 'generateReviewPackage' | 'explainTopic' | 'recommendContent' | 'analyzeHomework' | 'generateFlashcards'
+    action: 'generateTest' | 'analyzeTest' | 'generateWeeklyPlan' | 'generateReviewPackage' | 'explainTopic' | 'recommendContent' | 'analyzeHomework' | 'generateFlashcards' | 'generateCompletionTasks' | 'generateProgressReport' | 'checkAnswer' | 'suggestHomework' | 'generateContent' | 'generateDiagnosisQuestions' | 'analyzeDiagnosisTest'
     payload: any
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders, status: 200 })
@@ -52,16 +56,20 @@ serve(async (req) => {
         }
 
         // Parse request body
-        const { action, payload }: AIRequest = await req.json()
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            throw new Error('Invalid JSON body');
+        }
+
+        const { action, payload } = body as AIRequest;
 
         // Get Gemini API key from environment (server-side only)
         const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
         if (!GEMINI_API_KEY) {
             throw new Error('Gemini API key not configured')
         }
-
-        // Make request to Gemini API
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
 
         let prompt = ''
 
@@ -113,12 +121,11 @@ serve(async (req) => {
                 prompt = buildDiagnosisAnalysisPrompt(payload)
                 break
             default:
-                throw new Error('Invalid action')
+                throw new Error(`Invalid action: ${action}`)
         }
 
         // Make request to Gemini API
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
-        // const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}` // This line is a duplicate and can be removed if desired, but the instruction doesn't ask for it.
 
         const requestBody: any = {
             contents: [{
@@ -157,7 +164,7 @@ serve(async (req) => {
         if (!geminiResponse.ok) {
             const errorText = await geminiResponse.text()
             console.error('Gemini API error:', errorText)
-            throw new Error(`Gemini API error: ${geminiResponse.status}`)
+            throw new Error(`Gemini API error: ${geminiResponse.status} - ${errorText}`)
         }
 
         const geminiData = await geminiResponse.json()
@@ -178,7 +185,12 @@ serve(async (req) => {
         } catch (parseError) {
             console.error('JSON parse error:', parseError)
             console.error('Response text:', responseText)
-            throw new Error('Failed to parse AI response')
+            // If it's not JSON, return as text if no schema was requested, otherwise error
+            if (!payload.responseSchema) {
+                result = { text: responseText }
+            } else {
+                throw new Error('Failed to parse AI response as JSON')
+            }
         }
 
         return new Response(

@@ -15,16 +15,6 @@ const TedrisLogo = () => (
   </svg>
 );
 
-const FeatureCard: React.FC<{ icon: React.ReactNode; title: string; description: string; delay?: string }> = ({ icon, title, description, delay = '0s' }) => (
-  <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 hover:-translate-y-1 group">
-    <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 mx-auto mb-6 text-3xl group-hover:scale-110 transition-transform duration-300">
-      {icon}
-    </div>
-    <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">{title}</h3>
-    <p className="text-gray-600 leading-relaxed text-center text-sm">{description}</p>
-  </div>
-);
-
 const ScreenshotCard: React.FC<{ title: string; description: string; imageSrc: string }> = ({ title, description, imageSrc }) => (
   <div className="group relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl border border-gray-100 hover:-translate-y-1">
     <div className="aspect-video bg-gray-100 relative overflow-hidden">
@@ -47,15 +37,6 @@ const ScreenshotCard: React.FC<{ title: string; description: string; imageSrc: s
       <h3 className="text-xl font-bold font-poppins mb-2 text-gray-900">{title}</h3>
       <p className="text-gray-600 text-sm leading-relaxed">{description}</p>
     </div>
-  </div>
-);
-
-const StatCard: React.FC<{ value: string; label: string }> = ({ value, label }) => (
-  <div className="text-center p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-white/50 shadow-sm hover:shadow-md transition-all">
-    <div className="text-4xl md:text-5xl font-bold font-poppins bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text mb-2">
-      {value}
-    </div>
-    <div className="text-gray-600 font-medium">{label}</div>
   </div>
 );
 
@@ -88,145 +69,298 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
 
       {/* Hero Section */}
       <main className="pt-32 pb-20 px-4 relative overflow-hidden">
-        {/* Background Elements - Optimized for performance */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full min-h-[800px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/5 via-slate-50 to-slate-50 -z-10"></div>
-        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-3xl -z-10"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl -z-10"></div>
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary/5 via-slate-50 to-slate-50"></div>
+          <div className="absolute top-20 -right-20 w-96 h-96 bg-gradient-to-br from-accent/20 to-primary/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 -left-20 w-96 h-96 bg-gradient-to-tr from-secondary/20 to-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary/5 via-accent/5 to-secondary/5 rounded-full blur-3xl"></div>
+        </div>
 
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100 mb-8 animate-fade-in-up">
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span className="text-gray-600 font-medium text-sm">Yapay Zeka Destekli Eğitim Platformu</span>
-            </div>
+          {/* Hero Content - Split Layout */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Content */}
+            <div className="space-y-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border border-white/50 animate-fade-in-up">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                <span className="text-gray-700 font-semibold text-sm">Yapay Zeka Destekli Eğitim</span>
+              </div>
 
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold font-poppins leading-tight mb-6 tracking-tight text-gray-900">
-              Öğretmenlerin{' '}
-              <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">
-                Zaman Kazandığı
-              </span>
-              <br />
-              Öğrencilerin{' '}
-              <span className="bg-gradient-to-r from-secondary via-accent to-primary text-transparent bg-clip-text">
-                Başarıya Ulaştığı
-              </span>
-              {' '}Platform
-            </h1>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-poppins leading-tight tracking-tight">
+                <span className="text-gray-900">Eğitimde</span>{' '}
+                <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text inline-block animate-fade-in-up">
+                  Yeni Dönem
+                </span>
+                <br />
+                <span className="text-gray-900">Başlıyor</span>
+              </h1>
 
-            <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-2xl mx-auto">
-              Yapay zeka destekli test oluşturma, kişiselleştirilmiş öğrenme haritaları ve detaylı performans analizleri ile eğitimde yeni bir dönem başlıyor.
-            </p>
+              <p className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-xl">
+                AI destekli test oluşturma, kişiselleştirilmiş öğrenme ve detaylı analizlerle öğretmenlere zaman kazandırın, öğrencileri başarıya taşıyın.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button
-                onClick={onNavigateToAuth}
-                className="w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-xl shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-300"
-              >
-                Hemen Başlayın
-              </button>
-              <button className="w-full sm:w-auto px-8 py-4 bg-white text-gray-700 font-bold rounded-xl shadow-lg border border-gray-100 hover:bg-gray-50 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2">
-                <span>▶</span> Demo İzle
-              </button>
-            </div>
-          </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={onNavigateToAuth}
+                  className="group px-8 py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  <span>Hemen Başla</span>
+                  <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
+                </button>
+                <button className="px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-bold rounded-xl shadow-lg border border-gray-200 hover:bg-white hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2">
+                  <span className="text-primary">▶</span>
+                  <span>Demo İzle</span>
+                </button>
+              </div>
 
-          {/* Hero Image */}
-          <div className="relative max-w-6xl mx-auto mt-12">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-white bg-white">
-              <img
-                src="/teacher-dashboard.png"
-                alt="TEDRİS Öğretmen Paneli"
-                className="w-full h-auto"
-                onError={(e) => {
-                  e.currentTarget.src = '/hero-dashboard.png';
-                }}
-              />
-              {/* Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-50/20 to-transparent pointer-events-none"></div>
-            </div>
-
-            {/* Floating Stats - Static for better performance */}
-            <div className="absolute -left-4 top-1/4 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden lg:block transform -rotate-3 hover:rotate-0 transition-transform duration-300 z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">🚀</div>
-                <div>
-                  <div className="text-sm text-gray-500">Verimlilik Artışı</div>
-                  <div className="text-lg font-bold text-gray-900">%85</div>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-4 pt-4">
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-md hover:shadow-lg transition-shadow">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">5K+</div>
+                  <div className="text-sm text-gray-600 font-medium">Kullanıcı</div>
+                </div>
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-md hover:shadow-lg transition-shadow">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-accent to-secondary text-transparent bg-clip-text">50K+</div>
+                  <div className="text-sm text-gray-600 font-medium">Test</div>
+                </div>
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-md hover:shadow-lg transition-shadow">
+                  <div className="text-2xl font-bold bg-gradient-to-r from-secondary to-primary text-transparent bg-clip-text">%92</div>
+                  <div className="text-sm text-gray-600 font-medium">Başarı</div>
                 </div>
               </div>
             </div>
 
-            <div className="absolute -right-4 bottom-1/4 bg-white p-4 rounded-xl shadow-xl border border-gray-100 hidden lg:block transform rotate-3 hover:rotate-0 transition-transform duration-300">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">🤖</div>
-                <div>
-                  <div className="text-sm text-gray-500">AI Analiz</div>
-                  <div className="text-lg font-bold text-gray-900">Aktif</div>
+            {/* Right: Visual */}
+            <div className="relative lg:block hidden">
+              {/* Main Dashboard Preview */}
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary via-accent to-secondary rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
+                <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-white/50">
+                  <img
+                    src="/teacher-dashboard.png"
+                    alt="TEDRİS Platform"
+                    className="w-full h-auto transform group-hover:scale-105 transition-transform duration-700"
+                    onError={(e) => {
+                      e.currentTarget.src = '/hero-dashboard.png';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none"></div>
                 </div>
+              </div>
+
+              {/* Floating Feature Badges */}
+              <div className="absolute -left-8 top-16 bg-white rounded-xl shadow-xl p-3 border border-gray-100 animate-float" style={{ animationDelay: '0s' }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center text-white text-lg shadow-lg">
+                    🚀
+                  </div>
+                  <div className="pr-2">
+                    <div className="text-xs text-gray-500 font-medium">Hız</div>
+                    <div className="text-sm font-bold text-gray-900">%300</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -right-8 top-1/3 bg-white rounded-xl shadow-xl p-3 border border-gray-100 animate-float" style={{ animationDelay: '0.5s' }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white text-lg shadow-lg">
+                    🤖
+                  </div>
+                  <div className="pr-2">
+                    <div className="text-xs text-gray-500 font-medium">AI Analiz</div>
+                    <div className="text-sm font-bold text-gray-900">Aktif</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute -left-6 bottom-16 bg-white rounded-xl shadow-xl p-3 border border-gray-100 animate-float" style={{ animationDelay: '1s' }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center text-white text-lg shadow-lg">
+                    📊
+                  </div>
+                  <div className="pr-2">
+                    <div className="text-xs text-gray-500 font-medium">Raporlama</div>
+                    <div className="text-sm font-bold text-gray-900">Detaylı</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Preview */}
+          <div className="lg:hidden mt-12">
+            <div className="relative group max-w-md mx-auto">
+              <div className="absolute -inset-1 bg-gradient-to-r from-primary via-accent to-secondary rounded-2xl blur-xl opacity-30"></div>
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-white/50">
+                <img
+                  src="/teacher-dashboard.png"
+                  alt="TEDRİS Platform"
+                  className="w-full h-auto"
+                  onError={(e) => {
+                    e.currentTarget.src = '/hero-dashboard.png';
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
+
+        {/* Add custom animations */}
+        <style>{`
+          @keyframes fade-in-up {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-10px);
+            }
+          }
+          
+          .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out;
+          }
+          
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+        `}</style>
       </main>
 
       {/* Stats Section */}
-      <section className="py-12 bg-white border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatCard value="5.000+" label="Aktif Kullanıcı" />
-            <StatCard value="250+" label="Öğretmen" />
-            <StatCard value="50K+" label="Oluşturulan Test" />
-            <StatCard value="%92" label="Başarı Artışı" />
+      <section className="py-16 bg-gradient-to-r from-primary via-accent to-secondary relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+          backgroundSize: '40px 40px'
+        }}></div>
+
+        <div className="max-w-7xl mx-auto px-4 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="text-center p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="text-4xl md:text-5xl font-bold font-poppins text-white mb-2">
+                5K+
+              </div>
+              <div className="text-white/90 font-semibold text-sm md:text-base">Aktif Kullanıcı</div>
+            </div>
+
+            <div className="text-center p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="text-4xl md:text-5xl font-bold font-poppins text-white mb-2">
+                250+
+              </div>
+              <div className="text-white/90 font-semibold text-sm md:text-base">Öğretmen</div>
+            </div>
+
+            <div className="text-center p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="text-4xl md:text-5xl font-bold font-poppins text-white mb-2">
+                50K+
+              </div>
+              <div className="text-white/90 font-semibold text-sm md:text-base">Oluşturulan Test</div>
+            </div>
+
+            <div className="text-center p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/30 shadow-xl hover:bg-white/20 hover:scale-105 transition-all duration-300">
+              <div className="text-4xl md:text-5xl font-bold font-poppins text-white mb-2">
+                %92
+              </div>
+              <div className="text-white/90 font-semibold text-sm md:text-base">Başarı Artışı</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="py-24 px-4 bg-slate-50">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24 px-4 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-primary/5 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-accent/5 to-transparent rounded-full blur-3xl"></div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold font-poppins text-gray-900 mb-4">
-              Neden Tedris?
+            <div className="inline-block px-4 py-2 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full mb-4">
+              <span className="text-primary font-bold text-sm">✨ Özellikler</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold font-poppins text-gray-900 mb-4">
+              Neden <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">Tedris</span>?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Modern eğitim ihtiyaçları için tasarlanmış kapsamlı özellikler
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              icon="🧠"
-              title="Yapay Zeka Destekli"
-              description="Google Gemini teknolojisi ile kişiselleştirilmiş içerik ve analizler."
-            />
-            <FeatureCard
-              icon="📊"
-              title="Detaylı Analitik"
-              description="Öğrenci performansını derinlemesine analiz edin ve raporlayın."
-            />
-            <FeatureCard
-              icon="📅"
-              title="Akıllı Planlama"
-              description="Otomatik ders ve çalışma programı oluşturun."
-            />
-            <FeatureCard
-              icon="📚"
-              title="Zengin Kütüphane"
-              description="Binlerce hazır soru ve içerik elinizin altında."
-            />
-            <FeatureCard
-              icon="💬"
-              title="7/24 Asistan"
-              description="Öğrenciler için her an ulaşılabilir yapay zeka asistanı."
-            />
-            <FeatureCard
-              icon="🎮"
-              title="Oyunlaştırma"
-              description="Rozetler ve puanlarla öğrenmeyi eğlenceli hale getirin."
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="group bg-gradient-to-br from-white to-primary/5 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-primary/10 hover:border-primary/30 hover:-translate-y-2">
+              <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-accent mx-auto mb-6 text-3xl shadow-lg shadow-primary/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                🧠
+              </div>
+              <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">Yapay Zeka Destekli</h3>
+              <p className="text-gray-600 leading-relaxed text-center text-sm">
+                Google Gemini teknolojisi ile kişiselleştirilmiş içerik ve analizler.
+              </p>
+            </div>
+
+            <div className="group bg-gradient-to-br from-white to-accent/5 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-accent/10 hover:border-accent/30 hover:-translate-y-2">
+              <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-accent to-secondary mx-auto mb-6 text-3xl shadow-lg shadow-accent/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                📊
+              </div>
+              <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">Detaylı Analitik</h3>
+              <p className="text-gray-600 leading-relaxed text-center text-sm">
+                Öğrenci performansını derinlemesine analiz edin ve raporlayın.
+              </p>
+            </div>
+
+            <div className="group bg-gradient-to-br from-white to-secondary/5 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-secondary/10 hover:border-secondary/30 hover:-translate-y-2">
+              <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-secondary to-primary mx-auto mb-6 text-3xl shadow-lg shadow-secondary/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                📅
+              </div>
+              <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">Akıllı Planlama</h3>
+              <p className="text-gray-600 leading-relaxed text-center text-sm">
+                Otomatik ders ve çalışma programı oluşturun.
+              </p>
+            </div>
+
+            <div className="group bg-gradient-to-br from-white to-primary/5 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-primary/10 hover:border-primary/30 hover:-translate-y-2">
+              <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 mx-auto mb-6 text-3xl shadow-lg shadow-blue-400/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                📚
+              </div>
+              <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">Zengin Kütüphane</h3>
+              <p className="text-gray-600 leading-relaxed text-center text-sm">
+                Binlerce hazır soru ve içerik elinizin altında.
+              </p>
+            </div>
+
+            <div className="group bg-gradient-to-br from-white to-accent/5 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-accent/10 hover:border-accent/30 hover:-translate-y-2">
+              <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 mx-auto mb-6 text-3xl shadow-lg shadow-green-400/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                💬
+              </div>
+              <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">7/24 Asistan</h3>
+              <p className="text-gray-600 leading-relaxed text-center text-sm">
+                Öğrenciler için her an ulaşılabilir yapay zeka asistanı.
+              </p>
+            </div>
+
+            <div className="group bg-gradient-to-br from-white to-secondary/5 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-secondary/10 hover:border-secondary/30 hover:-translate-y-2">
+              <div className="flex justify-center items-center h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-400 to-purple-600 mx-auto mb-6 text-3xl shadow-lg shadow-purple-400/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                🎮
+              </div>
+              <h3 className="text-xl font-bold font-poppins mb-3 text-gray-900 text-center">Oyunlaştırma</h3>
+              <p className="text-gray-600 leading-relaxed text-center text-sm">
+                Rozetler ve puanlarla öğrenmeyi eğlenceli hale getirin.
+              </p>
+            </div>
           </div>
         </div>
       </section>

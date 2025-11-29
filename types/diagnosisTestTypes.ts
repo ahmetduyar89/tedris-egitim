@@ -113,9 +113,9 @@ export interface CreateDiagnosisTestConfig {
     description?: string;
     subject: string;
     grade: number;
-    moduleIds: string[]; // Seçilen modül ID'leri
-    questionsPerModule: number;
+    totalQuestions: number;
     durationMinutes?: number;
+    questions: Omit<DiagnosisTestQuestion, 'id' | 'createdAt'>[];
 }
 
 // Atama için Config

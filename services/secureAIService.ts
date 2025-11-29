@@ -237,23 +237,23 @@ export const generateDiagnosisQuestions = async (
     difficulty: number = 3
 ): Promise<any> => {
     const responseSchema = {
-        type: "object",
+        type: "OBJECT",
         properties: {
             questions: {
-                type: "array",
+                type: "ARRAY",
                 items: {
-                    type: "object",
+                    type: "OBJECT",
                     properties: {
-                        module_id: { type: "string" },
-                        module_name: { type: "string" },
-                        question_text: { type: "string" },
+                        module_id: { type: "STRING" },
+                        module_name: { type: "STRING" },
+                        question_text: { type: "STRING" },
                         options: {
-                            type: "array",
-                            items: { type: "string" }
+                            type: "ARRAY",
+                            items: { type: "STRING" }
                         },
-                        correct_answer: { type: "string" },
-                        difficulty: { type: "number" },
-                        explanation: { type: "string" }
+                        correct_answer: { type: "STRING" },
+                        difficulty: { type: "NUMBER" },
+                        explanation: { type: "STRING" }
                     },
                     required: ["module_id", "module_name", "question_text", "options", "correct_answer", "difficulty"]
                 }

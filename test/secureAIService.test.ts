@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateTestQuestions } from '../services/secureAIService';
-import { supabase } from '../supabase/client';
+import { supabase } from '../services/supabase';
 import { Difficulty, QuestionType, Subject } from '../types';
 
 // Mock Supabase client
-vi.mock('../supabase/client', () => ({
+vi.mock('../services/supabase', () => ({
     supabase: {
         functions: {
             invoke: vi.fn()

@@ -25,7 +25,7 @@ export const diagnosisTestManagementService = {
                 description: config.description,
                 subject: config.subject,
                 grade: config.grade,
-                total_questions: config.moduleIds.length * config.questionsPerModule,
+                total_questions: config.totalQuestions,
                 duration_minutes: config.durationMinutes || 60,
                 is_active: true
             })
@@ -33,6 +33,11 @@ export const diagnosisTestManagementService = {
             .single();
 
         if (error) throw error;
+
+        // Soruları kaydet
+        if (config.questions && config.questions.length > 0) {
+            await this.saveQuestions(data.id, config.questions);
+        }
 
         return {
             id: data.id,

@@ -93,9 +93,36 @@ export const knowledgeGraphService = {
         );
       }
 
-      if (!data) {
-        console.warn('[KnowledgeGraph] No data returned from query');
-        return [];
+      if (!data || data.length === 0) {
+        console.warn('[KnowledgeGraph] No data returned from query, returning MOCK data for development');
+        // Mock data generator
+        const mockModules: KGModule[] = [];
+        const subjects = subject ? [subject] : ['Matematik', 'Fen Bilimleri', 'Türkçe'];
+        const grades = grade ? [grade] : [5, 6, 7, 8];
+
+        subjects.forEach(subj => {
+          grades.forEach(grd => {
+            const units = ['Ünite 1', 'Ünite 2', 'Ünite 3'];
+            units.forEach((unit, uIdx) => {
+              // 3 modules per unit
+              for (let i = 1; i <= 3; i++) {
+                mockModules.push({
+                  id: `mock-${subj}-${grd}-${uIdx}-${i}`,
+                  code: `${subj.substring(0, 3).toUpperCase()}${grd}.${uIdx + 1}.${i}`,
+                  title: `${unit} - Kazanım ${i}`,
+                  subject: subj,
+                  grade: grd,
+                  unit: unit,
+                  difficultyLevel: 3,
+                  description: `Mock module description for ${subj} ${grd}. class`,
+                  estimatedDurationMinutes: 40
+                });
+              }
+            });
+          });
+        });
+
+        return mockModules;
       }
 
       console.log(`[KnowledgeGraph] Successfully fetched ${data.length} modules`);

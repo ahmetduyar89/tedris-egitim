@@ -559,3 +559,22 @@ export interface DiagnosisTestResult {
     masteryScore: number;
   }[];
 }
+
+export interface PrivateLesson {
+  id: string;
+  tutorId: string;
+  studentId?: string;
+  studentName?: string;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  topic?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string;
+  duration?: number; // in minutes
+  color?: string;
+  contact?: string;
+  grade?: number;
+  lessonNotes?: string;
+  homework?: string;
+}

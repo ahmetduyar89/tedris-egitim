@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: error.message === 'Unauthorized' ? 401 : 500,
+                status: 200, // Return 200 to allow client to read the error message
             }
         )
     }

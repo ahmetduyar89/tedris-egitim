@@ -14,35 +14,38 @@ const COLORS = [
 ];
 
 const DAYS_TR = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+const DURATION_OPTIONS = [30, 45, 60, 90, 120]; // Realistic lesson durations
 
 const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, students }) => {
     const [lessons, setLessons] = useState<PrivateLesson[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
     const [isAddLessonModalOpen, setIsAddLessonModalOpen] = useState(false);
     const [isStudentDetailModalOpen, setIsStudentDetailModalOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [selectedLesson, setSelectedLesson] = useState<PrivateLesson | null>(null);
-
-    // Add Student Form
-    const [studentFormName, setStudentFormName] = useState('');
-    const [studentFormSubject, setStudentFormSubject] = useState(Subject.Mathematics);
-    const [studentFormGrade, setStudentFormGrade] = useState(5);
-    const [studentFormContact, setStudentFormContact] = useState('');
-    const [studentFormColor, setStudentFormColor] = useState(COLORS[0]);
 
     // Add Lesson Form
     const [lessonFormDay, setLessonFormDay] = useState('Pazartesi');
     const [lessonFormStudentId, setLessonFormStudentId] = useState('');
     const [lessonFormTime, setLessonFormTime] = useState('15:00');
     const [lessonFormDuration, setLessonFormDuration] = useState(60);
+    const [lessonFormSubject, setLessonFormSubject] = useState(Subject.Mathematics);
+    const [lessonFormColor, setLessonFormColor] = useState(COLORS[0]);
 
-    // Student Detail Form
+    // Student Detail - Homework Assignment
+    const [detailActiveTab, setDetailActiveTab] = useState<'notes' | 'homework' | 'ai'>('notes');
     const [detailLessonNotes, setDetailLessonNotes] = useState('');
-    const [detailHomework, setDetailHomework] = useState('');
     const [detailTopic, setDetailTopic] = useState('');
-    const [detailActiveTab, setDetailActiveTab] = useState<'notes' | 'schedule' | 'ai'>('notes');
+    const [weeklyHomework, setWeeklyHomework] = useState<{ [day: string]: string }>({
+        'Pazartesi': '',
+        'Salı': '',
+        'Çarşamba': '',
+        'Perşembe': '',
+        'Cuma': '',
+        'Cumartesi': '',
+        'Pazar': ''
+    });
 
     useEffect(() => {
         const fetchAllStudents = async () => {
@@ -141,12 +144,65 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         setCurrentDate(newDate);
     };
 
-    const handleAddStudent = async (e: React.FormEvent) => {
-        e.preventDefault();
-        // This would create a new student entry in the system
-        // For now, we'll just close the modal
-        setIsAddStudentModalOpen(false);
-        alert('Öğrenci ekleme özelliği yakında eklenecek');
+    const copyPreviousWeekSchedule = async () => {
+        try {
+            // Get previous week's lessons
+            const prevWeekStart = new Date(weekStart);
+            prevWeekStart.setDate(prevWeekStart.getDate() - 7);
+            const prevWeekEnd = new Date(weekEnd);
+            prevWeekEnd.setDate(prevWeekEnd.getDate() - 7);
+
+            const { data, error } = await supabase
+                .from('private_lessons')
+                .select('*')
+                .eq('tutor_id', user.id)
+                .gte('start_time', prevWeekStart.toISOString())
+                .lte('end_time', prevWeekEnd.toISOString());
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                // Copy lessons to current week
+                const newLessons = data.map(lesson => {
+                    const oldStart = new Date(lesson.start_time);
+                    const oldEnd = new Date(lesson.end_time);
+
+                    const newStart = new Date(oldStart);
+                    newStart.setDate(newStart.getDate() + 7);
+
+                    const newEnd = new Date(oldEnd);
+                    newEnd.setDate(newEnd.getDate() + 7);
+
+                    return {
+                        tutor_id: lesson.tutor_id,
+                        student_id: lesson.student_id,
+                        student_name: lesson.student_name,
+                        start_time: newStart.toISOString(),
+                        end_time: newEnd.toISOString(),
+                        subject: lesson.subject,
+                        duration: lesson.duration,
+                        status: 'scheduled',
+                        color: lesson.color,
+                        contact: lesson.contact,
+                        grade: lesson.grade
+                    };
+                });
+
+                const { error: insertError } = await supabase
+                    .from('private_lessons')
+                    .insert(newLessons);
+
+                if (insertError) throw insertError;
+
+                fetchLessons();
+                alert('Önceki hafta programı kopyalandı!');
+            } else {
+                alert('Önceki haftada ders bulunamadı.');
+            }
+        } catch (error) {
+            console.error('Error copying schedule:', error);
+            alert('Program kopyalanırken bir hata oluştu.');
+        }
     };
 
     const handleAddLesson = async (e: React.FormEvent) => {
@@ -174,10 +230,10 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     student_name: student.name,
                     start_time: lessonDate.toISOString(),
                     end_time: endDate.toISOString(),
-                    subject: studentFormSubject,
+                    subject: lessonFormSubject,
                     duration: lessonFormDuration,
                     status: 'scheduled',
-                    color: studentFormColor,
+                    color: lessonFormColor,
                     contact: student.contact,
                     grade: student.grade
                 }]);
@@ -198,8 +254,21 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         if (student) {
             setSelectedStudent(student);
             setDetailLessonNotes(lesson.lessonNotes || '');
-            setDetailHomework(lesson.homework || '');
             setDetailTopic(lesson.topic || '');
+
+            // Parse homework if exists
+            if (lesson.homework) {
+                try {
+                    const parsed = JSON.parse(lesson.homework);
+                    setWeeklyHomework(parsed);
+                } catch {
+                    setWeeklyHomework({
+                        'Pazartesi': '', 'Salı': '', 'Çarşamba': '', 'Perşembe': '',
+                        'Cuma': '', 'Cumartesi': '', 'Pazar': ''
+                    });
+                }
+            }
+
             setIsStudentDetailModalOpen(true);
         }
     };
@@ -212,7 +281,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 .from('private_lessons')
                 .update({
                     lesson_notes: detailLessonNotes,
-                    homework: detailHomework,
+                    homework: JSON.stringify(weeklyHomework),
                     topic: detailTopic
                 })
                 .eq('id', selectedLesson.id);
@@ -220,11 +289,33 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             if (error) throw error;
 
             fetchLessons();
-            setIsStudentDetailModalOpen(false);
+            alert('Kaydedildi!');
         } catch (error) {
             console.error('Error saving:', error);
             alert('Kaydedilirken bir hata oluştu.');
         }
+    };
+
+    const handleWhatsAppShare = () => {
+        if (!selectedStudent || !selectedLesson) return;
+
+        const homeworkList = Object.entries(weeklyHomework)
+            .filter(([_, hw]) => hw.trim() !== '')
+            .map(([day, hw]) => `*${day}:*\n${hw}`)
+            .join('\n\n');
+
+        const message = `Merhaba ${selectedStudent.name},\n\n` +
+            `📚 *${new Date(selectedLesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} Tarihli Ders Özeti*\n\n` +
+            `📖 *İşlenen Konu:*\n${detailTopic || 'Belirtilmedi'}\n\n` +
+            `📝 *Ders Notları:*\n${detailLessonNotes || 'Not eklenmedi'}\n\n` +
+            `✏️ *Haftalık Ödevler:*\n\n${homeworkList || 'Ödev verilmedi'}\n\n` +
+            `İyi çalışmalar! 📚✨`;
+
+        const encodedMessage = encodeURIComponent(message);
+        const phoneNumber = selectedStudent.contact?.replace(/\D/g, '') || '';
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+
+        window.open(whatsappUrl, '_blank');
     };
 
     const weekDays = useMemo(() => {
@@ -252,13 +343,13 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 <h2 className="text-2xl font-bold font-poppins text-gray-800">Özel Ders Programı</h2>
                 <div className="flex items-center space-x-4">
                     <button
-                        onClick={() => setIsAddStudentModalOpen(true)}
+                        onClick={copyPreviousWeekSchedule}
                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center space-x-2"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
-                        <span>Öğrenci Ekle</span>
+                        <span>Programı Ödev Aktar</span>
                     </button>
                     <button
                         onClick={() => setIsAddLessonModalOpen(true)}
@@ -347,106 +438,12 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 </div>
             </div>
 
-            {/* Add Student Modal */}
-            {isAddStudentModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold font-poppins">Yeni Öğrenci Ekle</h3>
-                            <button onClick={() => setIsAddStudentModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddStudent} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Ad Soyad</label>
-                                <select
-                                    value={studentFormName}
-                                    onChange={e => setStudentFormName(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary focus:border-transparent"
-                                    required
-                                >
-                                    <option value="">Örn: Ahmet Yılmaz</option>
-                                    {allStudents.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Ders</label>
-                                    <select
-                                        value={studentFormSubject}
-                                        onChange={e => setStudentFormSubject(e.target.value as Subject)}
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                    >
-                                        {Object.values(Subject).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Seviye/Sınıf</label>
-                                    <select
-                                        value={studentFormGrade}
-                                        onChange={e => setStudentFormGrade(parseInt(e.target.value))}
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                    >
-                                        {[5, 6, 7, 8, 9, 10, 11, 12].map(g => (
-                                            <option key={g} value={g}>{g}. Sınıf</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">İletişim (Tel/Email)</label>
-                                <input
-                                    type="text"
-                                    value={studentFormContact}
-                                    onChange={e => setStudentFormContact(e.target.value)}
-                                    placeholder="0555..."
-                                    className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Renk Etiketi</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {COLORS.map(color => (
-                                        <button
-                                            key={color}
-                                            type="button"
-                                            onClick={() => setStudentFormColor(color)}
-                                            className={`w-10 h-10 rounded-full border-2 ${studentFormColor === color ? 'border-gray-800 scale-110' : 'border-gray-200'} transition-transform`}
-                                            style={{ backgroundColor: color }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button type="button" onClick={() => setIsAddStudentModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
-                                    İptal
-                                </button>
-                                <button type="submit" className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
-                                    Kaydet
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
             {/* Add Lesson Modal */}
             {isAddLessonModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
                         <h3 className="text-xl font-bold font-poppins mb-2">Yeni Ders Ekle</h3>
-                        <p className="text-sm text-gray-500 mb-4">Pazartesi günü için ders planla</p>
+                        <p className="text-sm text-gray-500 mb-4">Programa ders ekle</p>
 
                         <form onSubmit={handleAddLesson} className="space-y-4">
                             <div>
@@ -477,28 +474,55 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                 </select>
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Ders</label>
+                                <select
+                                    value={lessonFormSubject}
+                                    onChange={e => setLessonFormSubject(e.target.value as Subject)}
+                                    className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                >
+                                    {Object.values(Subject).map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Saat</label>
-                                    <div className="relative">
-                                        <input
-                                            type="time"
-                                            value={lessonFormTime}
-                                            onChange={e => setLessonFormTime(e.target.value)}
-                                            className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                        />
-                                    </div>
+                                    <input
+                                        type="time"
+                                        value={lessonFormTime}
+                                        onChange={e => setLessonFormTime(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Süre (Dk)</label>
-                                    <input
-                                        type="number"
+                                    <select
                                         value={lessonFormDuration}
                                         onChange={e => setLessonFormDuration(parseInt(e.target.value))}
                                         className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                        min="15"
-                                        step="15"
-                                    />
+                                    >
+                                        {DURATION_OPTIONS.map(duration => (
+                                            <option key={duration} value={duration}>{duration} dk</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Renk</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {COLORS.slice(0, 7).map(color => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => setLessonFormColor(color)}
+                                            className={`w-8 h-8 rounded-full border-2 ${lessonFormColor === color ? 'border-gray-800 scale-110' : 'border-gray-200'} transition-transform`}
+                                            style={{ backgroundColor: color }}
+                                        />
+                                    ))}
                                 </div>
                             </div>
 
@@ -549,8 +573,8 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                 <span>Ders Notları</span>
                             </button>
                             <button
-                                onClick={() => setDetailActiveTab('schedule')}
-                                className={`px-6 py-3 font-medium flex items-center space-x-2 ${detailActiveTab === 'schedule' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
+                                onClick={() => setDetailActiveTab('homework')}
+                                className={`px-6 py-3 font-medium flex items-center space-x-2 ${detailActiveTab === 'homework' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -571,11 +595,6 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                         {/* Tab Content */}
                         {detailActiveTab === 'notes' && (
                             <div className="space-y-4">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                    <span className="text-sm text-gray-500">Tamamlanmadı</span>
-                                </div>
-
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">İşlenen Konu</label>
                                     <input
@@ -597,18 +616,82 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-orange-600 mb-2">Verilen Ödevler</label>
-                                    <textarea
-                                        value={detailHomework}
-                                        onChange={e => setDetailHomework(e.target.value)}
-                                        placeholder="Ödevler..."
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 h-32"
-                                    />
+                                <div className="flex justify-end space-x-3 pt-4">
+                                    <button onClick={() => setIsStudentDetailModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                                        Vazgeç
+                                    </button>
+                                    <button onClick={handleSaveStudentDetail} className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
+                                        Kaydet
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {detailActiveTab === 'homework' && (
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-lg font-semibold">Öğrenci Çalışma Programı</h4>
+                                    <button
+                                        onClick={() => setWeeklyHomework({
+                                            'Pazartesi': '', 'Salı': '', 'Çarşamba': '', 'Perşembe': '',
+                                            'Cuma': '', 'Cumartesi': '', 'Pazar': ''
+                                        })}
+                                        className="text-sm text-orange-600 hover:text-orange-700 flex items-center space-x-1"
+                                    >
+                                        <span>Programı Ödev Aktar</span>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-7 gap-2 mb-4">
+                                    {DAYS_TR.map((day, idx) => (
+                                        <div key={day} className={`text-center p-2 rounded-lg text-sm font-medium ${idx === 0 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}>
+                                            {day.slice(0, 3)}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {DAYS_TR.map(day => (
+                                        <div key={day} className="border border-gray-200 rounded-lg p-3">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="font-semibold text-gray-700">{day}</span>
+                                                {weeklyHomework[day] ? (
+                                                    <span className="text-xs text-gray-500">Görevler</span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">Bu güne plan eklenmemiş.</span>
+                                                )}
+                                            </div>
+                                            <div className="relative">
+                                                <textarea
+                                                    value={weeklyHomework[day]}
+                                                    onChange={e => setWeeklyHomework({ ...weeklyHomework, [day]: e.target.value })}
+                                                    placeholder="Görev yaz..."
+                                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm resize-none"
+                                                    rows={2}
+                                                />
+                                                {weeklyHomework[day] && (
+                                                    <button
+                                                        onClick={() => setWeeklyHomework({ ...weeklyHomework, [day]: '' })}
+                                                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
 
                                 <div className="flex justify-between pt-4">
-                                    <button className="px-6 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 flex items-center space-x-2">
+                                    <button
+                                        onClick={handleWhatsAppShare}
+                                        className="px-6 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 flex items-center space-x-2"
+                                    >
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                         </svg>
@@ -623,12 +706,6 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-
-                        {detailActiveTab === 'schedule' && (
-                            <div className="text-center py-12 text-gray-500">
-                                Haftalık program görünümü yakında eklenecek
                             </div>
                         )}
 

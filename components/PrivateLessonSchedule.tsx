@@ -616,6 +616,50 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                     />
                                 </div>
 
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-sm font-medium text-gray-700">Ödevler</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                // This will be populated from the weekly program tab
+                                                const homeworkSummary = Object.entries(weeklyHomework)
+                                                    .filter(([_, hw]) => hw.trim() !== '')
+                                                    .map(([day, hw]) => `${day}: ${hw}`)
+                                                    .join('\n');
+                                                if (homeworkSummary) {
+                                                    setDetailLessonNotes(detailLessonNotes + '\n\nÖdevler:\n' + homeworkSummary);
+                                                }
+                                            }}
+                                            className="text-xs text-primary hover:text-primary-dark flex items-center space-x-1"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            <span>Haftalık Programdan Aktar</span>
+                                        </button>
+                                    </div>
+                                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 max-h-48 overflow-y-auto">
+                                        {Object.entries(weeklyHomework).filter(([_, hw]) => hw.trim() !== '').length > 0 ? (
+                                            <div className="space-y-2">
+                                                {Object.entries(weeklyHomework)
+                                                    .filter(([_, hw]) => hw.trim() !== '')
+                                                    .map(([day, hw]) => (
+                                                        <div key={day} className="bg-white rounded-lg p-2 border border-gray-200">
+                                                            <div className="text-xs font-semibold text-primary mb-1">{day}</div>
+                                                            <div className="text-sm text-gray-700">{hw}</div>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        ) : (
+                                            <div className="text-center text-gray-400 text-sm py-4">
+                                                Henüz ödev eklenmedi. "Haftalık Program" sekmesinden ödev ekleyebilirsiniz.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
                                 <div className="flex justify-end space-x-3 pt-4">
                                     <button onClick={() => setIsStudentDetailModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
                                         Vazgeç

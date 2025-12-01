@@ -279,6 +279,21 @@ export async function generateTestAnalysis(
 }
 
 /**
+ * Generate generic content (optimized)
+ */
+export async function generateContent(
+    prompt: string
+): Promise<any> {
+    const cacheKey = `gen-content-${prompt.substring(0, 50)}`;
+
+    return withOptimizations(
+        cacheKey,
+        () => geminiService.generateContent(prompt),
+        3600000 // 1 hour
+    );
+}
+
+/**
  * Get rate limit status
  */
 export function getRateLimitStatus(): { count: number; limit: number; resetIn: number } | null {

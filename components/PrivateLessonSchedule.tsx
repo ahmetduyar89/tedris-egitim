@@ -173,12 +173,18 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     currentWeekLessons.push(existingLesson);
                 } else {
                     // Create a virtual lesson based on template
+                    // IMPORTANT: Clear specific content (notes, homework, topic) so they don't carry over to new weeks
                     currentWeekLessons.push({
                         ...template,
                         id: `virtual-${template.id}-${currentWeekDate.getTime()}`,
                         startTime: currentWeekDate.toISOString(),
                         endTime: endDate.toISOString(),
-                        status: 'scheduled'
+                        status: 'scheduled',
+                        // Clear content fields for the new week
+                        lessonNotes: '',
+                        homework: '',
+                        topic: '',
+                        notes: '' // internal notes if any
                     });
                 }
             });
@@ -272,6 +278,12 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                         'Cuma': '', 'Cumartesi': '', 'Pazar': ''
                     });
                 }
+            } else {
+                // Reset if no homework exists
+                setWeeklyHomework({
+                    'Pazartesi': '', 'Salı': '', 'Çarşamba': '', 'Perşembe': '',
+                    'Cuma': '', 'Cumartesi': '', 'Pazar': ''
+                });
             }
 
             setIsStudentDetailModalOpen(true);
@@ -342,8 +354,14 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             // Generate lesson summary
             const summaryPrompt = `${selectedLesson.subject} dersi için "${detailTopic}" konusu işlendi. ${selectedStudent.grade}. sınıf seviyesinde, öğrenciye WhatsApp ile gönderilebilecek kısa ve öz bir ders özeti oluştur. Özet maksimum 3-4 cümle olsun ve konunun ana noktalarını vurgulasın.`;
 
-            const summaryResponse = await optimizedAIService.explainTopic(summaryPrompt, selectedStudent.grade || 9);
-            const summary = summaryResponse.explanation || summaryResponse.content || 'Özet oluşturulamadı.';
+            const summaryResponseStr = await optimizedAIService.generateContent(summaryPrompt);
+            let summary = '';
+            try {
+                const summaryResponse = JSON.parse(summaryResponseStr);
+                summary = summaryResponse.text || summaryResponse.content || 'Özet oluşturulamadı.';
+            } catch (e) {
+                summary = summaryResponseStr;
+            }
             setAiSummary(summary);
 
             // Generate homework suggestions

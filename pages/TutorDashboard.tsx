@@ -134,6 +134,8 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                 setError('Bu e-posta adresi zaten kullanılıyor.');
             } else if (error.message?.includes('Password')) {
                 setError('Şifre en az 6 karakter olmalıdır.');
+            } else if (error.code === '42501' || error.message?.includes('row-level security')) {
+                setError('Yetki hatası: Veritabanı güvenlik politikaları (RLS) öğrenci oluşturmanızı engelliyor. Lütfen "fix_student_creation_rls.sql" dosyasını çalıştırın.');
             } else {
                 setError(error.message || 'Öğrenci oluşturulurken bir hata oluştu.');
             }

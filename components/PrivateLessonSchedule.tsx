@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/dbAdapter';
 import { User, Student, PrivateLesson, Subject } from '../types';
+import * as optimizedAIService from '../services/optimizedAIService';
 
 interface PrivateLessonScheduleProps {
     user: User;
@@ -46,6 +47,11 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         'Cumartesi': '',
         'Pazar': ''
     });
+
+    // AI Assistant states
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiSummary, setAiSummary] = useState('');
+    const [aiHomeworkSuggestions, setAiHomeworkSuggestions] = useState('');
 
     useEffect(() => {
         const fetchAllStudents = async () => {
@@ -95,16 +101,15 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
     const fetchLessons = async () => {
         try {
+            // Fetch ALL lessons for this tutor (not just current week)
             const { data, error } = await supabase
                 .from('private_lessons')
                 .select('*')
-                .eq('tutor_id', user.id)
-                .gte('start_time', weekStart.toISOString())
-                .lte('end_time', weekEnd.toISOString());
+                .eq('tutor_id', user.id);
 
             if (error) throw error;
 
-            const loadedLessons = (data || []).map(row => ({
+            const allLessons = (data || []).map(row => ({
                 id: row.id,
                 tutorId: row.tutor_id,
                 studentId: row.student_id,
@@ -122,7 +127,63 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 lessonNotes: row.lesson_notes,
                 homework: row.homework
             }));
-            setLessons(loadedLessons);
+
+            // Create a map of lessons by day-of-week and time
+            const lessonTemplates = new Map<string, PrivateLesson>();
+
+            allLessons.forEach(lesson => {
+                const lessonDate = new Date(lesson.startTime);
+                const dayOfWeek = lessonDate.getDay(); // 0-6 (Sunday-Saturday)
+                const hours = lessonDate.getHours();
+                const minutes = lessonDate.getMinutes();
+                const key = `${dayOfWeek}-${hours}-${minutes}-${lesson.studentId}`;
+
+                // Keep the most recent lesson for this slot
+                if (!lessonTemplates.has(key) || new Date(lesson.startTime) > new Date(lessonTemplates.get(key)!.startTime)) {
+                    lessonTemplates.set(key, lesson);
+                }
+            });
+
+            // Project lessons onto current week
+            const currentWeekLessons: PrivateLesson[] = [];
+
+            lessonTemplates.forEach(template => {
+                const templateDate = new Date(template.startTime);
+                const dayOfWeek = templateDate.getDay();
+                const hours = templateDate.getHours();
+                const minutes = templateDate.getMinutes();
+
+                // Calculate the date for this day in the current week
+                const currentWeekDate = new Date(weekStart);
+                const daysToAdd = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust for Monday start
+                currentWeekDate.setDate(currentWeekDate.getDate() + daysToAdd);
+                currentWeekDate.setHours(hours, minutes, 0, 0);
+
+                const endDate = new Date(currentWeekDate);
+                endDate.setMinutes(endDate.getMinutes() + (template.duration || 60));
+
+                // Check if there's already a lesson in the database for this exact slot
+                const existingLesson = allLessons.find(l => {
+                    const lDate = new Date(l.startTime);
+                    return lDate.getTime() === currentWeekDate.getTime() && l.studentId === template.studentId;
+                });
+
+                if (existingLesson) {
+                    // Use the existing lesson from database
+                    currentWeekLessons.push(existingLesson);
+                } else {
+                    // Create a virtual lesson based on template
+                    currentWeekLessons.push({
+                        ...template,
+                        id: `virtual-${template.id}-${currentWeekDate.getTime()}`,
+                        startTime: currentWeekDate.toISOString(),
+                        endTime: endDate.toISOString(),
+                        status: 'scheduled'
+                    });
+                }
+            });
+
+            setLessons(currentWeekLessons);
         } catch (error) {
             console.error('Error fetching lessons:', error);
         }
@@ -142,67 +203,6 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + 7);
         setCurrentDate(newDate);
-    };
-
-    const copyPreviousWeekSchedule = async () => {
-        try {
-            // Get previous week's lessons
-            const prevWeekStart = new Date(weekStart);
-            prevWeekStart.setDate(prevWeekStart.getDate() - 7);
-            const prevWeekEnd = new Date(weekEnd);
-            prevWeekEnd.setDate(prevWeekEnd.getDate() - 7);
-
-            const { data, error } = await supabase
-                .from('private_lessons')
-                .select('*')
-                .eq('tutor_id', user.id)
-                .gte('start_time', prevWeekStart.toISOString())
-                .lte('end_time', prevWeekEnd.toISOString());
-
-            if (error) throw error;
-
-            if (data && data.length > 0) {
-                // Copy lessons to current week
-                const newLessons = data.map(lesson => {
-                    const oldStart = new Date(lesson.start_time);
-                    const oldEnd = new Date(lesson.end_time);
-
-                    const newStart = new Date(oldStart);
-                    newStart.setDate(newStart.getDate() + 7);
-
-                    const newEnd = new Date(oldEnd);
-                    newEnd.setDate(newEnd.getDate() + 7);
-
-                    return {
-                        tutor_id: lesson.tutor_id,
-                        student_id: lesson.student_id,
-                        student_name: lesson.student_name,
-                        start_time: newStart.toISOString(),
-                        end_time: newEnd.toISOString(),
-                        subject: lesson.subject,
-                        duration: lesson.duration,
-                        status: 'scheduled',
-                        color: lesson.color,
-                        contact: lesson.contact,
-                        grade: lesson.grade
-                    };
-                });
-
-                const { error: insertError } = await supabase
-                    .from('private_lessons')
-                    .insert(newLessons);
-
-                if (insertError) throw insertError;
-
-                fetchLessons();
-                alert('Önceki hafta programı kopyalandı!');
-            } else {
-                alert('Önceki haftada ders bulunamadı.');
-            }
-        } catch (error) {
-            console.error('Error copying schedule:', error);
-            alert('Program kopyalanırken bir hata oluştu.');
-        }
     };
 
     const handleAddLesson = async (e: React.FormEvent) => {
@@ -256,6 +256,11 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             setDetailLessonNotes(lesson.lessonNotes || '');
             setDetailTopic(lesson.topic || '');
 
+            // Reset AI states
+            setAiSummary('');
+            setAiHomeworkSuggestions('');
+            setAiLoading(false);
+
             // Parse homework if exists
             if (lesson.homework) {
                 try {
@@ -277,23 +282,119 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         if (!selectedLesson) return;
 
         try {
-            const { error } = await supabase
-                .from('private_lessons')
-                .update({
-                    lesson_notes: detailLessonNotes,
-                    homework: JSON.stringify(weeklyHomework),
-                    topic: detailTopic
-                })
-                .eq('id', selectedLesson.id);
+            // Check if this is a virtual lesson
+            if (selectedLesson.id.startsWith('virtual-')) {
+                // Create a new lesson record for this virtual lesson
+                const { error } = await supabase
+                    .from('private_lessons')
+                    .insert([{
+                        tutor_id: selectedLesson.tutorId,
+                        student_id: selectedLesson.studentId,
+                        student_name: selectedLesson.studentName,
+                        start_time: selectedLesson.startTime,
+                        end_time: selectedLesson.endTime,
+                        subject: selectedLesson.subject,
+                        duration: selectedLesson.duration,
+                        status: selectedLesson.status,
+                        color: selectedLesson.color,
+                        contact: selectedLesson.contact,
+                        grade: selectedLesson.grade,
+                        lesson_notes: detailLessonNotes,
+                        homework: JSON.stringify(weeklyHomework),
+                        topic: detailTopic
+                    }]);
 
-            if (error) throw error;
+                if (error) throw error;
+            } else {
+                // Update existing lesson
+                const { error } = await supabase
+                    .from('private_lessons')
+                    .update({
+                        lesson_notes: detailLessonNotes,
+                        homework: JSON.stringify(weeklyHomework),
+                        topic: detailTopic
+                    })
+                    .eq('id', selectedLesson.id);
+
+                if (error) throw error;
+            }
 
             fetchLessons();
+            setIsStudentDetailModalOpen(false);
             alert('Kaydedildi!');
         } catch (error) {
             console.error('Error saving:', error);
             alert('Kaydedilirken bir hata oluştu.');
         }
+    };
+
+    const handleGenerateAISuggestions = async () => {
+        if (!selectedLesson || !selectedStudent) return;
+
+        if (!detailTopic || detailTopic.trim() === '') {
+            alert('Lütfen önce "Ders Notları" sekmesinden işlenen konuyu giriniz.');
+            setDetailActiveTab('notes');
+            return;
+        }
+
+        setAiLoading(true);
+        try {
+            // Generate lesson summary
+            const summaryPrompt = `${selectedLesson.subject} dersi için "${detailTopic}" konusu işlendi. ${selectedStudent.grade}. sınıf seviyesinde, öğrenciye WhatsApp ile gönderilebilecek kısa ve öz bir ders özeti oluştur. Özet maksimum 3-4 cümle olsun ve konunun ana noktalarını vurgulasın.`;
+
+            const summaryResponse = await optimizedAIService.explainTopic(summaryPrompt, selectedStudent.grade || 9);
+            const summary = summaryResponse.explanation || summaryResponse.content || 'Özet oluşturulamadı.';
+            setAiSummary(summary);
+
+            // Generate homework suggestions
+            const homeworkResponse = await optimizedAIService.suggestHomework(
+                selectedStudent.grade || 9,
+                selectedLesson.subject,
+                [detailTopic]
+            );
+
+            const homework = homeworkResponse.homework || homeworkResponse.suggestions || homeworkResponse.content || 'Ödev önerisi oluşturulamadı.';
+            setAiHomeworkSuggestions(homework);
+
+        } catch (error) {
+            console.error('Error generating AI suggestions:', error);
+            alert('AI önerileri oluşturulurken bir hata oluştu.');
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    const handleApplyAISuggestions = () => {
+        // Apply AI summary to lesson notes
+        if (aiSummary) {
+            const updatedNotes = detailLessonNotes ?
+                `${detailLessonNotes}\n\n📝 AI Özeti:\n${aiSummary}` :
+                `📝 AI Özeti:\n${aiSummary}`;
+            setDetailLessonNotes(updatedNotes);
+        }
+
+        // Apply AI homework to weekly homework (add to first empty day or Monday)
+        if (aiHomeworkSuggestions) {
+            const firstEmptyDay = DAYS_TR.find(day => !weeklyHomework[day] || weeklyHomework[day].trim() === '');
+            if (firstEmptyDay) {
+                setWeeklyHomework({
+                    ...weeklyHomework,
+                    [firstEmptyDay]: aiHomeworkSuggestions
+                });
+            } else {
+                // If all days are filled, add to Monday
+                setWeeklyHomework({
+                    ...weeklyHomework,
+                    'Pazartesi': weeklyHomework['Pazartesi'] ?
+                        `${weeklyHomework['Pazartesi']}\n\n${aiHomeworkSuggestions}` :
+                        aiHomeworkSuggestions
+                });
+            }
+        }
+
+        // Switch to notes tab to show the changes
+        setDetailActiveTab('notes');
+        alert('AI önerileri ders notlarına ve ödev programına eklendi!');
     };
 
     const handleWhatsAppShare = () => {
@@ -304,10 +405,16 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             .map(([day, hw]) => `*${day}:*\n${hw}`)
             .join('\n\n');
 
-        const message = `Merhaba ${selectedStudent.name},\n\n` +
+        let message = `Merhaba ${selectedStudent.name},\n\n` +
             `📚 *${new Date(selectedLesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} Tarihli Ders Özeti*\n\n` +
-            `📖 *İşlenen Konu:*\n${detailTopic || 'Belirtilmedi'}\n\n` +
-            `📝 *Ders Notları:*\n${detailLessonNotes || 'Not eklenmedi'}\n\n` +
+            `📖 *İşlenen Konu:*\n${detailTopic || 'Belirtilmedi'}\n\n`;
+
+        // Add AI summary if available
+        if (aiSummary) {
+            message += `🤖 *AI Özeti:*\n${aiSummary}\n\n`;
+        }
+
+        message += `📝 *Ders Notları:*\n${detailLessonNotes || 'Not eklenmedi'}\n\n` +
             `✏️ *Haftalık Ödevler:*\n\n${homeworkList || 'Ödev verilmedi'}\n\n` +
             `İyi çalışmalar! 📚✨`;
 
@@ -337,20 +444,63 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     };
 
+    // Calculate dynamic time range based on actual lessons
+    const timeRange = useMemo(() => {
+        if (lessons.length === 0) {
+            return { start: 8, end: 21 }; // Default range
+        }
+
+        let earliestHour = 23;
+        let latestHour = 0;
+
+        lessons.forEach(lesson => {
+            const startHour = new Date(lesson.startTime).getHours();
+            const endHour = new Date(lesson.endTime).getHours();
+
+            if (startHour < earliestHour) earliestHour = startHour;
+            if (endHour > latestHour) latestHour = endHour;
+        });
+
+        // Add 1 hour buffer before and after
+        return {
+            start: Math.max(8, earliestHour - 1),
+            end: Math.min(22, latestHour + 1)
+        };
+    }, [lessons]);
+
+    const handleDeleteLesson = async (lessonId: string) => {
+        // Check if this is a virtual lesson
+        if (lessonId.startsWith('virtual-')) {
+            if (!confirm('Bu sanal dersi kaldırmak istediğinizden emin misiniz? (Şablon ders korunacak, sadece bu hafta görünmeyecek)')) return;
+
+            // For virtual lessons, we just remove from display
+            setLessons(lessons.filter(l => l.id !== lessonId));
+            return;
+        }
+
+        if (!confirm('Bu dersi silmek istediğinizden emin misiniz? Bu ders şablondan da kaldırılacak.')) return;
+
+        try {
+            const { error } = await supabase
+                .from('private_lessons')
+                .delete()
+                .eq('id', lessonId);
+
+            if (error) throw error;
+
+            fetchLessons();
+            alert('Ders silindi!');
+        } catch (error) {
+            console.error('Error deleting lesson:', error);
+            alert('Ders silinirken bir hata oluştu.');
+        }
+    };
+
     return (
         <div className="bg-white rounded-2xl shadow-lg p-6 h-full flex flex-col">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold font-poppins text-gray-800">Özel Ders Programı</h2>
                 <div className="flex items-center space-x-4">
-                    <button
-                        onClick={copyPreviousWeekSchedule}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center space-x-2"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        <span>Programı Ödev Aktar</span>
-                    </button>
                     <button
                         onClick={() => setIsAddLessonModalOpen(true)}
                         className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium flex items-center space-x-2"
@@ -391,8 +541,8 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                             </div>
                         ))}
 
-                        {/* Time slots - 08:00 to 21:00 */}
-                        {Array.from({ length: 14 }, (_, i) => i + 8).map(hour => (
+                        {/* Time slots - Dynamic based on lessons */}
+                        {Array.from({ length: timeRange.end - timeRange.start + 1 }, (_, i) => i + timeRange.start).map(hour => (
                             <React.Fragment key={hour}>
                                 <div className="flex items-start justify-center pt-2 text-sm text-gray-500 font-medium">
                                     {hour.toString().padStart(2, '0')}:00
@@ -405,27 +555,55 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                     });
 
                                     return (
-                                        <div key={dayIdx} className="border border-gray-100 rounded-lg min-h-[60px] p-1 relative">
+                                        <div key={dayIdx} className="border border-gray-100 rounded-lg min-h-[80px] relative">
                                             {lessonsInHour.map(lesson => {
                                                 const startTime = new Date(lesson.startTime);
+                                                const endTime = new Date(lesson.endTime);
                                                 const duration = lesson.duration || 60;
-                                                const heightMultiplier = duration / 60;
+
+                                                // Calculate exact position and height
+                                                const startMinutes = startTime.getMinutes();
+                                                const topOffset = (startMinutes / 60) * 80; // pixels from top of hour slot
+                                                const heightInPixels = (duration / 60) * 80; // 80px per hour
 
                                                 return (
                                                     <div
                                                         key={lesson.id}
-                                                        onClick={() => handleLessonClick(lesson)}
-                                                        className="rounded-lg p-2 mb-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                                        className="absolute left-1 right-1 rounded-lg p-2 cursor-pointer hover:opacity-90 transition-opacity group z-10"
                                                         style={{
                                                             backgroundColor: lesson.color || '#FFB6C1',
-                                                            minHeight: `${heightMultiplier * 50}px`
+                                                            top: `${topOffset}px`,
+                                                            height: `${heightInPixels}px`,
+                                                            minHeight: '50px'
                                                         }}
                                                     >
-                                                        <div className="font-bold text-sm text-gray-800">
-                                                            {startTime.getHours().toString().padStart(2, '0')}:{startTime.getMinutes().toString().padStart(2, '0')}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteLesson(lesson.id);
+                                                            }}
+                                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                                            title="Dersi Sil"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                        <div
+                                                            onClick={() => handleLessonClick(lesson)}
+                                                            className="w-full h-full"
+                                                        >
+                                                            <div className="font-bold text-sm text-gray-800">
+                                                                {startTime.getHours().toString().padStart(2, '0')}:{startTime.getMinutes().toString().padStart(2, '0')}
+                                                            </div>
+                                                            <div className="font-semibold text-gray-900">{lesson.studentName}</div>
+                                                            <div className="text-xs text-gray-700">{lesson.subject}</div>
+                                                            {duration > 60 && (
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    {duration} dk
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <div className="font-semibold text-gray-900">{lesson.studentName}</div>
-                                                        <div className="text-xs text-gray-700">{lesson.subject}</div>
                                                     </div>
                                                 );
                                             })}
@@ -682,47 +860,40 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                         })}
                                         className="text-sm text-orange-600 hover:text-orange-700 flex items-center space-x-1"
                                     >
-                                        <span>Programı Ödev Aktar</span>
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
+                                        <span>Tümünü Temizle</span>
                                     </button>
-                                </div>
-
-                                <div className="grid grid-cols-7 gap-2 mb-4">
-                                    {DAYS_TR.map((day, idx) => (
-                                        <div key={day} className={`text-center p-2 rounded-lg text-sm font-medium ${idx === 0 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'}`}>
-                                            {day.slice(0, 3)}
-                                        </div>
-                                    ))}
                                 </div>
 
                                 <div className="space-y-3">
                                     {DAYS_TR.map(day => (
-                                        <div key={day} className="border border-gray-200 rounded-lg p-3">
+                                        <div key={day} className="border border-gray-200 rounded-lg p-3 hover:border-primary/30 transition-colors">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="font-semibold text-gray-700">{day}</span>
                                                 {weeklyHomework[day] ? (
-                                                    <span className="text-xs text-gray-500">Görevler</span>
+                                                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ Görev var</span>
                                                 ) : (
-                                                    <span className="text-xs text-gray-400">Bu güne plan eklenmemiş.</span>
+                                                    <span className="text-xs text-gray-400">Görev yok</span>
                                                 )}
                                             </div>
                                             <div className="relative">
                                                 <textarea
                                                     value={weeklyHomework[day]}
                                                     onChange={e => setWeeklyHomework({ ...weeklyHomework, [day]: e.target.value })}
-                                                    placeholder="Görev yaz..."
-                                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm resize-none"
+                                                    placeholder="Bu gün için görev yazın..."
+                                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
                                                     rows={2}
                                                 />
                                                 {weeklyHomework[day] && (
                                                     <button
                                                         onClick={() => setWeeklyHomework({ ...weeklyHomework, [day]: '' })}
-                                                        className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                                                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+                                                        title="Temizle"
                                                     >
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                         </svg>
                                                     </button>
                                                 )}
@@ -754,8 +925,116 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                         )}
 
                         {detailActiveTab === 'ai' && (
-                            <div className="text-center py-12 text-gray-500">
-                                AI Asistan özelliği yakında eklenecek
+                            <div className="space-y-6">
+                                {/* AI Assistant Header */}
+                                <div className="text-center">
+                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-4">
+                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-800 mb-2">Yapay Zeka Asistanı</h3>
+                                    <p className="text-gray-600">Mevcut konu ve notlarınıza göre ödev önerileri alın.</p>
+                                </div>
+
+                                {/* Generate Button */}
+                                {!aiSummary && !aiHomeworkSuggestions && (
+                                    <div className="text-center py-8">
+                                        <button
+                                            onClick={handleGenerateAISuggestions}
+                                            disabled={aiLoading || !detailTopic}
+                                            className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2 mx-auto shadow-lg"
+                                        >
+                                            {aiLoading ? (
+                                                <>
+                                                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <span>Öneriler Oluşturuluyor...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                    </svg>
+                                                    <span>Öneri Oluştur</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        {!detailTopic && (
+                                            <p className="text-sm text-orange-600 mt-4">
+                                                ⚠️ Önce "Ders Notları" sekmesinden işlenen konuyu giriniz.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* AI Results */}
+                                {(aiSummary || aiHomeworkSuggestions) && (
+                                    <div className="space-y-4">
+                                        {/* Summary Section */}
+                                        {aiSummary && (
+                                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                                                <div className="flex items-center space-x-2 mb-3">
+                                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <h4 className="font-semibold text-blue-900">Ders Özeti</h4>
+                                                </div>
+                                                <p className="text-gray-700 whitespace-pre-wrap">{aiSummary}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Homework Suggestions */}
+                                        {aiHomeworkSuggestions && (
+                                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+                                                <div className="flex items-center space-x-2 mb-3">
+                                                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                    </svg>
+                                                    <h4 className="font-semibold text-green-900">Ödev Önerileri</h4>
+                                                </div>
+                                                <p className="text-gray-700 whitespace-pre-wrap">{aiHomeworkSuggestions}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Action Buttons */}
+                                        <div className="flex justify-between items-center pt-4 border-t">
+                                            <button
+                                                onClick={() => {
+                                                    setAiSummary('');
+                                                    setAiHomeworkSuggestions('');
+                                                }}
+                                                className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center space-x-2"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                <span>Yeniden Oluştur</span>
+                                            </button>
+                                            <button
+                                                onClick={handleApplyAISuggestions}
+                                                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center space-x-2 shadow-lg"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span>Ders Notlarına Aktar</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Bottom Actions */}
+                                <div className="flex justify-end space-x-3 pt-4 border-t">
+                                    <button onClick={() => setIsStudentDetailModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                                        Vazgeç
+                                    </button>
+                                    <button onClick={handleSaveStudentDetail} className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
+                                        Kaydet
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

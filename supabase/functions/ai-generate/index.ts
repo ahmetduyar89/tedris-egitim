@@ -3,11 +3,6 @@
 // Client-side'dan sadece prompt gönderilir, API key asla expose olmaz
 
 // @ts-nocheck
-// Supabase Edge Function - AI Generate
-// Bu function Gemini API key'ini güvenli bir şekilde backend'de tutar
-// Client-side'dan sadece prompt gönderilir, API key asla expose olmaz
-
-// @ts-nocheck
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -64,6 +59,10 @@ Deno.serve(async (req) => {
         }
 
         const { action, payload } = body as AIRequest;
+
+        if (!payload) {
+            throw new Error('Missing payload');
+        }
 
         // Get Gemini API key from environment (server-side only)
         const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
@@ -125,7 +124,7 @@ Deno.serve(async (req) => {
         }
 
         // Make request to Gemini API
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`
 
         const requestBody: any = {
             contents: [{

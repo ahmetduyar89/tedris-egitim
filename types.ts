@@ -570,6 +570,7 @@ export interface PrivateLesson {
   subject: string;
   topic?: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  sourceLessonId?: string; // For virtual lessons to track the template source
   notes?: string;
   duration?: number; // in minutes
   color?: string;

@@ -177,6 +177,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     currentWeekLessons.push({
                         ...template,
                         id: `virtual-${template.id}-${currentWeekDate.getTime()}`,
+                        sourceLessonId: template.id, // Keep track of the source for "Delete All" functionality
                         startTime: currentWeekDate.toISOString(),
                         endTime: endDate.toISOString(),
                         status: 'scheduled',
@@ -486,28 +487,61 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         };
     }, [lessons]);
 
-    const handleDeleteLesson = async (lessonId: string) => {
-        // Check if this is a virtual lesson
-        if (lessonId.startsWith('virtual-')) {
-            if (!confirm('Bu sanal dersi kaldırmak istediğinizden emin misiniz? (Şablon ders korunacak, sadece bu hafta görünmeyecek)')) return;
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [lessonToDelete, setLessonToDelete] = useState<PrivateLesson | null>(null);
 
-            // For virtual lessons, we just remove from display
-            setLessons(lessons.filter(l => l.id !== lessonId));
-            return;
+    const handleDeleteLesson = (lessonId: string) => {
+        const lesson = lessons.find(l => l.id === lessonId);
+        if (lesson) {
+            setLessonToDelete(lesson);
+            setIsDeleteModalOpen(true);
         }
+    };
 
-        if (!confirm('Bu dersi silmek istediğinizden emin misiniz? Bu ders şablondan da kaldırılacak.')) return;
+    const confirmDeleteLesson = async (mode: 'single' | 'all') => {
+        if (!lessonToDelete) return;
 
         try {
-            const { error } = await supabase
-                .from('private_lessons')
-                .delete()
-                .eq('id', lessonId);
+            if (mode === 'all') {
+                // Delete the source/template lesson to stop recurrence
+                // If it's a virtual lesson, use sourceLessonId. If real, use id.
+                const targetId = lessonToDelete.sourceLessonId || lessonToDelete.id;
 
-            if (error) throw error;
+                const { error } = await supabase
+                    .from('private_lessons')
+                    .delete()
+                    .eq('id', targetId);
 
-            fetchLessons();
-            alert('Ders silindi!');
+                if (error) throw error;
+
+                // Also remove from local state immediately
+                setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id && l.sourceLessonId !== targetId && l.id !== targetId));
+                alert('Ders programı tamamen silindi.');
+            } else {
+                // Delete only this specific lesson instance
+                if (lessonToDelete.id.startsWith('virtual-')) {
+                    // It's a virtual lesson, just remove from view for now
+                    // To make it permanent without DB support for "skips", we just hide it
+                    setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id));
+                } else {
+                    // It's a real lesson, delete from DB
+                    const { error } = await supabase
+                        .from('private_lessons')
+                        .delete()
+                        .eq('id', lessonToDelete.id);
+
+                    if (error) throw error;
+
+                    setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id));
+                }
+                alert('Ders bu hafta için silindi.');
+            }
+
+            setIsDeleteModalOpen(false);
+            setLessonToDelete(null);
+            if (selectedLesson?.id === lessonToDelete.id) {
+                setIsStudentDetailModalOpen(false);
+            }
         } catch (error) {
             console.error('Error deleting lesson:', error);
             alert('Ders silinirken bir hata oluştu.');
@@ -1055,6 +1089,51 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                 </div>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+            {isDeleteModalOpen && lessonToDelete && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
+                        <h2 className="text-2xl font-bold font-poppins mb-4 text-red-600">Dersi Sil</h2>
+                        <p className="text-gray-700 mb-6">
+                            Bu dersi nasıl silmek istersiniz?
+                        </p>
+                        <div className="flex flex-col space-y-3">
+                            <button
+                                onClick={() => confirmDeleteLesson('single')}
+                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:text-primary transition-colors flex items-center justify-between group"
+                            >
+                                <div className="text-left">
+                                    <span className="block font-semibold text-gray-900 group-hover:text-primary">Sadece Bu Dersi Sil</span>
+                                    <span className="text-sm text-gray-500">Sadece bu haftaki ders programdan kaldırılır.</span>
+                                </div>
+                                <svg className="w-5 h-5 text-gray-400 group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+
+                            <button
+                                onClick={() => confirmDeleteLesson('all')}
+                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-red-500 hover:text-red-600 transition-colors flex items-center justify-between group"
+                            >
+                                <div className="text-left">
+                                    <span className="block font-semibold text-gray-900 group-hover:text-red-600">Tüm Programdan Sil</span>
+                                    <span className="text-sm text-gray-500">Bu ders ve gelecekteki tüm tekrarları silinir.</span>
+                                </div>
+                                <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            >
+                                İptal
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

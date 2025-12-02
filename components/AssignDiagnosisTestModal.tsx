@@ -160,13 +160,13 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                                     key={student.id}
                                     onClick={() => toggleStudent(student.id)}
                                     className={`p-3 border rounded-lg cursor-pointer transition-colors flex items-center space-x-3 ${selectedStudents.has(student.id)
-                                            ? 'border-primary bg-blue-50'
-                                            : 'border-gray-200 hover:bg-gray-50'
+                                        ? 'border-primary bg-blue-50'
+                                        : 'border-gray-200 hover:bg-gray-50'
                                         }`}
                                 >
                                     <div className={`w-5 h-5 rounded border flex items-center justify-center ${selectedStudents.has(student.id)
-                                            ? 'bg-primary border-primary text-white'
-                                            : 'border-gray-300 bg-white'
+                                        ? 'bg-primary border-primary text-white'
+                                        : 'border-gray-300 bg-white'
                                         }`}>
                                         {selectedStudents.has(student.id) && (
                                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -176,7 +176,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                                     </div>
                                     <div>
                                         <div className="font-medium text-gray-800">{student.name}</div>
-                                        <div className="text-xs text-gray-500">{student.grade}. Sınıf</div>
+                                        <div className="text-xs text-gray-500">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</div>
                                     </div>
                                 </div>
                             ))}

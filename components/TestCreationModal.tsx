@@ -38,7 +38,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
             unit: initialUnit,
             count: 5
         }]);
-        setTitle(`${student.grade}. Sınıf Karma Deneme`);
+        setTitle(`${student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`} Karma Deneme`);
     }, [student.grade]);
 
     const handleTopicChange = (id: number, field: 'subject' | 'unit' | 'count', value: string | number) => {

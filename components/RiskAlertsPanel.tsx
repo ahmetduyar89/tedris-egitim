@@ -97,7 +97,7 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
               <div className="flex-1">
                 <h3 className="font-bold text-lg text-text-primary">{alert.student.name}</h3>
                 <p className="text-sm text-text-secondary">
-                  {alert.student.grade}. Sınıf • Ortalama: {Math.round(alert.averageScore * 100)}%
+                  {alert.student.grade === 4 ? 'İlkokul' : `${alert.student.grade}. Sınıf`} • Ortalama: {Math.round(alert.averageScore * 100)}%
                 </p>
               </div>
               <div className="bg-secondary text-white px-3 py-1 rounded-full text-sm font-semibold">

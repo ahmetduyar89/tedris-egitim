@@ -164,8 +164,8 @@ const CreateFlashcardModal: React.FC<CreateFlashcardModalProps> = ({ teacherId, 
             <button
               onClick={() => setManualMode(false)}
               className={`flex-1 py-3 rounded-xl font-semibold transition-all ${!manualMode
-                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
             >
               AI ile Oluştur
@@ -173,8 +173,8 @@ const CreateFlashcardModal: React.FC<CreateFlashcardModalProps> = ({ teacherId, 
             <button
               onClick={() => setManualMode(true)}
               className={`flex-1 py-3 rounded-xl font-semibold transition-all ${manualMode
-                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
             >
               Manuel Oluştur
@@ -202,8 +202,8 @@ const CreateFlashcardModal: React.FC<CreateFlashcardModalProps> = ({ teacherId, 
                   onChange={(e) => setGrade(parseInt(e.target.value))}
                   className="w-full border border-gray-300 rounded-lg p-2"
                 >
-                  {[5, 6, 7, 8].map((g) => (
-                    <option key={g} value={g}>{g}. Sınıf</option>
+                  {[4, 5, 6, 7, 8, 9, 10].map((g) => (
+                    <option key={g} value={g}>{g === 4 ? 'İlkokul' : `${g}. Sınıf`}</option>
                   ))}
                 </select>
               </div>

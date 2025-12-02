@@ -155,7 +155,8 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
                         <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                            {[5, 6, 7, 8].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                            <option value={4}>İlkokul</option>
+                            {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
                     </div>
                     <div>
@@ -229,7 +230,8 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
                         <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
-                            {[5, 6, 7, 8].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                            <option value={4}>İlkokul</option>
+                            {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
                     </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -291,7 +293,7 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
                     </div>
                     <div>
                         <h3 className="text-lg font-bold font-poppins text-text-primary">{student.name}</h3>
-                        <p className="text-text-secondary">{student.grade}. Sınıf</p>
+                        <p className="text-text-secondary">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</p>
                     </div>
                 </div>
                 <div className="flex space-x-2">

@@ -153,7 +153,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-bold text-gray-800 mb-2">{questionBank.title}</h3>
             <div className="text-sm text-gray-600 space-y-1">
-              <p>{questionBank.subject} • {questionBank.grade}. Sınıf • {questionBank.unit}</p>
+              <p>{questionBank.subject} • {questionBank.grade === 4 ? 'İlkokul' : `${questionBank.grade}. Sınıf`} • {questionBank.unit}</p>
               <p className="font-semibold text-primary">
                 {questionBank.totalQuestions} Soru • {totalPoints} Puan
               </p>
@@ -170,7 +170,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
               <option value="">Öğrenci seçiniz...</option>
               {students.map(student => (
                 <option key={student.id} value={student.id}>
-                  {student.name} ({student.grade}. Sınıf)
+                  {student.name} ({student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`})
                 </option>
               ))}
             </select>

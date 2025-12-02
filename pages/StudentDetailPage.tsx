@@ -1581,7 +1581,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                                 <div>
                                     <h2 className="text-2xl md:text-3xl font-bold font-poppins text-text-primary">{student.name}</h2>
-                                    <p className="text-text-secondary">{student.grade}. Sınıf</p>
+                                    <p className="text-text-secondary">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                     <button onClick={handleExportToPDF} disabled={!weeklyProgram} className="flex-1 sm:flex-none bg-gray-600 text-white px-3 md:px-4 py-2 rounded-xl hover:bg-gray-700 flex items-center justify-center space-x-2 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm md:text-base">

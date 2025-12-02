@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { User, Student, Test, AIAnalysisReport, WeeklyProgram, ReviewPackage, ReviewPackageItem, Task, TaskStatus, ContentLibraryItem, ContentType, Assignment, Submission, AssignmentStatus, AIHomeworkAnalysis, LearningLoopStatus, ProgressReport, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment, QuestionBank } from '../types';
+import { User, Student, Test, AIAnalysisReport, WeeklyProgram, ReviewPackage, ReviewPackageItem, Task, TaskStatus, ContentLibraryItem, ContentType, Assignment, Submission, AssignmentStatus, AIHomeworkAnalysis, LearningLoopStatus, ProgressReport, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment, QuestionBank, PrivateLesson } from '../types';
 import TestCreationModal from '../components/TestCreationModal';
 import AIReportPage from './AIReportPage';
 import ReviewPackageEditorModal from '../components/ReviewPackageEditorModal';
@@ -68,7 +68,10 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
     const [isCreatingPDFTest, setIsCreatingPDFTest] = useState(false);
     const [pdfTests, setPdfTests] = useState<PDFTest[]>([]);
     const [pdfTestSubmissions, setPdfTestSubmissions] = useState<PDFTestSubmission[]>([]);
+
     const [viewingPDFTestResult, setViewingPDFTestResult] = useState<{ test: PDFTest; submission: PDFTestSubmission } | null>(null);
+    const [completedLessons, setCompletedLessons] = useState<PrivateLesson[]>([]);
+    const [viewingLesson, setViewingLesson] = useState<PrivateLesson | null>(null);
 
 
     const loadData = useCallback(async () => {
@@ -236,6 +239,39 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
             const studentPDFSubmissions = await getSubmissionsForStudent(student.id);
             setPdfTestSubmissions(studentPDFSubmissions);
+
+            // Private Lessons
+            const { data: lessonsData, error: lessonsError } = await supabase
+                .from('private_lessons')
+                .select('*')
+                .eq('student_id', student.id)
+                .lt('start_time', new Date().toISOString()) // Only past lessons
+                .order('start_time', { ascending: false });
+
+            if (lessonsError) {
+                console.error('Error fetching private lessons:', lessonsError);
+            } else {
+                const mappedLessons = (lessonsData || []).map(row => ({
+                    id: row.id,
+                    tutorId: row.tutor_id,
+                    studentId: row.student_id,
+                    studentName: row.student_name,
+                    startTime: row.start_time,
+                    endTime: row.end_time,
+                    subject: row.subject,
+                    topic: row.topic,
+                    status: row.status,
+                    notes: row.notes,
+                    duration: row.duration,
+                    color: row.color,
+                    contact: row.contact,
+                    grade: row.grade,
+                    lessonNotes: row.lesson_notes,
+                    homework: row.homework
+                }));
+                // Filter for lessons that have topic or homework
+                setCompletedLessons(mappedLessons.filter(l => l.topic || l.homework));
+            }
 
         } catch (error) {
             console.error("Error loading student details:", error);
@@ -1081,6 +1117,83 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             {editingFlashcard && <EditFlashcardModal flashcard={editingFlashcard} onClose={() => setEditingFlashcard(null)} onUpdate={handleUpdateFlashcard} />}
             {isCreatingPDFTest && <CreatePDFTestModal student={student} teacherId={user.id} onClose={() => setIsCreatingPDFTest(false)} onCreated={loadData} />}
             {viewingPDFTestResult && <PDFTestResultModal test={viewingPDFTestResult.test} submission={viewingPDFTestResult.submission} onClose={() => setViewingPDFTestResult(null)} />}
+            {viewingLesson && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-2xl">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-800">{viewingLesson.subject} Dersi</h3>
+                                <p className="text-sm text-gray-600">
+                                    {new Date(viewingLesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </p>
+                            </div>
+                            <button onClick={() => setViewingLesson(null)} className="text-gray-500 hover:text-gray-700 bg-white p-2 rounded-full shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            {viewingLesson.topic && (
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                    <h4 className="font-bold text-blue-800 mb-2 flex items-center">
+                                        <span className="text-xl mr-2">📖</span> İşlenen Konu
+                                    </h4>
+                                    <p className="text-gray-800 text-lg">{viewingLesson.topic}</p>
+                                </div>
+                            )}
+
+                            {viewingLesson.lessonNotes && (
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                    <h4 className="font-bold text-gray-800 mb-2 flex items-center">
+                                        <span className="text-xl mr-2">📝</span> Ders Notları
+                                    </h4>
+                                    <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
+                                        {viewingLesson.lessonNotes}
+                                    </div>
+                                </div>
+                            )}
+
+                            {viewingLesson.homework && (
+                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                                    <h4 className="font-bold text-purple-800 mb-3 flex items-center">
+                                        <span className="text-xl mr-2">✏️</span> Verilen Ödevler
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {(() => {
+                                            try {
+                                                const hw = JSON.parse(viewingLesson.homework);
+                                                const hasHomework = Object.values(hw).some((v: any) => v && v.trim() !== '');
+                                                if (!hasHomework) return <p className="text-gray-500 italic">Ödev içeriği bulunamadı.</p>;
+
+                                                return Object.entries(hw).map(([day, content]: [string, any]) => {
+                                                    if (!content || content.trim() === '') return null;
+                                                    return (
+                                                        <div key={day} className="bg-white p-3 rounded-lg border border-purple-100 shadow-sm">
+                                                            <span className="font-bold text-purple-600 block mb-1">{day}</span>
+                                                            <p className="text-gray-700 whitespace-pre-wrap text-sm">{content}</p>
+                                                        </div>
+                                                    );
+                                                });
+                                            } catch (e) {
+                                                return <p className="text-gray-700 whitespace-pre-wrap">{viewingLesson.homework}</p>;
+                                            }
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end">
+                            <button
+                                onClick={() => setViewingLesson(null)}
+                                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 font-medium transition-colors"
+                            >
+                                Kapat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 
@@ -1246,6 +1359,50 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                         ) : <p className="text-gray-500 text-center py-4">Bu öğrenciye henüz bir test atanmamış.</p>}
                     </div>
 
+                    <div className="bg-card-background p-6 rounded-xl shadow-md border-l-4 border-indigo-500">
+                        <h3 className="text-xl font-bold font-poppins text-text-primary mb-4 flex items-center">
+                            <span className="text-2xl mr-2">📚</span>
+                            Yapılan Dersler
+                        </h3>
+                        {completedLessons.length > 0 ? (
+                            <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                                {completedLessons.map((lesson) => (
+                                    <div
+                                        key={lesson.id}
+                                        onClick={() => setViewingLesson(lesson)}
+                                        className="bg-white p-4 rounded-lg border border-indigo-100 hover:shadow-md transition-all cursor-pointer group"
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-indigo-700">{lesson.subject}</span>
+                                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                        {new Date(lesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-gray-800 font-medium line-clamp-1">
+                                                    {lesson.topic || 'Konu belirtilmemiş'}
+                                                </p>
+                                            </div>
+                                            <div className="text-indigo-400 group-hover:text-indigo-600 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        {lesson.homework && (
+                                            <div className="mt-2 text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded inline-block">
+                                                ✏️ Ödev verildi
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 text-center py-4">Henüz tamamlanmış ve kayıtlı bir ders bulunmuyor.</p>
+                        )}
+                    </div>
+
                     <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-xl shadow-md border-l-4 border-purple-500">
                         <h3 className="text-xl font-bold font-poppins text-text-primary mb-4 flex items-center">
                             <span className="text-2xl mr-2">🔄</span>
@@ -1375,7 +1532,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 
     const HomeworkTab = () => (

@@ -372,7 +372,23 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 [detailTopic]
             );
 
-            const homework = homeworkResponse.homework || homeworkResponse.suggestions || homeworkResponse.content || 'Ödev önerisi oluşturulamadı.';
+            let homework = '';
+            if (typeof homeworkResponse === 'string') {
+                homework = homeworkResponse;
+            } else if (homeworkResponse.text) {
+                homework = homeworkResponse.text;
+            } else if (homeworkResponse.suggestions) {
+                // Fallback for old format or if AI returns JSON despite instructions
+                homework = Array.isArray(homeworkResponse.suggestions)
+                    ? homeworkResponse.suggestions.map((s: any) => `- ${s.title}: ${s.description}`).join('\n')
+                    : JSON.stringify(homeworkResponse.suggestions);
+            } else {
+                homework = JSON.stringify(homeworkResponse);
+            }
+
+            // Clean up JSON markdown if present
+            homework = homework.replace(/```json\n|\n```/g, '').replace(/```/g, '');
+
             setAiHomeworkSuggestions(homework);
 
         } catch (error) {
@@ -392,23 +408,52 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             setDetailLessonNotes(updatedNotes);
         }
 
-        // Apply AI homework to weekly homework (add to first empty day or Monday)
+        // Apply AI homework to weekly homework
         if (aiHomeworkSuggestions) {
-            const firstEmptyDay = DAYS_TR.find(day => !weeklyHomework[day] || weeklyHomework[day].trim() === '');
-            if (firstEmptyDay) {
-                setWeeklyHomework({
-                    ...weeklyHomework,
-                    [firstEmptyDay]: aiHomeworkSuggestions
-                });
+            const lessonDate = new Date(selectedLesson.startTime);
+            // Get the day index (0=Sunday, 1=Monday...)
+            // Adjust for Turkish week starting Monday (0=Monday, 6=Sunday)
+            let lessonDayIndex = lessonDate.getDay() - 1;
+            if (lessonDayIndex === -1) lessonDayIndex = 6; // Sunday
+
+            const newWeeklyHomework = { ...weeklyHomework };
+
+            // Try to parse "1. Gün", "2. Gün" format
+            const dayMatches = aiHomeworkSuggestions.split(/(\d+\.\s*Gün:)/g).filter(Boolean);
+
+            if (dayMatches.length > 1 && dayMatches[0].match(/\d+\.\s*Gün:/)) {
+                // We have a structured response
+                for (let i = 0; i < dayMatches.length; i += 2) {
+                    const dayLabel = dayMatches[i]; // "1. Gün:"
+                    const content = dayMatches[i + 1]?.trim(); // "Do this..."
+
+                    if (content) {
+                        // Extract day offset from label (1-based)
+                        const dayOffset = parseInt(dayLabel.match(/\d+/)?.[0] || '1') - 1;
+
+                        // Calculate target day index
+                        const targetDayIndex = (lessonDayIndex + dayOffset) % 7;
+                        const targetDayName = DAYS_TR[targetDayIndex];
+
+                        // Append to existing homework or set new
+                        if (newWeeklyHomework[targetDayName]) {
+                            newWeeklyHomework[targetDayName] += `\n\n${content}`;
+                        } else {
+                            newWeeklyHomework[targetDayName] = content;
+                        }
+                    }
+                }
             } else {
-                // If all days are filled, add to Monday
-                setWeeklyHomework({
-                    ...weeklyHomework,
-                    'Pazartesi': weeklyHomework['Pazartesi'] ?
-                        `${weeklyHomework['Pazartesi']}\n\n${aiHomeworkSuggestions}` :
-                        aiHomeworkSuggestions
-                });
+                // Unstructured response, assign to lesson day
+                const targetDayName = DAYS_TR[lessonDayIndex];
+                if (newWeeklyHomework[targetDayName]) {
+                    newWeeklyHomework[targetDayName] += `\n\n${aiHomeworkSuggestions}`;
+                } else {
+                    newWeeklyHomework[targetDayName] = aiHomeworkSuggestions;
+                }
             }
+
+            setWeeklyHomework(newWeeklyHomework);
         }
 
         // Switch to notes tab to show the changes

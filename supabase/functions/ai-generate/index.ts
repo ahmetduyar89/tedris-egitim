@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
         }
 
         // Make request to Gemini API
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`
 
         const requestBody: any = {
             contents: [{
@@ -273,7 +273,16 @@ function buildCheckAnswerPrompt(payload: any): string {
 
 function buildSuggestHomeworkPrompt(payload: any): string {
     const { grade, subject, weakTopics } = payload
-    return `Suggest 3 homework assignments for Grade ${grade} ${subject} focusing on: ${weakTopics.join(', ')}. Return JSON: { suggestions: [{ title: "", description: "", type: "" }] }`
+    return `Sen bir öğretmensin. ${grade}. sınıf ${subject} dersi için "${weakTopics.join(', ')}" konusu işlendi. Öğrenciye bu konuyu pekiştirmesi için 2-3 günlük, sade ve basit bir ödev programı hazırla.
+
+    Çıktı Formatı:
+    Sadece düz metin olarak, gün gün ne yapması gerektiğini yaz. Başlık veya giriş cümlesi kullanma.
+    Örnek:
+    1. Gün: Konu tekrarı yap ve 10 soru çöz.
+    2. Gün: Ders kitabından ilgili bölümü oku.
+    3. Gün: 20 soru çöz.
+
+    Lütfen bu formatta, öğrenciye hitaben samimi bir dille yaz.`
 }
 
 function buildDiagnosisQuestionsPrompt(payload: any): string {

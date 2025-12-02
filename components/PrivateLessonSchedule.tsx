@@ -594,30 +594,31 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     };
 
     return (
-        <div className="bg-white rounded-2xl shadow-lg p-6 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold font-poppins text-gray-800">Özel Ders Programı</h2>
-                <div className="flex items-center space-x-4">
+        <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-6 h-full flex flex-col">
+            {/* Header - Responsive */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold font-poppins text-gray-800">Özel Ders Programı</h2>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
                     <button
                         onClick={() => setIsAddLessonModalOpen(true)}
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium flex items-center space-x-2"
+                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium flex items-center justify-center space-x-2 text-sm sm:text-base"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                         </svg>
                         <span>Ders Ekle</span>
                     </button>
-                    <div className="flex items-center bg-gray-50 rounded-lg p-1">
+                    <div className="flex items-center justify-between sm:justify-start bg-gray-50 rounded-lg p-1">
                         <button onClick={handlePrevWeek} className="p-2 hover:bg-white rounded-md transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                             </svg>
                         </button>
-                        <span className="px-4 font-semibold text-gray-700">
-                            {weekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} - {weekEnd.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}
+                        <span className="px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm text-center">
+                            {weekStart.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} - {weekEnd.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                         </span>
                         <button onClick={handleNextWeek} className="p-2 hover:bg-white rounded-md transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                             </svg>
                         </button>
@@ -625,9 +626,9 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 </div>
             </div>
 
-            {/* Weekly Schedule Grid */}
-            <div className="flex-1 overflow-auto">
-                <div className="min-w-[1200px]">
+            {/* Weekly Schedule Grid - Desktop View */}
+            <div className="hidden lg:block flex-1 overflow-auto">
+                <div className="min-w-[1000px]">
                     <div className="grid grid-cols-8 gap-2">
                         {/* Header */}
                         <div className="bg-gray-50 p-3 rounded-lg"></div>
@@ -713,20 +714,116 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 </div>
             </div>
 
+            {/* Mobile View - List of Lessons by Day */}
+            <div className="lg:hidden flex-1 overflow-auto">
+                <div className="space-y-4">
+                    {weekDays.map((day, dayIdx) => {
+                        const dayLessons = getLessonsForDay(dayIdx);
+                        const isToday = day.toDateString() === new Date().toDateString();
+
+                        return (
+                            <div key={dayIdx} className={`border rounded-xl overflow-hidden ${isToday ? 'border-primary border-2 shadow-md' : 'border-gray-200'}`}>
+                                {/* Day Header */}
+                                <div className={`p-3 ${isToday ? 'bg-primary/10' : 'bg-gray-50'}`}>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className={`font-bold text-sm ${isToday ? 'text-primary' : 'text-gray-700'}`}>
+                                                {DAYS_TR[dayIdx]}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                {day.getDate()} {day.toLocaleDateString('tr-TR', { month: 'long' })}
+                                            </div>
+                                        </div>
+                                        {isToday && (
+                                            <span className="text-xs bg-primary text-white px-2 py-1 rounded-full font-medium">
+                                                Bugün
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Lessons for this day */}
+                                <div className="p-2">
+                                    {dayLessons.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {dayLessons.map(lesson => {
+                                                const startTime = new Date(lesson.startTime);
+                                                const endTime = new Date(lesson.endTime);
+                                                const duration = lesson.duration || 60;
+
+                                                return (
+                                                    <div
+                                                        key={lesson.id}
+                                                        className="rounded-lg p-3 relative group cursor-pointer hover:shadow-md transition-shadow"
+                                                        style={{ backgroundColor: lesson.color || '#FFB6C1' }}
+                                                        onClick={() => handleLessonClick(lesson)}
+                                                    >
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDeleteLesson(lesson.id);
+                                                            }}
+                                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-20"
+                                                            title="Dersi Sil"
+                                                        >
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+
+                                                        <div className="flex items-start justify-between pr-8">
+                                                            <div className="flex-1">
+                                                                <div className="font-bold text-base text-gray-900 mb-1">
+                                                                    {lesson.studentName}
+                                                                </div>
+                                                                <div className="text-sm text-gray-700 mb-1">
+                                                                    {lesson.subject}
+                                                                </div>
+                                                                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                                                    <span className="flex items-center">
+                                                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                        </svg>
+                                                                        {startTime.getHours().toString().padStart(2, '0')}:{startTime.getMinutes().toString().padStart(2, '0')} - {endTime.getHours().toString().padStart(2, '0')}:{endTime.getMinutes().toString().padStart(2, '0')}
+                                                                    </span>
+                                                                    <span>•</span>
+                                                                    <span>{duration} dk</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-6 text-gray-400 text-sm">
+                                            <svg className="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            Ders yok
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
             {/* Add Lesson Modal */}
             {isAddLessonModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-                        <h3 className="text-xl font-bold font-poppins mb-2">Yeni Ders Ekle</h3>
-                        <p className="text-sm text-gray-500 mb-4">Programa ders ekle</p>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-lg sm:text-xl font-bold font-poppins mb-2">Yeni Ders Ekle</h3>
+                        <p className="text-xs sm:text-sm text-gray-500 mb-4">Programa ders ekle</p>
 
-                        <form onSubmit={handleAddLesson} className="space-y-4">
+                        <form onSubmit={handleAddLesson} className="space-y-3 sm:space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Gün</label>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Gün</label>
                                 <select
                                     value={lessonFormDay}
                                     onChange={e => setLessonFormDay(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                    className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm sm:text-base"
                                 >
                                     {DAYS_TR.map(day => (
                                         <option key={day} value={day}>{day}</option>
@@ -735,11 +832,11 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Seç</label>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Öğrenci Seç</label>
                                 <select
                                     value={lessonFormStudentId}
                                     onChange={e => setLessonFormStudentId(e.target.value)}
-                                    className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                    className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm sm:text-base"
                                     required
                                 >
                                     <option value="">Öğrenci seçiniz...</option>
@@ -750,11 +847,11 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Ders</label>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Ders</label>
                                 <select
                                     value={lessonFormSubject}
                                     onChange={e => setLessonFormSubject(e.target.value as Subject)}
-                                    className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                    className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm sm:text-base"
                                 >
                                     {Object.values(Subject).map(s => (
                                         <option key={s} value={s}>{s}</option>
@@ -762,22 +859,22 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Saat</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Saat</label>
                                     <input
                                         type="time"
                                         value={lessonFormTime}
                                         onChange={e => setLessonFormTime(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm sm:text-base"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Süre (Dk)</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Süre (Dk)</label>
                                     <select
                                         value={lessonFormDuration}
                                         onChange={e => setLessonFormDuration(parseInt(e.target.value))}
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm sm:text-base"
                                     >
                                         {DURATION_OPTIONS.map(duration => (
                                             <option key={duration} value={duration}>{duration} dk</option>
@@ -787,25 +884,25 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Renk</label>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Renk</label>
                                 <div className="flex flex-wrap gap-2">
                                     {COLORS.slice(0, 7).map(color => (
                                         <button
                                             key={color}
                                             type="button"
                                             onClick={() => setLessonFormColor(color)}
-                                            className={`w-8 h-8 rounded-full border-2 ${lessonFormColor === color ? 'border-gray-800 scale-110' : 'border-gray-200'} transition-transform`}
+                                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 ${lessonFormColor === color ? 'border-gray-800 scale-110' : 'border-gray-200'} transition-transform`}
                                             style={{ backgroundColor: color }}
                                         />
                                     ))}
                                 </div>
                             </div>
 
-                            <div className="flex justify-between pt-4">
-                                <button type="button" onClick={() => setIsAddLessonModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-0 pt-4">
+                                <button type="button" onClick={() => setIsAddLessonModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">
                                     İptal
                                 </button>
-                                <button type="submit" className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
+                                <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm sm:text-base">
                                     Ekle
                                 </button>
                             </div>
@@ -816,51 +913,51 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
             {/* Student Detail Modal */}
             {isStudentDetailModalOpen && selectedStudent && selectedLesson && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <div className="flex items-center space-x-2 mb-1">
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedLesson.color || '#FFB6C1' }}></div>
-                                    <span className="text-sm text-gray-500">{selectedLesson.subject}</span>
-                                    <span className="text-sm text-gray-500">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1 flex-wrap">
+                                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: selectedLesson.color || '#FFB6C1' }}></div>
+                                    <span className="text-xs sm:text-sm text-gray-500">{selectedLesson.subject}</span>
+                                    <span className="text-xs sm:text-sm text-gray-500 truncate">
                                         {new Date(selectedLesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}
                                     </span>
                                 </div>
-                                <h3 className="text-2xl font-bold font-poppins">{selectedStudent.name}</h3>
+                                <h3 className="text-xl sm:text-2xl font-bold font-poppins truncate">{selectedStudent.name}</h3>
                             </div>
-                            <button onClick={() => setIsStudentDetailModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button onClick={() => setIsStudentDetailModalOpen(false)} className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2">
+                                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
 
-                        {/* Tabs */}
-                        <div className="flex border-b border-gray-200 mb-6">
+                        {/* Tabs - Scrollable on mobile */}
+                        <div className="flex border-b border-gray-200 mb-4 sm:mb-6 overflow-x-auto scrollbar-hide -mx-4 sm:mx-0 px-4 sm:px-0">
                             <button
                                 onClick={() => setDetailActiveTab('notes')}
-                                className={`px-6 py-3 font-medium flex items-center space-x-2 ${detailActiveTab === 'notes' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
+                                className={`px-3 sm:px-6 py-3 font-medium flex items-center space-x-1 sm:space-x-2 whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${detailActiveTab === 'notes' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                 </svg>
                                 <span>Ders Notları</span>
                             </button>
                             <button
                                 onClick={() => setDetailActiveTab('homework')}
-                                className={`px-6 py-3 font-medium flex items-center space-x-2 ${detailActiveTab === 'homework' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
+                                className={`px-3 sm:px-6 py-3 font-medium flex items-center space-x-1 sm:space-x-2 whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${detailActiveTab === 'homework' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                                 <span>Haftalık Program</span>
                             </button>
                             <button
                                 onClick={() => setDetailActiveTab('ai')}
-                                className={`px-6 py-3 font-medium flex items-center space-x-2 ${detailActiveTab === 'ai' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
+                                className={`px-3 sm:px-6 py-3 font-medium flex items-center space-x-1 sm:space-x-2 whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${detailActiveTab === 'ai' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
                                 <span>AI Asistan</span>
@@ -869,31 +966,31 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                         {/* Tab Content */}
                         {detailActiveTab === 'notes' && (
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">İşlenen Konu</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">İşlenen Konu</label>
                                     <input
                                         type="text"
                                         value={detailTopic}
                                         onChange={e => setDetailTopic(e.target.value)}
                                         placeholder="Bugün ne işlendi?"
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
+                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm sm:text-base"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Ders Notları</label>
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Ders Notları</label>
                                     <textarea
                                         value={detailLessonNotes}
                                         onChange={e => setDetailLessonNotes(e.target.value)}
                                         placeholder="Ders notları..."
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 h-32"
+                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 h-24 sm:h-32 text-sm sm:text-base"
                                     />
                                 </div>
 
                                 <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="block text-sm font-medium text-gray-700">Ödevler</label>
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Ödevler</label>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -906,15 +1003,15 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                     setDetailLessonNotes(detailLessonNotes + '\n\nÖdevler:\n' + homeworkSummary);
                                                 }
                                             }}
-                                            className="text-xs text-primary hover:text-primary-dark flex items-center space-x-1"
+                                            className="text-xs text-primary hover:text-primary-dark flex items-center space-x-1 self-start sm:self-auto"
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                             </svg>
                                             <span>Haftalık Programdan Aktar</span>
                                         </button>
                                     </div>
-                                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 max-h-48 overflow-y-auto">
+                                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 max-h-40 sm:max-h-48 overflow-y-auto">
                                         {Object.entries(weeklyHomework).filter(([_, hw]) => hw.trim() !== '').length > 0 ? (
                                             <div className="space-y-2">
                                                 {Object.entries(weeklyHomework)
@@ -922,24 +1019,24 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                     .map(([day, hw]) => (
                                                         <div key={day} className="bg-white rounded-lg p-2 border border-gray-200">
                                                             <div className="text-xs font-semibold text-primary mb-1">{day}</div>
-                                                            <div className="text-sm text-gray-700">{hw}</div>
+                                                            <div className="text-xs sm:text-sm text-gray-700">{hw}</div>
                                                         </div>
                                                     ))
                                                 }
                                             </div>
                                         ) : (
-                                            <div className="text-center text-gray-400 text-sm py-4">
+                                            <div className="text-center text-gray-400 text-xs sm:text-sm py-4">
                                                 Henüz ödev eklenmedi. "Haftalık Program" sekmesinden ödev ekleyebilirsiniz.
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end space-x-3 pt-4">
-                                    <button onClick={() => setIsStudentDetailModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4">
+                                    <button onClick={() => setIsStudentDetailModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">
                                         Vazgeç
                                     </button>
-                                    <button onClick={handleSaveStudentDetail} className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
+                                    <button onClick={handleSaveStudentDetail} className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm sm:text-base">
                                         Kaydet
                                     </button>
                                 </div>
@@ -947,17 +1044,17 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                         )}
 
                         {detailActiveTab === 'homework' && (
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="text-lg font-semibold">Öğrenci Çalışma Programı</h4>
+                            <div className="space-y-3 sm:space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-4">
+                                    <h4 className="text-base sm:text-lg font-semibold">Öğrenci Çalışma Programı</h4>
                                     <button
                                         onClick={() => setWeeklyHomework({
                                             'Pazartesi': '', 'Salı': '', 'Çarşamba': '', 'Perşembe': '',
                                             'Cuma': '', 'Cumartesi': '', 'Pazar': ''
                                         })}
-                                        className="text-sm text-orange-600 hover:text-orange-700 flex items-center space-x-1"
+                                        className="text-xs sm:text-sm text-orange-600 hover:text-orange-700 flex items-center space-x-1 self-start sm:self-auto"
                                     >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                         </svg>
                                         <span>Tümünü Temizle</span>
@@ -968,7 +1065,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                     {DAYS_TR.map(day => (
                                         <div key={day} className="border border-gray-200 rounded-lg p-3 hover:border-primary/30 transition-colors">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="font-semibold text-gray-700">{day}</span>
+                                                <span className="font-semibold text-gray-700 text-sm sm:text-base">{day}</span>
                                                 {weeklyHomework[day] ? (
                                                     <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ Görev var</span>
                                                 ) : (
@@ -980,7 +1077,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                     value={weeklyHomework[day]}
                                                     onChange={e => setWeeklyHomework({ ...weeklyHomework, [day]: e.target.value })}
                                                     placeholder="Bu gün için görev yazın..."
-                                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-xs sm:text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
                                                     rows={2}
                                                 />
                                                 {weeklyHomework[day] && (
@@ -989,7 +1086,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                         className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
                                                         title="Temizle"
                                                     >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                         </svg>
                                                     </button>
@@ -999,21 +1096,21 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                     ))}
                                 </div>
 
-                                <div className="flex justify-between pt-4">
+                                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 pt-4">
                                     <button
                                         onClick={handleWhatsAppShare}
-                                        className="px-6 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 flex items-center space-x-2"
+                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 flex items-center justify-center space-x-2 text-sm sm:text-base order-2 sm:order-1"
                                     >
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                         </svg>
                                         <span>WhatsApp Paylaş</span>
                                     </button>
-                                    <div className="flex space-x-3">
-                                        <button onClick={() => setIsStudentDetailModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                                    <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 order-1 sm:order-2">
+                                        <button onClick={() => setIsStudentDetailModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">
                                             Vazgeç
                                         </button>
-                                        <button onClick={handleSaveStudentDetail} className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
+                                        <button onClick={handleSaveStudentDetail} className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm sm:text-base">
                                             Kaydet
                                         </button>
                                     </div>
@@ -1022,29 +1119,29 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                         )}
 
                         {detailActiveTab === 'ai' && (
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                                 {/* AI Assistant Header */}
                                 <div className="text-center">
-                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-4">
-                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mb-3 sm:mb-4">
+                                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                         </svg>
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-800 mb-2">Yapay Zeka Asistanı</h3>
-                                    <p className="text-gray-600">Mevcut konu ve notlarınıza göre ödev önerileri alın.</p>
+                                    <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Yapay Zeka Asistanı</h3>
+                                    <p className="text-sm sm:text-base text-gray-600">Mevcut konu ve notlarınıza göre ödev önerileri alın.</p>
                                 </div>
 
                                 {/* Generate Button */}
                                 {!aiSummary && !aiHomeworkSuggestions && (
-                                    <div className="text-center py-8">
+                                    <div className="text-center py-6 sm:py-8">
                                         <button
                                             onClick={handleGenerateAISuggestions}
                                             disabled={aiLoading || !detailTopic}
-                                            className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2 mx-auto shadow-lg"
+                                            className="px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2 mx-auto shadow-lg text-sm sm:text-base"
                                         >
                                             {aiLoading ? (
                                                 <>
-                                                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                                    <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24">
                                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                     </svg>
@@ -1052,7 +1149,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                 </>
                                             ) : (
                                                 <>
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                     </svg>
                                                     <span>Öneri Oluştur</span>
@@ -1060,7 +1157,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                             )}
                                         </button>
                                         {!detailTopic && (
-                                            <p className="text-sm text-orange-600 mt-4">
+                                            <p className="text-xs sm:text-sm text-orange-600 mt-4">
                                                 ⚠️ Önce "Ders Notları" sekmesinden işlenen konuyu giriniz.
                                             </p>
                                         )}
@@ -1069,52 +1166,52 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                                 {/* AI Results */}
                                 {(aiSummary || aiHomeworkSuggestions) && (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3 sm:space-y-4">
                                         {/* Summary Section */}
                                         {aiSummary && (
-                                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                                                <div className="flex items-center space-x-2 mb-3">
-                                                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3 sm:p-4">
+                                                <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+                                                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
-                                                    <h4 className="font-semibold text-blue-900">Ders Özeti</h4>
+                                                    <h4 className="font-semibold text-blue-900 text-sm sm:text-base">Ders Özeti</h4>
                                                 </div>
-                                                <p className="text-gray-700 whitespace-pre-wrap">{aiSummary}</p>
+                                                <p className="text-gray-700 whitespace-pre-wrap text-xs sm:text-sm">{aiSummary}</p>
                                             </div>
                                         )}
 
                                         {/* Homework Suggestions */}
                                         {aiHomeworkSuggestions && (
-                                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-                                                <div className="flex items-center space-x-2 mb-3">
-                                                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3 sm:p-4">
+                                                <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+                                                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                                                     </svg>
-                                                    <h4 className="font-semibold text-green-900">Ödev Önerileri</h4>
+                                                    <h4 className="font-semibold text-green-900 text-sm sm:text-base">Ödev Önerileri</h4>
                                                 </div>
-                                                <p className="text-gray-700 whitespace-pre-wrap">{aiHomeworkSuggestions}</p>
+                                                <p className="text-gray-700 whitespace-pre-wrap text-xs sm:text-sm">{aiHomeworkSuggestions}</p>
                                             </div>
                                         )}
 
                                         {/* Action Buttons */}
-                                        <div className="flex justify-between items-center pt-4 border-t">
+                                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 pt-4 border-t">
                                             <button
                                                 onClick={() => {
                                                     setAiSummary('');
                                                     setAiHomeworkSuggestions('');
                                                 }}
-                                                className="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center space-x-2"
+                                                className="w-full sm:w-auto px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center justify-center space-x-2 text-sm sm:text-base order-2 sm:order-1"
                                             >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                 </svg>
                                                 <span>Yeniden Oluştur</span>
                                             </button>
                                             <button
                                                 onClick={handleApplyAISuggestions}
-                                                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center space-x-2 shadow-lg"
+                                                className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 flex items-center justify-center space-x-2 shadow-lg text-sm sm:text-base order-1 sm:order-2"
                                             >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
                                                 <span>Ders Notlarına Aktar</span>
@@ -1124,11 +1221,11 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                 )}
 
                                 {/* Bottom Actions */}
-                                <div className="flex justify-end space-x-3 pt-4 border-t">
-                                    <button onClick={() => setIsStudentDetailModalOpen(false)} className="px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50">
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
+                                    <button onClick={() => setIsStudentDetailModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">
                                         Vazgeç
                                     </button>
-                                    <button onClick={handleSaveStudentDetail} className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">
+                                    <button onClick={handleSaveStudentDetail} className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm sm:text-base">
                                         Kaydet
                                     </button>
                                 </div>
@@ -1138,43 +1235,43 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 </div>
             )}
             {isDeleteModalOpen && lessonToDelete && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-                        <h2 className="text-2xl font-bold font-poppins mb-4 text-red-600">Dersi Sil</h2>
-                        <p className="text-gray-700 mb-6">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
+                        <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4 text-red-600">Dersi Sil</h2>
+                        <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
                             Bu dersi nasıl silmek istersiniz?
                         </p>
                         <div className="flex flex-col space-y-3">
                             <button
                                 onClick={() => confirmDeleteLesson('single')}
-                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:text-primary transition-colors flex items-center justify-between group"
+                                className="w-full px-3 sm:px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:text-primary transition-colors flex items-center justify-between group"
                             >
-                                <div className="text-left">
-                                    <span className="block font-semibold text-gray-900 group-hover:text-primary">Sadece Bu Dersi Sil</span>
-                                    <span className="text-sm text-gray-500">Sadece bu haftaki ders programdan kaldırılır.</span>
+                                <div className="text-left flex-1">
+                                    <span className="block font-semibold text-gray-900 group-hover:text-primary text-sm sm:text-base">Sadece Bu Dersi Sil</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">Sadece bu haftaki ders programdan kaldırılır.</span>
                                 </div>
-                                <svg className="w-5 h-5 text-gray-400 group-hover:text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                             </button>
 
                             <button
                                 onClick={() => confirmDeleteLesson('all')}
-                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-red-500 hover:text-red-600 transition-colors flex items-center justify-between group"
+                                className="w-full px-3 sm:px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-red-500 hover:text-red-600 transition-colors flex items-center justify-between group"
                             >
-                                <div className="text-left">
-                                    <span className="block font-semibold text-gray-900 group-hover:text-red-600">Tüm Programdan Sil</span>
-                                    <span className="text-sm text-gray-500">Bu ders ve gelecekteki tüm tekrarları silinir.</span>
+                                <div className="text-left flex-1">
+                                    <span className="block font-semibold text-gray-900 group-hover:text-red-600 text-sm sm:text-base">Tüm Programdan Sil</span>
+                                    <span className="text-xs sm:text-sm text-gray-500">Bu ders ve gelecekteki tüm tekrarları silinir.</span>
                                 </div>
-                                <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-red-600 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
                         </div>
-                        <div className="mt-6 flex justify-end">
+                        <div className="mt-4 sm:mt-6 flex justify-end">
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm sm:text-base"
                             >
                                 İptal
                             </button>

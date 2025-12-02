@@ -370,8 +370,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
       // Fetch student data
       const studentDoc = await db.collection('students').doc(user.id).get();
       if (studentDoc.exists) {
-        const data = studentDoc.data() as Student;
-        setStudentData({ ...data, badges: data.badges || [] });
+        const data = studentDoc.data() as any;
+        setStudentData({
+          ...data,
+          badges: data.badges || [],
+          isAiAssistantEnabled: data.is_ai_assistant_enabled ?? data.isAiAssistantEnabled ?? true
+        });
       }
 
       // Fetch tests
@@ -1219,9 +1223,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           </div>
         </main>
 
-        <button onClick={() => setActiveView('aiAssistant')} className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-accent p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform z-20" title="AI Asistan">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 md:w-8 md:h-8 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-        </button>
+        {studentData?.isAiAssistantEnabled && (
+          <button onClick={() => setActiveView('aiAssistant')} className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-accent p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform z-20" title="AI Asistan">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 md:w-8 md:h-8 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+          </button>
+        )}
 
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 

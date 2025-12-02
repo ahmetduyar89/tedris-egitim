@@ -1,0 +1,1 @@
+ALTER TABLE students ADD COLUMN IF NOT EXISTS is_ai_assistant_enabled BOOLEAN DEFAULT TRUE;

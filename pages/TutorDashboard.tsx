@@ -107,7 +107,8 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                         tutor_id: tutor.id,
                         level: 1,
                         xp: 0,
-                        learning_loop_status: LearningLoopStatus.Initial
+                        learning_loop_status: LearningLoopStatus.Initial,
+                        is_ai_assistant_enabled: true
                     }]);
 
                 if (studentError) throw studentError;
@@ -123,6 +124,7 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                     badges: [],
                     learningLoopStatus: LearningLoopStatus.Initial,
                     progressReports: [],
+                    isAiAssistantEnabled: true,
                 };
 
                 onStudentAdded(newStudent);
@@ -195,6 +197,7 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
 const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStudentUpdated: (updatedStudent: Student) => void }> = ({ student, onClose, onStudentUpdated }) => {
     const [name, setName] = useState(student.name);
     const [grade, setGrade] = useState(student.grade);
+    const [isAiAssistantEnabled, setIsAiAssistantEnabled] = useState(student.isAiAssistantEnabled ?? true);
     const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -204,12 +207,12 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
         try {
             const { error: updateError } = await supabase
                 .from('students')
-                .update({ name, grade })
+                .update({ name, grade, is_ai_assistant_enabled: isAiAssistantEnabled })
                 .eq('id', student.id);
 
             if (updateError) throw updateError;
 
-            const updatedStudent = { ...student, name, grade };
+            const updatedStudent = { ...student, name, grade, isAiAssistantEnabled };
             onStudentUpdated(updatedStudent);
             onClose();
         } catch (error: any) {
@@ -233,6 +236,20 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                             <option value={4}>İlkokul</option>
                             {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
+                    </div>
+                    <div>
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={isAiAssistantEnabled}
+                                onChange={(e) => setIsAiAssistantEnabled(e.target.checked)}
+                                className="w-5 h-5 text-primary rounded focus:ring-primary"
+                            />
+                            <div>
+                                <span className="text-sm font-medium text-gray-700">AI Asistan Aktif</span>
+                                <p className="text-xs text-gray-500">Öğrenci AI Asistan'a erişebilir</p>
+                            </div>
+                        </label>
                     </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                     <div className="mt-6 flex justify-end space-x-3">
@@ -401,6 +418,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 badges: [],
                 learningLoopStatus: row.learning_loop_status,
                 progressReports: [],
+                isAiAssistantEnabled: row.is_ai_assistant_enabled ?? true,
             })) as Student[];
             setStudents(studentList);
         } catch (error) {

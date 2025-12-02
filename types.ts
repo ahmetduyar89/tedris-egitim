@@ -57,6 +57,8 @@ export interface Student {
   // Learning Loop
   learningLoopStatus: LearningLoopStatus;
   progressReports: ProgressReport[];
+  // AI Assistant Control
+  isAiAssistantEnabled?: boolean;
 }
 
 export enum Subject {

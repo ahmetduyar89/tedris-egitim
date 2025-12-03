@@ -291,6 +291,16 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
                     </div>
                 </div>
             </main>
+
+            {/* DEBUG INFO - REMOVE LATER */}
+            <div className="bg-gray-900 text-white p-4 text-xs font-mono opacity-75">
+                <p>Debug Info:</p>
+                <p>Current Q ID: {currentQuestion.id}</p>
+                <p>Correct Answer: {currentQuestion.correctAnswer}</p>
+                <p>Selected Answer: {answers[currentQuestion.id] || 'None'}</p>
+                <p>Is Correct: {answers[currentQuestion.id] === currentQuestion.correctAnswer ? 'YES' : 'NO'}</p>
+                <p>Total Answers: {Object.keys(answers).length}</p>
+            </div>
         </div>
     );
 };

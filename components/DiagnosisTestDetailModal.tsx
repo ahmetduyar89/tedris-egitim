@@ -67,16 +67,16 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
                                 <div className="text-center px-8 border-r border-gray-100">
                                     <div className="text-sm text-gray-500 mb-1">Başarı Puanı</div>
-                                    <div className={`text-4xl font-bold ${(result.assignment.score || 0) >= 80 ? 'text-green-600' :
-                                        (result.assignment.score || 0) >= 50 ? 'text-yellow-600' : 'text-red-600'
+                                    <div className={`text-4xl font-bold ${(result.assignment.score ?? 0) >= 80 ? 'text-green-600' :
+                                        (result.assignment.score ?? 0) >= 50 ? 'text-yellow-600' : 'text-red-600'
                                         }`}>
-                                        {result.assignment.score}%
+                                        {result.assignment.score ?? 0}%
                                     </div>
                                 </div>
                                 <div className="text-center px-8 border-r border-gray-100">
                                     <div className="text-sm text-gray-500 mb-1">Doğru / Toplam</div>
                                     <div className="text-2xl font-bold text-gray-800">
-                                        {result.assignment.totalCorrect} <span className="text-gray-400 text-lg">/ {result.assignment.totalQuestions}</span>
+                                        {result.assignment.totalCorrect ?? 0} <span className="text-gray-400 text-lg">/ {result.assignment.totalQuestions ?? 0}</span>
                                     </div>
                                 </div>
                                 <div className="text-center px-8">

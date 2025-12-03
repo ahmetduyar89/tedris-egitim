@@ -11,6 +11,7 @@ interface DiagnosisTestResultsViewProps {
 const DiagnosisTestResultsView: React.FC<DiagnosisTestResultsViewProps> = ({ test, onBack }) => {
     const [assignments, setAssignments] = useState<DiagnosisTestAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -20,10 +21,12 @@ const DiagnosisTestResultsView: React.FC<DiagnosisTestResultsViewProps> = ({ tes
     const loadAssignments = async () => {
         try {
             setIsLoading(true);
+            setError(null);
             const data = await diagnosisTestManagementService.getTestAssignments(test.id);
             setAssignments(data);
-        } catch (error) {
-            console.error('Error loading assignments:', error);
+        } catch (err: any) {
+            console.error('Error loading assignments:', err);
+            setError(err.message || 'Atamalar yüklenirken bir hata oluştu.');
         } finally {
             setIsLoading(false);
         }
@@ -67,6 +70,17 @@ const DiagnosisTestResultsView: React.FC<DiagnosisTestResultsViewProps> = ({ tes
                 {isLoading ? (
                     <div className="flex justify-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                ) : error ? (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+                        <div className="text-red-500 text-xl font-bold mb-2">Bir Hata Oluştu</div>
+                        <p className="text-gray-700">{error}</p>
+                        <button
+                            onClick={loadAssignments}
+                            className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                        >
+                            Tekrar Dene
+                        </button>
                     </div>
                 ) : assignments.length === 0 ? (
                     <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-gray-100">

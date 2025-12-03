@@ -1701,12 +1701,17 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Ders Başı Ücret (TL)</label>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={newPerLessonFee}
-                                        onChange={e => setNewPerLessonFee(e.target.value)}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                setNewPerLessonFee(val);
+                                            }
+                                        }}
                                         className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                        step="0.01"
-                                        min="0"
+                                        placeholder="0.00"
                                     />
                                 </div>
                                 <div>

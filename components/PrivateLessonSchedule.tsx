@@ -58,7 +58,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     // Attendance Tracking states
     const [attendanceStatus, setAttendanceStatus] = useState<'completed' | 'missed' | 'cancelled'>('completed');
     const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid' | 'partial'>('unpaid');
-    const [paymentAmount, setPaymentAmount] = useState<number>(0);
+    const [paymentAmount, setPaymentAmount] = useState<string>('0');
     const [paymentDate, setPaymentDate] = useState<string>('');
     const [paymentNotes, setPaymentNotes] = useState<string>('');
     const [studentPaymentConfig, setStudentPaymentConfig] = useState<number>(0);
@@ -298,41 +298,42 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 });
             }
 
-            // Load attendance data if exists
+            // Load student payment config first, as it might be needed for attendance
+            let config = null;
             try {
-                const attendance = await privateLessonService.getLessonAttendance(lesson.id);
-                if (attendance) {
-                    setAttendanceStatus(attendance.attendanceStatus);
-                    setPaymentStatus(attendance.paymentStatus);
-                    setPaymentAmount(attendance.paymentAmount || 0);
-                    setPaymentDate(attendance.paymentDate ? attendance.paymentDate.split('T')[0] : '');
-                    setPaymentNotes(attendance.paymentNotes || '');
-                } else {
-                    // Reset attendance states
-                    setAttendanceStatus('completed');
-                    setPaymentStatus('unpaid');
-                    setPaymentAmount(0);
-                    setPaymentDate('');
-                    setPaymentNotes('');
-                }
-            } catch (error) {
-                console.error('Error loading attendance:', error);
-            }
-
-            // Load student payment config
-            try {
-                const config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
+                config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
                 if (config) {
                     setStudentPaymentConfig(config.perLessonFee);
-                    // Auto-fill payment amount if not already set
-                    if (!lesson.attendance) {
-                        setPaymentAmount(config.perLessonFee);
-                    }
                 } else {
                     setStudentPaymentConfig(0);
                 }
             } catch (error) {
                 console.error('Error loading payment config:', error);
+            }
+
+            // Load attendance data if exists
+            try {
+                const attendance = await privateLessonService.getLessonAttendance(lesson.id);
+                if (attendance) {
+                    setAttendanceStatus(attendance.attendanceStatus);
+                    setPaymentStatus(attendance.paymentStatus || 'unpaid');
+                    setPaymentAmount(attendance.paymentAmount ? attendance.paymentAmount.toString() : '0');
+                    setPaymentDate(attendance.paymentDate || new Date().toISOString().split('T')[0]);
+                    setPaymentNotes(attendance.paymentNotes || '');
+                } else {
+                    setAttendanceStatus('completed');
+                    setPaymentStatus('unpaid');
+                    setPaymentDate(new Date().toISOString().split('T')[0]);
+                    setPaymentNotes('');
+                    // Auto-fill amount if config exists
+                    if (config) {
+                        setPaymentAmount(config.perLessonFee.toString());
+                    } else {
+                        setPaymentAmount('0');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading attendance:', error);
             }
 
             setIsStudentDetailModalOpen(true);
@@ -612,22 +613,17 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id && l.sourceLessonId !== targetId && l.id !== targetId));
                 alert('Ders programı tamamen silindi.');
             } else {
-                // Delete only this specific lesson instance
-                if (lessonToDelete.id.startsWith('virtual-')) {
-                    // It's a virtual lesson, just remove from view for now
-                    // To make it permanent without DB support for "skips", we just hide it
-                    setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id));
-                } else {
-                    // It's a real lesson, delete from DB
+                // It's a real lesson, delete from DB
+                if (!lessonToDelete.id.startsWith('virtual-')) {
                     const { error } = await supabase
                         .from('private_lessons')
                         .delete()
                         .eq('id', lessonToDelete.id);
 
                     if (error) throw error;
-
-                    setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id));
                 }
+                // For both real and virtual, remove from local state
+                setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id));
                 alert('Ders bu hafta için silindi.');
             }
 
@@ -1397,13 +1393,17 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                     <div>
                                                         <label className="block text-sm font-medium text-gray-700 mb-2">Ücret (TL)</label>
                                                         <input
-                                                            type="number"
-                                                            value={paymentAmount || ''}
-                                                            onChange={e => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                                                            type="text"
+                                                            inputMode="decimal"
+                                                            value={paymentAmount}
+                                                            onChange={e => {
+                                                                const val = e.target.value;
+                                                                if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                                                                    setPaymentAmount(val);
+                                                                }
+                                                            }}
                                                             placeholder="0.00"
                                                             className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm"
-                                                            step="0.01"
-                                                            min="0"
                                                         />
                                                         {studentPaymentConfig > 0 && (
                                                             <p className="text-xs text-gray-500 mt-1">
@@ -1449,7 +1449,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                             user.id,
                                                             attendanceStatus,
                                                             attendanceStatus === 'completed' ? {
-                                                                paymentAmount,
+                                                                paymentAmount: parseFloat(paymentAmount) || 0,
                                                                 paymentStatus,
                                                                 paymentDate: paymentDate || undefined,
                                                                 paymentNotes: paymentNotes || undefined

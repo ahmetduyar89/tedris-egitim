@@ -1702,7 +1702,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Ders Başı Ücret (TL)</label>
                                     <input
                                         type="number"
-                                        value={newPerLessonFee}
+                                        value={newPerLessonFee || ''}
                                         onChange={e => setNewPerLessonFee(parseFloat(e.target.value) || 0)}
                                         className="w-full border border-gray-300 rounded-lg py-2 px-3"
                                         step="0.01"
@@ -1720,6 +1720,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                 </div>
                                 <div className="flex space-x-3">
                                     <button
+                                        type="button"
                                         onClick={async () => {
                                             try {
                                                 await privateLessonService.setStudentPaymentConfig(
@@ -1743,6 +1744,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                         Kaydet
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => {
                                             setIsEditingPaymentConfig(false);
                                             if (paymentConfig) {
@@ -1770,6 +1772,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                             </div>
                                         )}
                                         <button
+                                            type="button"
                                             onClick={() => setIsEditingPaymentConfig(true)}
                                             className="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 font-medium"
                                         >
@@ -1780,6 +1783,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                     <div className="text-center">
                                         <p className="text-gray-600 mb-3">Henüz ücret ayarı yapılmamış</p>
                                         <button
+                                            type="button"
                                             onClick={() => setIsEditingPaymentConfig(true)}
                                             className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 font-medium"
                                         >

@@ -157,7 +157,18 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
             );
 
             // 3. Testi tamamla
-            await diagnosisTestManagementService.completeTest(assignmentId, aiAnalysis);
+            const totalQuestions = questions.length;
+            const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+
+            await diagnosisTestManagementService.completeTest(
+                assignmentId,
+                aiAnalysis,
+                {
+                    score,
+                    totalCorrect: correctCount,
+                    totalQuestions
+                }
+            );
 
             onComplete();
         } catch (error) {
@@ -234,8 +245,8 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
                                         key={index}
                                         onClick={() => handleAnswerSelect(option)}
                                         className={`w-full text-left p-4 rounded-xl border-2 transition-all ${isSelected
-                                                ? 'border-primary bg-blue-50 text-primary font-medium'
-                                                : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                                            ? 'border-primary bg-blue-50 text-primary font-medium'
+                                            : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="flex items-center">

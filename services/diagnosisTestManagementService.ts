@@ -296,12 +296,30 @@ export const diagnosisTestManagementService = {
         }));
     },
 
-    async completeTest(assignmentId: string, aiAnalysis: DiagnosisAIAnalysis): Promise<void> {
-        // Toplam doğru sayısını hesapla
-        const answers = await this.getAssignmentAnswers(assignmentId);
-        const totalCorrect = answers.filter(a => a.isCorrect).length;
-        const totalQuestions = answers.length;
-        const score = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    async completeTest(
+        assignmentId: string,
+        aiAnalysis: DiagnosisAIAnalysis,
+        results?: {
+            score: number;
+            totalCorrect: number;
+            totalQuestions: number;
+        }
+    ): Promise<void> {
+        let score = 0;
+        let totalCorrect = 0;
+        let totalQuestions = 0;
+
+        if (results) {
+            score = results.score;
+            totalCorrect = results.totalCorrect;
+            totalQuestions = results.totalQuestions;
+        } else {
+            // Fallback: Toplam doğru sayısını veritabanından hesapla (Eski yöntem)
+            const answers = await this.getAssignmentAnswers(assignmentId);
+            totalCorrect = answers.filter(a => a.isCorrect).length;
+            totalQuestions = answers.length;
+            score = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+        }
 
         const { error } = await supabase
             .from('diagnosis_test_assignments')

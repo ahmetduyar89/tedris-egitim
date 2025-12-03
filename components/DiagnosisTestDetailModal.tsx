@@ -116,18 +116,23 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                             <div className="prose prose-sm max-w-none text-gray-600">
                                                 <div className="mb-4">
                                                     <h4 className="font-semibold text-gray-800 mb-2">Genel Değerlendirme</h4>
-                                                    <p>{result.aiAnalysis.overallAssessment}</p>
+                                                    <p>{result.aiAnalysis.overallAssessment || (result.aiAnalysis as any).overall_assessment}</p>
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     <div>
                                                         <h4 className="font-semibold text-green-700 mb-2">Güçlü Yönler</h4>
                                                         <ul className="list-disc list-inside space-y-1">
-                                                            {/* Handle both new (strongAreas) and old (strengths) data structures */}
-                                                            {(result.aiAnalysis.strongAreas || (result.aiAnalysis as any).strengths || []).map((s: any, i: number) => (
+                                                            {/* Handle camelCase, old format, and snake_case */}
+                                                            {(
+                                                                result.aiAnalysis.strongAreas ||
+                                                                (result.aiAnalysis as any).strengths ||
+                                                                (result.aiAnalysis as any).strong_areas ||
+                                                                []
+                                                            ).map((s: any, i: number) => (
                                                                 <li key={i}>
                                                                     {typeof s === 'string' ? s : (
                                                                         <>
-                                                                            <span className="font-medium">{s.moduleName}</span>: {s.comment}
+                                                                            <span className="font-medium">{s.moduleName || s.module_name}</span>: {s.comment}
                                                                         </>
                                                                     )}
                                                                 </li>
@@ -137,12 +142,17 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                                     <div>
                                                         <h4 className="font-semibold text-red-700 mb-2">Gelişim Alanları</h4>
                                                         <ul className="list-disc list-inside space-y-1">
-                                                            {/* Handle both new (weakAreas) and old (weaknesses) data structures */}
-                                                            {(result.aiAnalysis.weakAreas || (result.aiAnalysis as any).weaknesses || []).map((w: any, i: number) => (
+                                                            {/* Handle camelCase, old format, and snake_case */}
+                                                            {(
+                                                                result.aiAnalysis.weakAreas ||
+                                                                (result.aiAnalysis as any).weaknesses ||
+                                                                (result.aiAnalysis as any).weak_areas ||
+                                                                []
+                                                            ).map((w: any, i: number) => (
                                                                 <li key={i}>
                                                                     {typeof w === 'string' ? w : (
                                                                         <>
-                                                                            <span className="font-medium">{w.moduleName}</span>: {w.gapAnalysis}
+                                                                            <span className="font-medium">{w.moduleName || w.module_name}</span>: {w.gapAnalysis || w.gap_analysis}
                                                                         </>
                                                                     )}
                                                                 </li>
@@ -165,7 +175,7 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                                                     </div>
                                                                     <p className="text-gray-700 mb-1">{r.description}</p>
                                                                     <div className="text-xs text-gray-500">
-                                                                        <span className="font-medium">Süre:</span> {r.estimatedDuration} • <span className="font-medium">Konular:</span> {r.modules?.join(', ')}
+                                                                        <span className="font-medium">Süre:</span> {r.estimatedDuration || r.estimated_duration} • <span className="font-medium">Konular:</span> {r.modules?.join(', ')}
                                                                     </div>
                                                                 </div>
                                                             )

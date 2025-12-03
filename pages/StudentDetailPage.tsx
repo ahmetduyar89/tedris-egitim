@@ -80,7 +80,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
     const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
     const [paymentConfig, setPaymentConfig] = useState<StudentPaymentConfig | null>(null);
     const [isEditingPaymentConfig, setIsEditingPaymentConfig] = useState(false);
-    const [newPerLessonFee, setNewPerLessonFee] = useState<number>(0);
+    const [newPerLessonFee, setNewPerLessonFee] = useState<string>('0');
     const [paymentConfigNotes, setPaymentConfigNotes] = useState<string>('');
 
 
@@ -295,7 +295,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 const config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
                 setPaymentConfig(config);
                 if (config) {
-                    setNewPerLessonFee(config.perLessonFee);
+                    setNewPerLessonFee(config.perLessonFee.toString());
                     setPaymentConfigNotes(config.notes || '');
                 }
             } catch (error) {
@@ -1702,8 +1702,8 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Ders Başı Ücret (TL)</label>
                                     <input
                                         type="number"
-                                        value={newPerLessonFee || ''}
-                                        onChange={e => setNewPerLessonFee(parseFloat(e.target.value) || 0)}
+                                        value={newPerLessonFee}
+                                        onChange={e => setNewPerLessonFee(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg py-2 px-3"
                                         step="0.01"
                                         min="0"
@@ -1726,7 +1726,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                                 await privateLessonService.setStudentPaymentConfig(
                                                     student.id,
                                                     user.id,
-                                                    newPerLessonFee,
+                                                    parseFloat(newPerLessonFee) || 0,
                                                     'TL',
                                                     paymentConfigNotes
                                                 );
@@ -1748,7 +1748,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                         onClick={() => {
                                             setIsEditingPaymentConfig(false);
                                             if (paymentConfig) {
-                                                setNewPerLessonFee(paymentConfig.perLessonFee);
+                                                setNewPerLessonFee(paymentConfig.perLessonFee.toString());
                                                 setPaymentConfigNotes(paymentConfig.notes || '');
                                             }
                                         }}

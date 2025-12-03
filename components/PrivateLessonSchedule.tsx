@@ -63,6 +63,10 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     const [paymentNotes, setPaymentNotes] = useState<string>('');
     const [studentPaymentConfig, setStudentPaymentConfig] = useState<number>(0);
 
+    // Drag and Drop states
+    const [draggedLesson, setDraggedLesson] = useState<PrivateLesson | null>(null);
+    const [dropTarget, setDropTarget] = useState<{ day: number; hour: number } | null>(null);
+
 
     useEffect(() => {
         const fetchAllStudents = async () => {
@@ -391,6 +395,97 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         }
     };
 
+    const handleMoveLesson = async (lesson: PrivateLesson, targetDay: number, targetHour: number, targetMinute: number = 0) => {
+        try {
+            // Calculate new date/time
+            const newStartDate = new Date(weekStart);
+            newStartDate.setDate(newStartDate.getDate() + targetDay);
+            newStartDate.setHours(targetHour, targetMinute, 0, 0);
+
+            const newEndDate = new Date(newStartDate);
+            newEndDate.setMinutes(newEndDate.getMinutes() + (lesson.duration || 60));
+
+            // If it's a virtual lesson, create a real one for this week
+            if (lesson.id.startsWith('virtual-')) {
+                const { error } = await supabase
+                    .from('private_lessons')
+                    .insert([{
+                        tutor_id: lesson.tutorId,
+                        student_id: lesson.studentId,
+                        student_name: lesson.studentName,
+                        start_time: newStartDate.toISOString(),
+                        end_time: newEndDate.toISOString(),
+                        subject: lesson.subject,
+                        duration: lesson.duration,
+                        status: lesson.status,
+                        color: lesson.color,
+                        contact: lesson.contact,
+                        grade: lesson.grade,
+                        lesson_notes: lesson.lessonNotes,
+                        homework: lesson.homework,
+                        topic: lesson.topic
+                    }]);
+
+                if (error) throw error;
+            } else {
+                // Update existing lesson
+                const { error } = await supabase
+                    .from('private_lessons')
+                    .update({
+                        start_time: newStartDate.toISOString(),
+                        end_time: newEndDate.toISOString()
+                    })
+                    .eq('id', lesson.id);
+
+                if (error) throw error;
+            }
+
+            fetchLessons();
+            alert('Ders başarıyla taşındı!');
+        } catch (error) {
+            console.error('Error moving lesson:', error);
+            alert('Ders taşınırken bir hata oluştu.');
+        }
+    };
+
+    const handleDragStart = (e: React.DragEvent, lesson: PrivateLesson) => {
+        setDraggedLesson(lesson);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+        // Add visual feedback
+        (e.currentTarget as HTMLElement).style.opacity = '0.5';
+    };
+
+    const handleDragEnd = (e: React.DragEvent) => {
+        (e.currentTarget as HTMLElement).style.opacity = '1';
+        setDraggedLesson(null);
+        setDropTarget(null);
+    };
+
+    const handleDragOver = (e: React.DragEvent, day: number, hour: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        setDropTarget({ day, hour });
+    };
+
+    const handleDragLeave = () => {
+        setDropTarget(null);
+    };
+
+    const handleDrop = async (e: React.DragEvent, day: number, hour: number) => {
+        e.preventDefault();
+        setDropTarget(null);
+
+        if (!draggedLesson) return;
+
+        // Get the minute from the drop position (if clicking on a specific time)
+        const targetMinute = 0; // Default to start of hour
+
+        await handleMoveLesson(draggedLesson, day, hour, targetMinute);
+        setDraggedLesson(null);
+    };
+
+
     const handleGenerateAISuggestions = async () => {
         if (!selectedLesson || !selectedStudent) return;
 
@@ -697,8 +792,17 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                         return lessonHour === hour;
                                     });
 
+                                    const isDropTarget = dropTarget?.day === dayIdx && dropTarget?.hour === hour;
+
                                     return (
-                                        <div key={dayIdx} className="border border-gray-100 rounded-lg min-h-[80px] relative">
+                                        <div
+                                            key={dayIdx}
+                                            className={`border rounded-lg min-h-[80px] relative transition-colors ${isDropTarget ? 'bg-blue-50 border-blue-300 border-2 border-dashed' : 'border-gray-100'
+                                                }`}
+                                            onDragOver={(e) => handleDragOver(e, dayIdx, hour)}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={(e) => handleDrop(e, dayIdx, hour)}
+                                        >
                                             {lessonsInHour.map(lesson => {
                                                 const startTime = new Date(lesson.startTime);
                                                 const endTime = new Date(lesson.endTime);
@@ -712,7 +816,10 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                 return (
                                                     <div
                                                         key={lesson.id}
-                                                        className="absolute left-1 right-1 rounded-lg p-2 cursor-pointer hover:opacity-90 transition-opacity group z-10"
+                                                        draggable
+                                                        onDragStart={(e) => handleDragStart(e, lesson)}
+                                                        onDragEnd={handleDragEnd}
+                                                        className="absolute left-1 right-1 rounded-lg p-2 cursor-move hover:opacity-90 transition-opacity group z-10 shadow-sm"
                                                         style={{
                                                             backgroundColor: lesson.color || '#FFB6C1',
                                                             top: `${topOffset}px`,

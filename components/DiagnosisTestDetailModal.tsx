@@ -122,9 +122,14 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                                     <div>
                                                         <h4 className="font-semibold text-green-700 mb-2">Güçlü Yönler</h4>
                                                         <ul className="list-disc list-inside space-y-1">
-                                                            {result.aiAnalysis.strongAreas.map((s, i) => (
+                                                            {/* Handle both new (strongAreas) and old (strengths) data structures */}
+                                                            {(result.aiAnalysis.strongAreas || (result.aiAnalysis as any).strengths || []).map((s: any, i: number) => (
                                                                 <li key={i}>
-                                                                    <span className="font-medium">{s.moduleName}</span>: {s.comment}
+                                                                    {typeof s === 'string' ? s : (
+                                                                        <>
+                                                                            <span className="font-medium">{s.moduleName}</span>: {s.comment}
+                                                                        </>
+                                                                    )}
                                                                 </li>
                                                             ))}
                                                         </ul>
@@ -132,9 +137,14 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                                     <div>
                                                         <h4 className="font-semibold text-red-700 mb-2">Gelişim Alanları</h4>
                                                         <ul className="list-disc list-inside space-y-1">
-                                                            {result.aiAnalysis.weakAreas.map((w, i) => (
+                                                            {/* Handle both new (weakAreas) and old (weaknesses) data structures */}
+                                                            {(result.aiAnalysis.weakAreas || (result.aiAnalysis as any).weaknesses || []).map((w: any, i: number) => (
                                                                 <li key={i}>
-                                                                    <span className="font-medium">{w.moduleName}</span>: {w.gapAnalysis}
+                                                                    {typeof w === 'string' ? w : (
+                                                                        <>
+                                                                            <span className="font-medium">{w.moduleName}</span>: {w.gapAnalysis}
+                                                                        </>
+                                                                    )}
                                                                 </li>
                                                             ))}
                                                         </ul>
@@ -143,14 +153,22 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                                 <div className="mt-4">
                                                     <h4 className="font-semibold text-blue-700 mb-2">Öneriler</h4>
                                                     <div className="space-y-3">
-                                                        {result.aiAnalysis.recommendations.map((r, i) => (
-                                                            <div key={i} className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                                                                <div className="font-bold text-blue-800 text-sm mb-1 uppercase">{r.type === 'study_plan' ? 'Çalışma Planı' : r.type === 'practice' ? 'Pratik' : r.type === 'review' ? 'Tekrar' : 'İleri Seviye'}</div>
-                                                                <p className="text-gray-700 mb-1">{r.description}</p>
-                                                                <div className="text-xs text-gray-500">
-                                                                    <span className="font-medium">Süre:</span> {r.estimatedDuration} • <span className="font-medium">Konular:</span> {r.modules.join(', ')}
+                                                        {(result.aiAnalysis.recommendations || []).map((r: any, i: number) => (
+                                                            typeof r === 'string' ? (
+                                                                <li key={i} className="list-disc list-inside">{r}</li>
+                                                            ) : (
+                                                                <div key={i} className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                                    <div className="font-bold text-blue-800 text-sm mb-1 uppercase">
+                                                                        {r.type === 'study_plan' ? 'Çalışma Planı' :
+                                                                            r.type === 'practice' ? 'Pratik' :
+                                                                                r.type === 'review' ? 'Tekrar' : 'İleri Seviye'}
+                                                                    </div>
+                                                                    <p className="text-gray-700 mb-1">{r.description}</p>
+                                                                    <div className="text-xs text-gray-500">
+                                                                        <span className="font-medium">Süre:</span> {r.estimatedDuration} • <span className="font-medium">Konular:</span> {r.modules?.join(', ')}
+                                                                    </div>
                                                                 </div>
-                                                            </div>
+                                                            )
                                                         ))}
                                                     </div>
                                                 </div>

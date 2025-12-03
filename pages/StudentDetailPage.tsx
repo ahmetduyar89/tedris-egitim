@@ -251,6 +251,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             setPdfTestSubmissions(studentPDFSubmissions);
 
 
+
             // Private Lessons
             const { data: lessonsData, error: lessonsError } = await supabase
                 .from('private_lessons')
@@ -262,27 +263,43 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             if (lessonsError) {
                 console.error('Error fetching private lessons:', lessonsError);
             } else {
-                const mappedLessons = (lessonsData || []).map(row => ({
-                    id: row.id,
-                    tutorId: row.tutor_id,
-                    studentId: row.student_id,
-                    studentName: row.student_name,
-                    startTime: row.start_time,
-                    endTime: row.end_time,
-                    subject: row.subject,
-                    topic: row.topic,
-                    status: row.status,
-                    notes: row.notes,
-                    duration: row.duration,
-                    color: row.color,
-                    contact: row.contact,
-                    grade: row.grade,
-                    lessonNotes: row.lesson_notes,
-                    homework: row.homework
+                const mappedLessons = await Promise.all((lessonsData || []).map(async row => {
+                    const lesson: PrivateLesson = {
+                        id: row.id,
+                        tutorId: row.tutor_id,
+                        studentId: row.student_id,
+                        studentName: row.student_name,
+                        startTime: row.start_time,
+                        endTime: row.end_time,
+                        subject: row.subject,
+                        topic: row.topic,
+                        status: row.status,
+                        notes: row.notes,
+                        duration: row.duration,
+                        color: row.color,
+                        contact: row.contact,
+                        grade: row.grade,
+                        lessonNotes: row.lesson_notes,
+                        homework: row.homework
+                    };
+
+                    // Fetch attendance data for this lesson
+                    try {
+                        const attendance = await privateLessonService.getLessonAttendance(row.id);
+                        if (attendance) {
+                            lesson.attendance = attendance;
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching attendance for lesson ${row.id}:`, error);
+                    }
+
+                    return lesson;
                 }));
+
                 // Filter for lessons that have topic or homework
                 setCompletedLessons(mappedLessons.filter(l => l.topic || l.homework));
             }
+
 
             // Lesson Stats and Payment Data
             try {
@@ -1661,7 +1678,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                     <div key={lesson.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
-                                                <div className="flex items-center space-x-2 mb-2">
+                                                <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
                                                     <span className="font-semibold text-gray-900">{lesson.subject}</span>
                                                     <span className="text-sm text-gray-500">
                                                         {new Date(lesson.startTime).toLocaleDateString('tr-TR', {
@@ -1670,6 +1687,38 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                                             year: 'numeric'
                                                         })}
                                                     </span>
+
+                                                    {/* Attendance Status Badge */}
+                                                    {lesson.attendance && (
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.attendanceStatus === 'completed'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : lesson.attendance.attendanceStatus === 'missed'
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : 'bg-orange-100 text-orange-700'
+                                                            }`}>
+                                                            {lesson.attendance.attendanceStatus === 'completed'
+                                                                ? '✓ Yapıldı'
+                                                                : lesson.attendance.attendanceStatus === 'missed'
+                                                                    ? '✗ Yapılmadı'
+                                                                    : '⊘ İptal'}
+                                                        </span>
+                                                    )}
+
+                                                    {/* Payment Status Badge */}
+                                                    {lesson.attendance?.attendanceStatus === 'completed' && lesson.attendance.paymentStatus && (
+                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.paymentStatus === 'paid'
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : lesson.attendance.paymentStatus === 'partial'
+                                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                                    : 'bg-gray-100 text-gray-700'
+                                                            }`}>
+                                                            {lesson.attendance.paymentStatus === 'paid'
+                                                                ? `💰 ${lesson.attendance.paymentAmount || 0} TL`
+                                                                : lesson.attendance.paymentStatus === 'partial'
+                                                                    ? `◐ ${lesson.attendance.paymentAmount || 0} TL (Kısmi)`
+                                                                    : 'Ödenmedi'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {lesson.topic && (
                                                     <p className="text-sm text-gray-700 mb-1">
@@ -1678,6 +1727,11 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                                 )}
                                                 {lesson.lessonNotes && (
                                                     <p className="text-sm text-gray-600 line-clamp-2">{lesson.lessonNotes}</p>
+                                                )}
+                                                {lesson.attendance?.paymentNotes && (
+                                                    <p className="text-xs text-gray-500 mt-1 italic">
+                                                        💬 {lesson.attendance.paymentNotes}
+                                                    </p>
                                                 )}
                                             </div>
                                         </div>
@@ -1701,15 +1755,12 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Ders Başı Ücret (TL)</label>
                                     <input
-                                        type="text"
-                                        inputMode="decimal"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
                                         value={newPerLessonFee}
-                                        onChange={e => {
-                                            const val = e.target.value;
-                                            if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
-                                                setNewPerLessonFee(val);
-                                            }
-                                        }}
+                                        onChange={e => setNewPerLessonFee(e.target.value)}
+                                        onFocus={e => e.target.select()}
                                         className="w-full border border-gray-300 rounded-lg py-2 px-3"
                                         placeholder="0.00"
                                     />

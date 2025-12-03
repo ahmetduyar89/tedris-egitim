@@ -1278,7 +1278,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                         {/* Attendance Tab */}
                         {detailActiveTab === 'attendance' && (
-                            <div className="space-y-4">
+                            <div className="space-y-4 min-h-[400px]">
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                                     <div className="flex items-center space-x-2 mb-2">
                                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -5,16 +5,19 @@ import { DiagnosisTest } from '../types/diagnosisTestTypes';
 import CreateDiagnosisTestPage from './CreateDiagnosisTestPage';
 import AssignDiagnosisTestModal from '../components/AssignDiagnosisTestModal';
 
+import DiagnosisTestResultsView from '../components/DiagnosisTestResultsView';
+
 interface TeacherDiagnosisTestsPageProps {
     user: User;
     onBack: () => void;
 }
 
 const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ user, onBack }) => {
-    const [view, setView] = useState<'list' | 'create'>('list');
+    const [view, setView] = useState<'list' | 'create' | 'results'>('list');
     const [tests, setTests] = useState<DiagnosisTest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [assignModalData, setAssignModalData] = useState<{ id: string; title: string } | null>(null);
+    const [selectedTest, setSelectedTest] = useState<DiagnosisTest | null>(null);
 
     useEffect(() => {
         if (view === 'list') {
@@ -39,12 +42,29 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
         loadTests();
     };
 
+    const handleViewResults = (test: DiagnosisTest) => {
+        setSelectedTest(test);
+        setView('results');
+    };
+
     if (view === 'create') {
         return (
             <CreateDiagnosisTestPage
                 user={user}
                 onBack={() => setView('list')}
                 onTestCreated={handleTestCreated}
+            />
+        );
+    }
+
+    if (view === 'results' && selectedTest) {
+        return (
+            <DiagnosisTestResultsView
+                test={selectedTest}
+                onBack={() => {
+                    setSelectedTest(null);
+                    setView('list');
+                }}
             />
         );
     }
@@ -137,8 +157,14 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
                                         </svg>
                                     </button>
 
-                                    <button className="text-gray-500 hover:text-gray-700 text-sm">
-                                        Detaylar
+                                    <button
+                                        onClick={() => handleViewResults(test)}
+                                        className="text-gray-500 hover:text-gray-700 text-sm font-medium flex items-center"
+                                    >
+                                        <span>Sonuçlar</span>
+                                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>

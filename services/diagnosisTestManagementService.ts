@@ -159,6 +159,39 @@ export const diagnosisTestManagementService = {
         }));
     },
 
+    async getTestAssignments(testId: string): Promise<DiagnosisTestAssignment[]> {
+        const { data, error } = await supabase
+            .from('diagnosis_test_assignments')
+            .select(`
+                *,
+                students (*)
+            `)
+            .eq('test_id', testId)
+            .order('assigned_at', { ascending: false });
+
+        if (error) throw error;
+
+        return data.map(d => ({
+            id: d.id,
+            testId: d.test_id,
+            studentId: d.student_id,
+            teacherId: d.teacher_id,
+            assignedAt: d.assigned_at,
+            dueDate: d.due_date,
+            isMandatory: d.is_mandatory,
+            status: d.status,
+            startedAt: d.started_at,
+            completedAt: d.completed_at,
+            score: d.score,
+            totalCorrect: d.total_correct,
+            totalQuestions: d.total_questions,
+            aiAnalysis: d.ai_analysis,
+            createdAt: d.created_at,
+            updatedAt: d.updated_at,
+            student: d.students
+        }));
+    },
+
     // ==================== ÖĞRENCİ: TEST ALMA ====================
 
     async getStudentAssignments(studentId: string): Promise<DiagnosisTestAssignment[]> {

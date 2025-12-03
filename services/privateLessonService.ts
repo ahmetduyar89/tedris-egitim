@@ -135,9 +135,9 @@ export async function setStudentPaymentConfig(
         .select('*')
         .eq('student_id', studentId)
         .eq('tutor_id', tutorId)
-        .single();
+        .maybeSingle();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
+    if (fetchError) {
         throw fetchError;
     }
 
@@ -188,10 +188,9 @@ export async function getStudentPaymentConfig(
         .select('*')
         .eq('student_id', studentId)
         .eq('tutor_id', tutorId)
-        .single();
+        .maybeSingle();
 
     if (error) {
-        if (error.code === 'PGRST116') return null;
         throw error;
     }
 

@@ -146,47 +146,47 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold font-poppins mb-4">Yeni Öğrenci Ekle</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md max-h-[95vh] overflow-y-auto">
+                <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4">Yeni Öğrenci Ekle</h2>
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
-                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
+                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base">
                             <option value={4}>İlkokul</option>
                             {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Öğrenci E-posta (Giriş için)</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci E-posta (Giriş için)</label>
                         <input
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             required
                             autoComplete="off"
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Öğrenci Şifresi (Giriş için)</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci Şifresi (Giriş için)</label>
                         <input
                             type="password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             required
                             autoComplete="new-password"
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base"
                         />
                     </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button type="button" onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600">İptal</button>
-                        <button type="submit" className="bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark">Öğrenciyi Kaydet</button>
+                    {error && <p className="text-red-500 text-xs sm:text-sm">{error}</p>}
+                    <div className="mt-4 sm:mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                        <button type="button" onClick={onClose} className="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm sm:text-base">İptal</button>
+                        <button type="submit" className="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark text-sm sm:text-base">Öğrenciyi Kaydet</button>
                     </div>
                 </form>
             </div>
@@ -222,17 +222,17 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-                <h2 className="text-2xl font-bold font-poppins mb-4">Öğrenci Düzenle</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md max-h-[95vh] overflow-y-auto">
+                <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4">Öğrenci Düzenle</h2>
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" />
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
-                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
+                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base">
                             <option value={4}>İlkokul</option>
                             {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
@@ -243,18 +243,18 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                                 type="checkbox"
                                 checked={isAiAssistantEnabled}
                                 onChange={(e) => setIsAiAssistantEnabled(e.target.checked)}
-                                className="w-5 h-5 text-primary rounded focus:ring-primary"
+                                className="w-4 h-4 sm:w-5 sm:h-5 text-primary rounded focus:ring-primary"
                             />
                             <div>
-                                <span className="text-sm font-medium text-gray-700">AI Asistan Aktif</span>
+                                <span className="text-xs sm:text-sm font-medium text-gray-700">AI Asistan Aktif</span>
                                 <p className="text-xs text-gray-500">Öğrenci AI Asistan'a erişebilir</p>
                             </div>
                         </label>
                     </div>
-                    {error && <p className="text-red-500 text-sm">{error}</p>}
-                    <div className="mt-6 flex justify-end space-x-3">
-                        <button type="button" onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600">İptal</button>
-                        <button type="submit" className="bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark">Güncelle</button>
+                    {error && <p className="text-red-500 text-xs sm:text-sm">{error}</p>}
+                    <div className="mt-4 sm:mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                        <button type="button" onClick={onClose} className="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm sm:text-base">İptal</button>
+                        <button type="submit" className="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark text-sm sm:text-base">Güncelle</button>
                     </div>
                 </form>
             </div>
@@ -263,17 +263,17 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
 };
 
 const ConfirmDeleteModal: React.FC<{ studentName: string; onConfirm: () => void; onCancel: () => void }> = ({ studentName, onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-            <h2 className="text-2xl font-bold font-poppins mb-4 text-red-600">Öğrenciyi Sil</h2>
-            <p className="text-gray-700 mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
+            <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4 text-red-600">Öğrenciyi Sil</h2>
+            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
                 <span className="font-semibold">{studentName}</span> adlı öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve öğrencinin tüm verileri silinecektir.
             </p>
-            <div className="flex justify-end space-x-3">
-                <button onClick={onCancel} className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                <button onClick={onCancel} className="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm sm:text-base">
                     İptal
                 </button>
-                <button onClick={onConfirm} className="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700">
+                <button onClick={onConfirm} className="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 text-sm sm:text-base">
                     Sil
                 </button>
             </div>
@@ -300,35 +300,35 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
 
     return (
         <div
-            className="bg-card-background p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
+            className="bg-card-background p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
             onClick={onSelect}
         >
             <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                    <div className="bg-primary text-white rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold font-poppins">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+                    <div className="bg-primary text-white rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center text-lg sm:text-xl font-bold font-poppins flex-shrink-0">
                         {student.name.charAt(0)}
                     </div>
-                    <div>
-                        <h3 className="text-lg font-bold font-poppins text-text-primary">{student.name}</h3>
-                        <p className="text-text-secondary">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</p>
+                    <div className="min-w-0 flex-1">
+                        <h3 className="text-base sm:text-lg font-bold font-poppins text-text-primary truncate">{student.name}</h3>
+                        <p className="text-sm sm:text-base text-text-secondary">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</p>
                     </div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex space-x-1 sm:space-x-2 flex-shrink-0 ml-2">
                     <button
                         onClick={handleEdit}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Düzenle"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                         </svg>
                     </button>
                     <button
                         onClick={handleDelete}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Sil"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                         </svg>
                     </button>
@@ -531,23 +531,23 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
 
     const renderStudentsList = () => (
         <div className="p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
                 {students.length > 0 && (
                     <RiskAlertsPanel students={students} onViewStudent={handleSelectStudent} />
                 )}
 
                 <div>
-                    <h2 className="text-3xl font-bold font-poppins text-text-primary mb-6">Öğrencilerim</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold font-poppins text-text-primary mb-4 sm:mb-6">Öğrencilerim</h2>
                     {isLoadingStudents ? (
-                        <div className="flex flex-col items-center justify-center py-20">
-                            <svg className="animate-spin h-12 w-12 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <div className="flex flex-col items-center justify-center py-12 sm:py-20">
+                            <svg className="animate-spin h-10 w-10 sm:h-12 sm:w-12 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <p className="text-gray-600 text-lg font-semibold">Öğrenciler yükleniyor...</p>
+                            <p className="text-gray-600 text-base sm:text-lg font-semibold">Öğrenciler yükleniyor...</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                             {students.map(student => (
                                 <StudentCard
                                     key={student.id}
@@ -558,14 +558,14 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                                 />
                             ))}
                             <div
-                                className="bg-gray-50 border-2 border-dashed border-border p-6 rounded-xl flex items-center justify-center hover:border-primary hover:text-primary transition-colors duration-300 cursor-pointer"
+                                className="bg-gray-50 border-2 border-dashed border-border p-4 sm:p-6 rounded-xl flex items-center justify-center hover:border-primary hover:text-primary transition-colors duration-300 cursor-pointer"
                                 onClick={() => setIsAddingStudent(true)}
                             >
                                 <div className="text-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mx-auto text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-400">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                                     </svg>
-                                    <p className="mt-2 font-semibold">Yeni Öğrenci Ekle</p>
+                                    <p className="mt-2 font-semibold text-sm sm:text-base">Yeni Öğrenci Ekle</p>
                                 </div>
                             </div>
                         </div>

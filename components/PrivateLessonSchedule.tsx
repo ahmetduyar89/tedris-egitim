@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/dbAdapter';
-import { User, Student, PrivateLesson, Subject } from '../types';
+import { User, Student, PrivateLesson, Subject, LessonAttendance, StudentPaymentConfig } from '../types';
 import * as optimizedAIService from '../services/optimizedAIService';
+import * as privateLessonService from '../services/privateLessonService';
+
 
 interface PrivateLessonScheduleProps {
     user: User;
@@ -35,7 +37,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     const [lessonFormColor, setLessonFormColor] = useState(COLORS[0]);
 
     // Student Detail - Homework Assignment
-    const [detailActiveTab, setDetailActiveTab] = useState<'notes' | 'homework' | 'ai'>('notes');
+    const [detailActiveTab, setDetailActiveTab] = useState<'notes' | 'homework' | 'ai' | 'attendance'>('notes');
     const [detailLessonNotes, setDetailLessonNotes] = useState('');
     const [detailTopic, setDetailTopic] = useState('');
     const [weeklyHomework, setWeeklyHomework] = useState<{ [day: string]: string }>({
@@ -52,6 +54,15 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     const [aiLoading, setAiLoading] = useState(false);
     const [aiSummary, setAiSummary] = useState('');
     const [aiHomeworkSuggestions, setAiHomeworkSuggestions] = useState('');
+
+    // Attendance Tracking states
+    const [attendanceStatus, setAttendanceStatus] = useState<'completed' | 'missed' | 'cancelled'>('completed');
+    const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid' | 'partial'>('unpaid');
+    const [paymentAmount, setPaymentAmount] = useState<number>(0);
+    const [paymentDate, setPaymentDate] = useState<string>('');
+    const [paymentNotes, setPaymentNotes] = useState<string>('');
+    const [studentPaymentConfig, setStudentPaymentConfig] = useState<number>(0);
+
 
     useEffect(() => {
         const fetchAllStudents = async () => {
@@ -255,7 +266,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         }
     };
 
-    const handleLessonClick = (lesson: PrivateLesson) => {
+    const handleLessonClick = async (lesson: PrivateLesson) => {
         setSelectedLesson(lesson);
         const student = allStudents.find(s => s.id === lesson.studentId);
         if (student) {
@@ -287,9 +298,47 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 });
             }
 
+            // Load attendance data if exists
+            try {
+                const attendance = await privateLessonService.getLessonAttendance(lesson.id);
+                if (attendance) {
+                    setAttendanceStatus(attendance.attendanceStatus);
+                    setPaymentStatus(attendance.paymentStatus);
+                    setPaymentAmount(attendance.paymentAmount || 0);
+                    setPaymentDate(attendance.paymentDate ? attendance.paymentDate.split('T')[0] : '');
+                    setPaymentNotes(attendance.paymentNotes || '');
+                } else {
+                    // Reset attendance states
+                    setAttendanceStatus('completed');
+                    setPaymentStatus('unpaid');
+                    setPaymentAmount(0);
+                    setPaymentDate('');
+                    setPaymentNotes('');
+                }
+            } catch (error) {
+                console.error('Error loading attendance:', error);
+            }
+
+            // Load student payment config
+            try {
+                const config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
+                if (config) {
+                    setStudentPaymentConfig(config.perLessonFee);
+                    // Auto-fill payment amount if not already set
+                    if (!lesson.attendance) {
+                        setPaymentAmount(config.perLessonFee);
+                    }
+                } else {
+                    setStudentPaymentConfig(0);
+                }
+            } catch (error) {
+                console.error('Error loading payment config:', error);
+            }
+
             setIsStudentDetailModalOpen(true);
         }
     };
+
 
     const handleSaveStudentDetail = async () => {
         if (!selectedLesson) return;
@@ -962,6 +1011,15 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                 </svg>
                                 <span>AI Asistan</span>
                             </button>
+                            <button
+                                onClick={() => setDetailActiveTab('attendance')}
+                                className={`px-3 sm:px-6 py-3 font-medium flex items-center space-x-1 sm:space-x-2 whitespace-nowrap flex-shrink-0 text-sm sm:text-base ${detailActiveTab === 'attendance' ? 'border-b-2 border-primary text-primary' : 'text-gray-500'}`}
+                            >
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Katılım</span>
+                            </button>
                         </div>
 
                         {/* Tab Content */}
@@ -1215,6 +1273,199 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
                                                 <span>Ders Notlarına Aktar</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Attendance Tab */}
+                                {detailActiveTab === 'attendance' && (
+                                    <div className="space-y-4">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <h4 className="font-semibold text-blue-900">Ders Takibi</h4>
+                                            </div>
+                                            <p className="text-sm text-blue-800">
+                                                Bu dersin yapılıp yapılmadığını ve ödeme durumunu buradan takip edebilirsiniz.
+                                            </p>
+                                        </div>
+
+                                        {/* Attendance Status */}
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Ders Durumu</label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAttendanceStatus('completed')}
+                                                    className={`px-4 py-3 rounded-lg border-2 transition-all ${attendanceStatus === 'completed'
+                                                        ? 'border-green-500 bg-green-50 text-green-700'
+                                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex flex-col items-center space-y-1">
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span className="text-xs font-medium">Yapıldı</span>
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAttendanceStatus('missed')}
+                                                    className={`px-4 py-3 rounded-lg border-2 transition-all ${attendanceStatus === 'missed'
+                                                        ? 'border-red-500 bg-red-50 text-red-700'
+                                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex flex-col items-center space-y-1">
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                        <span className="text-xs font-medium">Yapılmadı</span>
+                                                    </div>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAttendanceStatus('cancelled')}
+                                                    className={`px-4 py-3 rounded-lg border-2 transition-all ${attendanceStatus === 'cancelled'
+                                                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <div className="flex flex-col items-center space-y-1">
+                                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                        </svg>
+                                                        <span className="text-xs font-medium">İptal</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Payment Section - Only show if lesson was completed */}
+                                        {attendanceStatus === 'completed' && (
+                                            <div className="space-y-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                                <h4 className="font-semibold text-gray-900 flex items-center space-x-2">
+                                                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span>Ödeme Bilgileri</span>
+                                                </h4>
+
+                                                {/* Payment Status */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Durumu</label>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentStatus('paid')}
+                                                            className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === 'paid'
+                                                                ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                }`}
+                                                        >
+                                                            ✓ Ödendi
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentStatus('unpaid')}
+                                                            className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === 'unpaid'
+                                                                ? 'border-red-500 bg-red-50 text-red-700 font-semibold'
+                                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                }`}
+                                                        >
+                                                            ✗ Ödenmedi
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentStatus('partial')}
+                                                            className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === 'partial'
+                                                                ? 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold'
+                                                                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                                }`}
+                                                        >
+                                                            ◐ Kısmi
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Payment Amount */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Ücret (TL)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={paymentAmount || ''}
+                                                            onChange={e => setPaymentAmount(parseFloat(e.target.value) || 0)}
+                                                            placeholder="0.00"
+                                                            className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm"
+                                                            step="0.01"
+                                                            min="0"
+                                                        />
+                                                        {studentPaymentConfig > 0 && (
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                Varsayılan: {studentPaymentConfig} TL
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Tarihi</label>
+                                                        <input
+                                                            type="date"
+                                                            value={paymentDate}
+                                                            onChange={e => setPaymentDate(e.target.value)}
+                                                            className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Payment Notes */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Notları</label>
+                                                    <textarea
+                                                        value={paymentNotes}
+                                                        onChange={e => setPaymentNotes(e.target.value)}
+                                                        placeholder="Ödeme ile ilgili notlar..."
+                                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 h-20 text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Save Button for Attendance */}
+                                        <div className="flex justify-end pt-4">
+                                            <button
+                                                onClick={async () => {
+                                                    if (!selectedLesson || !selectedStudent) return;
+
+                                                    try {
+                                                        await privateLessonService.markLessonAttendance(
+                                                            selectedLesson.id,
+                                                            selectedStudent.id,
+                                                            user.id,
+                                                            attendanceStatus,
+                                                            attendanceStatus === 'completed' ? {
+                                                                paymentAmount,
+                                                                paymentStatus,
+                                                                paymentDate: paymentDate || undefined,
+                                                                paymentNotes: paymentNotes || undefined
+                                                            } : undefined
+                                                        );
+
+                                                        alert('Katılım bilgisi kaydedildi!');
+                                                        fetchLessons();
+                                                    } catch (error) {
+                                                        console.error('Error saving attendance:', error);
+                                                        alert('Katılım bilgisi kaydedilirken bir hata oluştu.');
+                                                    }
+                                                }}
+                                                className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm font-medium"
+                                            >
+                                                Katılım Bilgisini Kaydet
                                             </button>
                                         </div>
                                     </div>

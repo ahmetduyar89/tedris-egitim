@@ -580,4 +580,48 @@ export interface PrivateLesson {
   grade?: number;
   lessonNotes?: string;
   homework?: string;
+  attendance?: LessonAttendance;
+}
+
+export interface LessonAttendance {
+  id: string;
+  lessonId: string;
+  studentId: string;
+  tutorId: string;
+  attendanceStatus: 'completed' | 'missed' | 'cancelled';
+  paymentAmount?: number;
+  paymentStatus: 'paid' | 'unpaid' | 'partial';
+  paymentDate?: string;
+  paymentNotes?: string;
+  markedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StudentPaymentConfig {
+  id: string;
+  studentId: string;
+  tutorId: string;
+  perLessonFee: number;
+  currency: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LessonStats {
+  totalScheduled: number;
+  totalCompleted: number;
+  totalMissed: number;
+  totalCancelled: number;
+  completionRate: number;
+}
+
+export interface PaymentSummary {
+  totalEarned: number;
+  totalPending: number;
+  totalLessons: number;
+  paidLessons: number;
+  unpaidLessons: number;
+  currency: string;
 }

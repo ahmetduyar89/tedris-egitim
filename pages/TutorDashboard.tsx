@@ -6,6 +6,7 @@ import ContentLibraryPage from './ContentLibraryPage';
 import CreateInteractiveMaterialPage from './CreateInteractiveMaterialPage';
 import QuestionBankPage from './QuestionBankPage';
 import RiskAlertsPanel from '../components/RiskAlertsPanel';
+import RevenueOverview from '../components/RevenueOverview';
 import { supabase } from '../services/dbAdapter';
 
 const TedrisLogo = () => (
@@ -533,7 +534,10 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         <div className="p-4 md:p-8">
             <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
                 {students.length > 0 && (
-                    <RiskAlertsPanel students={students} onViewStudent={handleSelectStudent} />
+                    <>
+                        <RiskAlertsPanel students={students} onViewStudent={handleSelectStudent} />
+                        <RevenueOverview tutorId={user.id} students={students} />
+                    </>
                 )}
 
                 <div>

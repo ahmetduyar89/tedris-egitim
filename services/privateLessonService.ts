@@ -318,6 +318,79 @@ export async function getPaymentSummary(
     };
 }
 
+/**
+ * Get bulk payment summaries for multiple students
+ */
+export async function getBulkPaymentSummaries(
+    studentIds: string[],
+    tutorId: string,
+    dateRange?: { start: string; end: string }
+): Promise<Record<string, PaymentSummary>> {
+    if (studentIds.length === 0) return {};
+
+    // 1. Fetch all attendance records for these students
+    let query = supabase
+        .from('lesson_attendance')
+        .select('student_id, payment_amount, payment_status, marked_at')
+        .in('student_id', studentIds)
+        .eq('tutor_id', tutorId);
+
+    if (dateRange) {
+        query = query
+            .gte('marked_at', dateRange.start)
+            .lte('marked_at', dateRange.end);
+    }
+
+    const { data: attendanceData, error: attendanceError } = await query;
+    if (attendanceError) throw attendanceError;
+
+    // 2. Fetch all payment configs for these students
+    const { data: configData, error: configError } = await supabase
+        .from('student_payment_config')
+        .select('student_id, currency')
+        .in('student_id', studentIds)
+        .eq('tutor_id', tutorId);
+
+    if (configError) throw configError;
+
+    // 3. Map configs for easy lookup
+    const configMap = new Map<string, string>();
+    configData?.forEach(config => {
+        configMap.set(config.student_id, config.currency);
+    });
+
+    // 4. Aggregate data per student
+    const summaries: Record<string, PaymentSummary> = {};
+
+    studentIds.forEach(studentId => {
+        const studentAttendance = attendanceData?.filter(a => a.student_id === studentId) || [];
+        const currency = configMap.get(studentId) || 'TL';
+
+        const totalLessons = studentAttendance.length;
+        const paidLessons = studentAttendance.filter(a => a.payment_status === 'paid').length;
+        const unpaidLessons = studentAttendance.filter(a => a.payment_status === 'unpaid').length;
+
+        const totalEarned = studentAttendance
+            .filter(a => a.payment_status === 'paid')
+            .reduce((sum, a) => sum + (a.payment_amount || 0), 0);
+
+        const totalPending = studentAttendance
+            .filter(a => a.payment_status === 'unpaid' || a.payment_status === 'partial')
+            .reduce((sum, a) => sum + (a.payment_amount || 0), 0);
+
+        summaries[studentId] = {
+            totalEarned,
+            totalPending,
+            totalLessons,
+            paidLessons,
+            unpaidLessons,
+            currency
+        };
+    });
+
+    return summaries;
+}
+
 // ==================== Helper Functions ====================
 
 function mapAttendanceFromDB(data: any): LessonAttendance {

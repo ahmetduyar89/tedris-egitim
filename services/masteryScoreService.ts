@@ -234,4 +234,50 @@ export const masteryScoreService = {
       totalAttempts,
     };
   },
+
+  async getBulkMasteryStatistics(studentIds: string[]): Promise<Record<string, {
+    totalModules: number;
+    masteredCount: number;
+    progressCount: number;
+    weakCount: number;
+    averageScore: number;
+    totalAttempts: number;
+  }>> {
+    const bulkMasteryData = await knowledgeGraphService.getBulkStudentMastery(studentIds);
+    const result: Record<string, any> = {};
+
+    studentIds.forEach(studentId => {
+      const masteryData = bulkMasteryData[studentId] || [];
+
+      let masteredCount = 0;
+      let progressCount = 0;
+      let weakCount = 0;
+      let totalScore = 0;
+      let totalAttempts = 0;
+
+      masteryData.forEach(mastery => {
+        totalScore += mastery.masteryScore;
+        totalAttempts += mastery.attemptsCount;
+
+        if (mastery.masteryScore >= 0.7) {
+          masteredCount++;
+        } else if (mastery.masteryScore >= 0.5) {
+          progressCount++;
+        } else {
+          weakCount++;
+        }
+      });
+
+      result[studentId] = {
+        totalModules: masteryData.length,
+        masteredCount,
+        progressCount,
+        weakCount,
+        averageScore: masteryData.length > 0 ? Math.round((totalScore / masteryData.length) * 100) / 100 : 0,
+        totalAttempts,
+      };
+    });
+
+    return result;
+  },
 };

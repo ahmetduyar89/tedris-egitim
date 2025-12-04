@@ -273,6 +273,45 @@ export const knowledgeGraphService = {
     }));
   },
 
+  async getBulkWeakModules(studentIds: string[], threshold: number = 0.7): Promise<Record<string, StudentMastery[]>> {
+    if (studentIds.length === 0) return {};
+
+    const { data, error } = await supabase
+      .from('student_mastery')
+      .select(`
+        *,
+        kg_modules (*)
+      `)
+      .in('student_id', studentIds)
+      .lt('mastery_score', threshold)
+      .order('mastery_score', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching bulk weak modules:', error);
+      throw error;
+    }
+
+    const result: Record<string, StudentMastery[]> = {};
+
+    // Initialize empty arrays for all students
+    studentIds.forEach(id => {
+      result[id] = [];
+    });
+
+    data.forEach(item => {
+      const studentId = item.student_id;
+      if (!result[studentId]) {
+        result[studentId] = [];
+      }
+      result[studentId].push({
+        ...convertFromSnakeCase(item),
+        module: item.kg_modules ? convertFromSnakeCase(item.kg_modules) : undefined,
+      });
+    });
+
+    return result;
+  },
+
   async getMasteryHistory(studentId: string, moduleId?: string): Promise<MasteryHistory[]> {
     let query = supabase
       .from('mastery_history')
@@ -298,6 +337,43 @@ export const knowledgeGraphService = {
       ...convertFromSnakeCase(item),
       module: item.kg_modules ? convertFromSnakeCase(item.kg_modules) : undefined,
     }));
+  },
+
+  async getBulkStudentMastery(studentIds: string[]): Promise<Record<string, StudentMastery[]>> {
+    if (studentIds.length === 0) return {};
+
+    const { data, error } = await supabase
+      .from('student_mastery')
+      .select(`
+        *,
+        kg_modules (*)
+      `)
+      .in('student_id', studentIds);
+
+    if (error) {
+      console.error('Error fetching bulk student mastery:', error);
+      throw error;
+    }
+
+    const result: Record<string, StudentMastery[]> = {};
+
+    // Initialize empty arrays
+    studentIds.forEach(id => {
+      result[id] = [];
+    });
+
+    data.forEach(item => {
+      const studentId = item.student_id;
+      if (!result[studentId]) {
+        result[studentId] = [];
+      }
+      result[studentId].push({
+        ...convertFromSnakeCase(item),
+        module: item.kg_modules ? convertFromSnakeCase(item.kg_modules) : undefined,
+      });
+    });
+
+    return result;
   },
 
   async getTedrisPlan(studentId: string, startDate?: string, endDate?: string): Promise<TedrisPlanTask[]> {

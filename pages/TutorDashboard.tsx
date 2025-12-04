@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { User, Student, UserRole, LearningLoopStatus } from '../types';
 import Header from '../components/Header';
 import StudentDetailPage from './StudentDetailPage';
@@ -8,6 +8,8 @@ import QuestionBankPage from './QuestionBankPage';
 import RiskAlertsPanel from '../components/RiskAlertsPanel';
 import RevenueOverview from '../components/RevenueOverview';
 import { supabase } from '../services/dbAdapter';
+import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
+import PrivateLessonSchedule from '../components/PrivateLessonSchedule';
 
 const TedrisLogo = () => (
     <svg className="h-10 w-auto" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -27,19 +29,20 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsSubmitting(true);
 
         if (password.length < 6) {
             setError('Şifre en az 6 karakter olmalıdır.');
+            setIsSubmitting(false);
             return;
         }
 
         try {
-            // 1. Use direct fetch to Supabase Auth API to avoid triggering global auth state changes
-            // This is the most isolated way to create a user without affecting the current session
             const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
             const response = await fetch(authUrl, {
                 method: 'POST',
@@ -62,14 +65,6 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
             if (authData.user || authData.id) {
                 const userId = authData.user?.id || authData.id;
 
-                // 2. We need to insert data into tables.
-                // Since we can't use the main supabase client (it's logged in as tutor)
-                // and we can't easily get a client for the new user without logging in (which we want to avoid),
-                // we will use the "Allow profile creation during registration" policy we created.
-
-                // To do this, we need a client authenticated as the NEW user.
-                // We can create a temporary client using the access token we just got.
-
                 const { createClient } = await import('@supabase/supabase-js');
                 const tempClient = createClient(
                     import.meta.env.VITE_SUPABASE_URL,
@@ -85,7 +80,6 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                     }
                 );
 
-                // 3. Add to public.users table
                 const { error: userError } = await tempClient
                     .from('users')
                     .insert([{
@@ -98,7 +92,6 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
 
                 if (userError) throw userError;
 
-                // 4. Add to students table
                 const { error: studentError } = await tempClient
                     .from('students')
                     .insert([{
@@ -114,7 +107,6 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
 
                 if (studentError) throw studentError;
 
-                // 5. Success!
                 const newStudent: Student = {
                     id: userId,
                     name: name.trim(),
@@ -143,51 +135,93 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                 setError(error.message || 'Öğrenci oluşturulurken bir hata oluştu.');
             }
             console.error("Error creating student:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md max-h-[95vh] overflow-y-auto">
-                <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4">Yeni Öğrenci Ekle</h2>
-                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md max-h-[95vh] overflow-y-auto transform transition-all scale-100">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold font-poppins text-gray-800">Yeni Öğrenci Ekle</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Adı Soyadı</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            required
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="Ad Soyad"
+                        />
                     </div>
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
-                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sınıf Seviyesi</label>
+                        <select
+                            value={grade}
+                            onChange={e => setGrade(parseInt(e.target.value, 10))}
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all bg-white"
+                        >
                             <option value={4}>İlkokul</option>
-                            {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                            {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci E-posta (Giriş için)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci E-posta (Giriş için)</label>
                         <input
                             type="email"
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             required
                             autoComplete="off"
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base"
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="ornek@ogrenci.com"
                         />
                     </div>
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci Şifresi (Giriş için)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Şifresi (Giriş için)</label>
                         <input
                             type="password"
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             required
                             autoComplete="new-password"
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base"
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="******"
                         />
                     </div>
-                    {error && <p className="text-red-500 text-xs sm:text-sm">{error}</p>}
-                    <div className="mt-4 sm:mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-                        <button type="button" onClick={onClose} className="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm sm:text-base">İptal</button>
-                        <button type="submit" className="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark text-sm sm:text-base">Öğrenciyi Kaydet</button>
+                    {error && (
+                        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center">
+                            <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            {error}
+                        </div>
+                    )}
+                    <div className="pt-2 flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 font-medium transition-colors"
+                        >
+                            İptal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 bg-primary text-white px-4 py-3 rounded-xl hover:bg-primary-dark font-medium transition-colors disabled:opacity-50 flex justify-center items-center"
+                        >
+                            {isSubmitting ? (
+                                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            ) : 'Öğrenciyi Kaydet'}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -200,10 +234,12 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
     const [grade, setGrade] = useState(student.grade);
     const [isAiAssistantEnabled, setIsAiAssistantEnabled] = useState(student.isAiAssistantEnabled ?? true);
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsSubmitting(true);
 
         try {
             const { error: updateError } = await supabase
@@ -219,43 +255,54 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
         } catch (error: any) {
             setError('Öğrenci güncellenirken bir hata oluştu.');
             console.error('Error updating student:', error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md max-h-[95vh] overflow-y-auto">
-                <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4">Öğrenci Düzenle</h2>
-                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold font-poppins text-gray-800">Öğrenci Düzenle</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Öğrenci Adı Soyadı</label>
-                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base" />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Adı Soyadı</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" />
                     </div>
                     <div>
-                        <label className="block text-xs sm:text-sm font-medium text-gray-700">Sınıf Seviyesi</label>
-                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm sm:text-base">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sınıf Seviyesi</label>
+                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all bg-white">
                             <option value={4}>İlkokul</option>
-                            {[5, 6, 7, 8, 9, 10].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                            {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
                     </div>
-                    <div>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                         <label className="flex items-center space-x-3 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={isAiAssistantEnabled}
-                                onChange={(e) => setIsAiAssistantEnabled(e.target.checked)}
-                                className="w-4 h-4 sm:w-5 sm:h-5 text-primary rounded focus:ring-primary"
-                            />
+                            <div className="relative flex items-center">
+                                <input
+                                    type="checkbox"
+                                    checked={isAiAssistantEnabled}
+                                    onChange={(e) => setIsAiAssistantEnabled(e.target.checked)}
+                                    className="w-5 h-5 text-primary rounded focus:ring-primary border-gray-300"
+                                />
+                            </div>
                             <div>
-                                <span className="text-xs sm:text-sm font-medium text-gray-700">AI Asistan Aktif</span>
-                                <p className="text-xs text-gray-500">Öğrenci AI Asistan'a erişebilir</p>
+                                <span className="text-sm font-semibold text-gray-800">AI Asistan Aktif</span>
+                                <p className="text-xs text-gray-500 mt-0.5">Öğrenci yapay zeka asistanına erişebilir</p>
                             </div>
                         </label>
                     </div>
-                    {error && <p className="text-red-500 text-xs sm:text-sm">{error}</p>}
-                    <div className="mt-4 sm:mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-                        <button type="button" onClick={onClose} className="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm sm:text-base">İptal</button>
-                        <button type="submit" className="w-full sm:w-auto bg-primary text-white px-4 py-2 rounded-xl hover:bg-primary-dark text-sm sm:text-base">Güncelle</button>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    <div className="pt-2 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 font-medium transition-colors">İptal</button>
+                        <button type="submit" disabled={isSubmitting} className="flex-1 bg-primary text-white px-4 py-3 rounded-xl hover:bg-primary-dark font-medium transition-colors disabled:opacity-50">
+                            {isSubmitting ? 'Güncelleniyor...' : 'Güncelle'}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -264,18 +311,21 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
 };
 
 const ConfirmDeleteModal: React.FC<{ studentName: string; onConfirm: () => void; onCancel: () => void }> = ({ studentName, onConfirm, onCancel }) => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
-            <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4 text-red-600">Öğrenciyi Sil</h2>
-            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
-                <span className="font-semibold">{studentName}</span> adlı öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve öğrencinin tüm verileri silinecektir.
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h2 className="text-2xl font-bold font-poppins mb-2 text-center text-gray-800">Öğrenciyi Sil</h2>
+            <p className="text-gray-600 text-center mb-8">
+                <span className="font-bold text-gray-900">{studentName}</span> adlı öğrenciyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve öğrencinin tüm verileri silinecektir.
             </p>
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
-                <button onClick={onCancel} className="w-full sm:w-auto bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm sm:text-base">
+            <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 font-medium transition-colors">
                     İptal
                 </button>
-                <button onClick={onConfirm} className="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 text-sm sm:text-base">
-                    Sil
+                <button onClick={onConfirm} className="flex-1 bg-red-600 text-white px-4 py-3 rounded-xl hover:bg-red-700 font-medium transition-colors shadow-lg shadow-red-200">
+                    Evet, Sil
                 </button>
             </div>
         </div>
@@ -301,47 +351,64 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
 
     return (
         <div
-            className="bg-card-background p-4 sm:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer transform hover:-translate-y-1"
+            className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-100 overflow-hidden relative"
             onClick={onSelect}
         >
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-                    <div className="bg-primary text-white rounded-full h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center text-lg sm:text-xl font-bold font-poppins flex-shrink-0">
-                        {student.name.charAt(0)}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+            <div className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                        <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl h-14 w-14 flex items-center justify-center text-2xl font-bold font-poppins shadow-lg shadow-primary/30">
+                            {student.name.charAt(0)}
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold font-poppins text-gray-900 group-hover:text-primary transition-colors">{student.name}</h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-md">
+                                    {student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}
+                                </span>
+                                <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-md border border-yellow-100">
+                                    Seviye {student.level}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <h3 className="text-base sm:text-lg font-bold font-poppins text-text-primary truncate">{student.name}</h3>
-                        <p className="text-sm sm:text-base text-text-secondary">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</p>
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button
+                            onClick={handleEdit}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Düzenle"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Sil"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
                     </div>
                 </div>
-                <div className="flex space-x-1 sm:space-x-2 flex-shrink-0 ml-2">
-                    <button
-                        onClick={handleEdit}
-                        className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Düzenle"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        className="p-1.5 sm:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Sil"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                        </svg>
-                    </button>
+
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-1">Toplam XP</p>
+                        <p className="text-sm font-bold text-gray-900">{student.xp.toLocaleString()} XP</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-3">
+                        <p className="text-xs text-gray-500 mb-1">Durum</p>
+                        <p className="text-sm font-bold text-green-600">Aktif</p>
+                    </div>
                 </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-3 border-t border-gray-100 flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-medium">Detayları Görüntüle</span>
+                <svg className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </div>
         </div>
     );
 };
-
-import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
-
-import PrivateLessonSchedule from '../components/PrivateLessonSchedule';
 
 type View = 'students' | 'studentDetail' | 'library' | 'createMaterial' | 'questionBank' | 'diagnosisTests' | 'privateLessons';
 
@@ -373,9 +440,9 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
                     <button
                         key={item.id}
                         onClick={() => setView(item.id as View)}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-colors ${isActive(item.id as any)
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-text-secondary hover:bg-gray-100'
+                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-all duration-200 ${isActive(item.id as any)
+                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                            : 'text-text-secondary hover:bg-gray-100 hover:text-primary'
                             }`}
                     >
                         <span>{item.icon}</span>
@@ -397,6 +464,11 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const [editingContentId, setEditingContentId] = useState<string | null>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isLoadingStudents, setIsLoadingStudents] = useState(true);
+
+    // Search and Filter States
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
+    const [sortBy, setSortBy] = useState<'name' | 'grade' | 'xp'>('name');
 
     const loadStudents = useCallback(async () => {
         try {
@@ -434,7 +506,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     }, [loadStudents]);
 
     const handleStudentAdded = async (newStudent: Student) => {
-        await loadStudents();
+        setStudents(prev => [...prev, newStudent]);
     };
 
     const handleEditStudent = (student: Student) => {
@@ -442,28 +514,11 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     };
 
     const handleStudentEdited = async (updatedStudent: Student) => {
-        await loadStudents();
-        if (selectedStudent?.id === updatedStudent.id) {
-            const { data, error } = await supabase
-                .from('students')
-                .select('*')
-                .eq('id', updatedStudent.id)
-                .maybeSingle();
+        // Optimistic update
+        setStudents(prev => prev.map(s => s.id === updatedStudent.id ? updatedStudent : s));
 
-            if (!error && data) {
-                setSelectedStudent({
-                    id: data.id,
-                    name: data.name,
-                    grade: data.grade,
-                    tutorId: data.tutor_id,
-                    contact: data.contact,
-                    level: data.level,
-                    xp: data.xp,
-                    badges: [],
-                    learningLoopStatus: data.learning_loop_status,
-                    progressReports: [],
-                });
-            }
+        if (selectedStudent?.id === updatedStudent.id) {
+            setSelectedStudent(prev => prev ? { ...prev, ...updatedStudent } : null);
         }
     };
 
@@ -475,7 +530,6 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         if (!deletingStudent) return;
 
         try {
-            // Use the Edge Function to delete the student completely (including Auth user)
             const { data, error } = await supabase.functions.invoke('delete-student', {
                 body: { studentId: deletingStudent.id }
             });
@@ -510,7 +564,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const handleBackToStudentList = () => {
         setSelectedStudent(null);
         setCurrentView('students');
-        loadStudents(); // Reload students to see any updates
+        // Do not reload students here to avoid unnecessary fetch
     };
 
     const handleStudentUpdated = (updatedStudent: Student) => {
@@ -530,29 +584,91 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         setCurrentView('library');
     };
 
+    // Filtered and Sorted Students
+    const filteredStudents = useMemo(() => {
+        return students
+            .filter(student => {
+                const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesGrade = filterGrade === 'all' || student.grade === filterGrade;
+                return matchesSearch && matchesGrade;
+            })
+            .sort((a, b) => {
+                if (sortBy === 'name') return a.name.localeCompare(b.name);
+                if (sortBy === 'grade') return a.grade - b.grade;
+                if (sortBy === 'xp') return b.xp - a.xp;
+                return 0;
+            });
+    }, [students, searchTerm, filterGrade, sortBy]);
+
     const renderStudentsList = () => (
         <div className="p-4 md:p-8">
-            <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* Stats & Overview - Only show if students exist */}
                 {students.length > 0 && (
-                    <>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <RiskAlertsPanel students={students} onViewStudent={handleSelectStudent} />
                         <RevenueOverview tutorId={user.id} students={students} />
-                    </>
+                    </div>
                 )}
 
                 <div>
-                    <h2 className="text-2xl sm:text-3xl font-bold font-poppins text-text-primary mb-4 sm:mb-6">Öğrencilerim</h2>
-                    {isLoadingStudents ? (
-                        <div className="flex flex-col items-center justify-center py-12 sm:py-20">
-                            <svg className="animate-spin h-10 w-10 sm:h-12 sm:w-12 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <p className="text-gray-600 text-base sm:text-lg font-semibold">Öğrenciler yükleniyor...</p>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 className="text-3xl font-bold font-poppins text-gray-900">Öğrencilerim</h2>
+                            <p className="text-gray-500 mt-1">{students.length} kayıtlı öğrenci</p>
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            {students.map(student => (
+
+                        <button
+                            onClick={() => setIsAddingStudent(true)}
+                            className="bg-primary text-white px-6 py-3 rounded-xl hover:bg-primary-dark font-semibold shadow-lg shadow-primary/30 flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            Yeni Öğrenci Ekle
+                        </button>
+                    </div>
+
+                    {/* Filters and Search */}
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+                        <div className="relative flex-1 w-full">
+                            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <input
+                                type="text"
+                                placeholder="Öğrenci ara..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            />
+                        </div>
+                        <div className="flex gap-3 w-full md:w-auto">
+                            <select
+                                value={filterGrade}
+                                onChange={(e) => setFilterGrade(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                                className="flex-1 md:w-40 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white cursor-pointer"
+                            >
+                                <option value="all">Tüm Sınıflar</option>
+                                <option value={4}>İlkokul</option>
+                                {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                            </select>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as any)}
+                                className="flex-1 md:w-40 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white cursor-pointer"
+                            >
+                                <option value="name">İsme Göre (A-Z)</option>
+                                <option value="grade">Sınıfa Göre</option>
+                                <option value="xp">Başarıya Göre (XP)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {isLoadingStudents ? (
+                        <div className="flex flex-col items-center justify-center py-20">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                            <p className="text-gray-500 font-medium">Öğrenciler yükleniyor...</p>
+                        </div>
+                    ) : filteredStudents.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredStudents.map(student => (
                                 <StudentCard
                                     key={student.id}
                                     student={student}
@@ -561,17 +677,29 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                                     onDelete={() => handleDeleteStudent(student)}
                                 />
                             ))}
-                            <div
-                                className="bg-gray-50 border-2 border-dashed border-border p-4 sm:p-6 rounded-xl flex items-center justify-center hover:border-primary hover:text-primary transition-colors duration-300 cursor-pointer"
-                                onClick={() => setIsAddingStudent(true)}
-                            >
-                                <div className="text-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-gray-400">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
-                                    <p className="mt-2 font-semibold text-sm sm:text-base">Yeni Öğrenci Ekle</p>
-                                </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                            <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                             </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">Öğrenci Bulunamadı</h3>
+                            <p className="text-gray-500">Arama kriterlerinize uygun öğrenci bulunmuyor.</p>
+                            {searchTerm || filterGrade !== 'all' ? (
+                                <button
+                                    onClick={() => { setSearchTerm(''); setFilterGrade('all'); }}
+                                    className="mt-4 text-primary font-medium hover:underline"
+                                >
+                                    Filtreleri Temizle
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsAddingStudent(true)}
+                                    className="mt-4 bg-primary text-white px-6 py-2 rounded-xl hover:bg-primary-dark transition-colors"
+                                >
+                                    İlk Öğrenciyi Ekle
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -600,16 +728,16 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     };
 
     return (
-        <div className="flex h-screen bg-background">
-            {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>}
+        <div className="flex h-screen bg-gray-50 font-inter">
+            {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
 
-            <aside className={`fixed z-40 inset-y-0 left-0 w-64 bg-card-background flex flex-col border-r border-border p-4 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <aside className={`fixed z-40 inset-y-0 left-0 w-72 bg-white flex flex-col border-r border-gray-200 p-6 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shadow-xl md:shadow-none`}>
                 <SidebarContent currentView={currentView} setView={(view) => { setCurrentView(view); setIsSidebarOpen(false); }} />
             </aside>
 
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden relative">
                 <Header user={user} onLogout={onLogout} onMenuButtonClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto bg-gray-50 scroll-smooth">
                     {renderContent()}
                 </main>
             </div>

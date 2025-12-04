@@ -120,6 +120,15 @@ export const diagnosisTestManagementService = {
         }));
     },
 
+    async deleteTest(testId: string): Promise<void> {
+        const { error } = await supabase
+            .from('diagnosis_tests')
+            .delete()
+            .eq('id', testId);
+
+        if (error) throw error;
+    },
+
     // ==================== ÖĞRETMEN: TEST ATAMA ====================
 
     async assignTest(config: AssignDiagnosisTestConfig, teacherId: string): Promise<DiagnosisTestAssignment[]> {

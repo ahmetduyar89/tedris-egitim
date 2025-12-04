@@ -13,9 +13,9 @@ function convertToSnakeCase(obj: any): any {
 
     // For JSONB fields and status enums, keep data as-is to preserve structure
     if ((key === 'questions' && Array.isArray(obj[key])) ||
-        (key === 'answerKey' && typeof obj[key] === 'object') ||
-        (key === 'studentAnswers' && typeof obj[key] === 'object') ||
-        key === 'status') {
+      (key === 'answerKey' && typeof obj[key] === 'object') ||
+      (key === 'studentAnswers' && typeof obj[key] === 'object') ||
+      key === 'status') {
       converted[snakeKey] = obj[key];
     } else {
       converted[snakeKey] = convertToSnakeCase(obj[key]);
@@ -51,14 +51,14 @@ function convertFieldToSnakeCase(str: string): string {
 export const db = {
   collection: (collectionName: string) => {
     const tableName = collectionName === 'weeklyPrograms' ? 'weekly_programs' :
-                     collectionName === 'contentLibrary' ? 'content_library' :
-                     collectionName === 'contentAssignments' ? 'content_assignments' :
-                     collectionName === 'reviewPackages' ? 'review_packages' :
-                     collectionName === 'interactiveContent' ? 'interactive_content' :
-                     collectionName === 'questionBanks' ? 'question_banks' :
-                     collectionName === 'questionBankAssignments' ? 'question_bank_assignments' :
-                     collectionName === 'publicContentShares' ? 'public_content_shares' :
-                     collectionName;
+      collectionName === 'contentLibrary' ? 'content_library' :
+        collectionName === 'contentAssignments' ? 'content_assignments' :
+          collectionName === 'reviewPackages' ? 'review_packages' :
+            collectionName === 'interactiveContent' ? 'interactive_content' :
+              collectionName === 'questionBanks' ? 'question_banks' :
+                collectionName === 'questionBankAssignments' ? 'question_bank_assignments' :
+                  collectionName === 'publicContentShares' ? 'public_content_shares' :
+                    collectionName;
 
     return {
       doc: (docId: string) => ({
@@ -123,23 +123,7 @@ export const db = {
             )
             .subscribe();
 
-          const initialFetch = async () => {
-            const { data } = await supabase
-              .from(tableName)
-              .select('*')
-              .eq('id', docId)
-              .maybeSingle();
 
-            if (data) {
-              callback({
-                exists: true,
-                id: docId,
-                data: () => convertFromSnakeCase(data)
-              });
-            }
-          };
-
-          initialFetch();
 
           return () => {
             supabase.removeChannel(channel);

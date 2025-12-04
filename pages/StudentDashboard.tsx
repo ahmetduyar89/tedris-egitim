@@ -30,7 +30,7 @@ import { diagnosisTestManagementService } from '../services/diagnosisTestManagem
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import StudentDiagnosisTestPage from './StudentDiagnosisTestPage';
 import * as privateLessonService from '../services/privateLessonService';
-import OnlineLessonRoom from '../components/OnlineLessonRoom';
+const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
 
 // ... (inside StudentDashboard component)
 
@@ -270,7 +270,7 @@ const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId
   if (loading || lessons.length === 0) return null;
 
   const isLessonJoinable = (lesson: any) => {
-    return lesson.status === 'started';
+    return lesson.status === 'started' && lesson.type === 'online';
   };
 
   const handleJoinClick = (lesson: any) => {
@@ -1362,13 +1362,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   return (
     <>
       {activeOnlineLesson && (
-        <OnlineLessonRoom
-          roomName={activeOnlineLesson.roomName}
-          userName={user.name || 'Öğrenci'}
-          userEmail={user.email}
-          isTeacher={false}
-          onClose={() => setActiveOnlineLesson(null)}
-        />
+        <React.Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 text-white">Yükleniyor...</div>}>
+          <OnlineLessonRoom
+            roomName={activeOnlineLesson.roomName}
+            userName={user.name || 'Öğrenci'}
+            userEmail={user.email}
+            isTeacher={false}
+            onClose={() => setActiveOnlineLesson(null)}
+          />
+        </React.Suspense>
       )}
       {newItemsPopupNotifications && (
         <NewItemPopup notifications={newItemsPopupNotifications} onClose={handleClosePopup} />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/dbAdapter';
 import { User, PrivateLesson, Student } from '../types';
-import OnlineLessonRoom from '../components/OnlineLessonRoom';
+const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
 
 interface OnlineLessonsPageProps {
     user: User;
@@ -48,6 +48,7 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
                 .from('private_lessons')
                 .select('*')
                 .eq('tutor_id', user.id)
+                .eq('type', 'online')
                 .neq('status', 'cancelled')
                 .order('start_time', { ascending: true });
 
@@ -120,6 +121,7 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
                 end_time: endDateTime.toISOString(),
                 duration,
                 status: 'scheduled',
+                type: 'online',
                 color: '#3B82F6' // Default blue for online lessons
             };
 
@@ -207,13 +209,15 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
     return (
         <div className="p-6 max-w-7xl mx-auto">
             {activeLesson && (
-                <OnlineLessonRoom
-                    roomName={`Tedris-Ders-${activeLesson.id.replace(/[^a-zA-Z0-9]/g, '')}`}
-                    userName={user.name}
-                    userEmail={user.email}
-                    isTeacher={true}
-                    onClose={handleCloseRoom}
-                />
+                <React.Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 text-white">Yükleniyor...</div>}>
+                    <OnlineLessonRoom
+                        roomName={`Tedris-Ders-${activeLesson.id.replace(/[^a-zA-Z0-9]/g, '')}`}
+                        userName={user.name}
+                        userEmail={user.email}
+                        isTeacher={true}
+                        onClose={handleCloseRoom}
+                    />
+                </React.Suspense>
             )}
 
             <div className="flex justify-between items-center mb-8">

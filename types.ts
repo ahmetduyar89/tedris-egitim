@@ -581,6 +581,7 @@ export interface PrivateLesson {
   lessonNotes?: string;
   homework?: string;
   attendance?: LessonAttendance;
+  type?: 'face_to_face' | 'online';
 }
 
 export interface LessonAttendance {

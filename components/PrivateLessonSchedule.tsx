@@ -261,7 +261,8 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     status: 'scheduled',
                     color: lessonFormColor,
                     contact: student.contact,
-                    grade: student.grade
+                    grade: student.grade,
+                    type: 'face_to_face'
                 }]);
 
             if (error) throw error;

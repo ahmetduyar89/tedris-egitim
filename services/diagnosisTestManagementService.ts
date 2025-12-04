@@ -261,14 +261,45 @@ export const diagnosisTestManagementService = {
     },
 
     async saveAnswer(assignmentId: string, questionId: string, answer: string): Promise<void> {
-        // Önce sorunun doğru cevabını al
+        // Önce sorunun doğru cevabını ve seçeneklerini al
         const { data: questionData } = await supabase
             .from('diagnosis_test_questions')
-            .select('correct_answer')
+            .select('correct_answer, options')
             .eq('id', questionId)
             .single();
 
-        const isCorrect = questionData ? answer === questionData.correct_answer : false;
+        let isCorrect = false;
+
+        if (questionData) {
+            const cleanAnswer = answer.trim();
+            const cleanCorrect = questionData.correct_answer.trim();
+
+            // 1. Tam eşleşme kontrolü
+            if (cleanAnswer === cleanCorrect) {
+                isCorrect = true;
+            }
+            // 2. Harf indeksi kontrolü (Eğer doğru cevap 'A', 'B' gibi tek harf ise)
+            else if (cleanCorrect.length === 1) {
+                const options = questionData.options as string[];
+                const answerIndex = options.indexOf(answer);
+
+                if (answerIndex !== -1) {
+                    // Seçilen şıkkın harf karşılığını bul (0->A, 1->B...)
+                    const answerLetter = String.fromCharCode(65 + answerIndex);
+                    if (answerLetter === cleanCorrect) {
+                        isCorrect = true;
+                    }
+                }
+
+                // Ayrıca prefix kontrolü de yapalım (Eğer cevap "A) ..." formatındaysa)
+                if (!isCorrect && (
+                    cleanAnswer.startsWith(`${cleanCorrect})`) ||
+                    cleanAnswer.startsWith(`${cleanCorrect}.`)
+                )) {
+                    isCorrect = true;
+                }
+            }
+        }
 
         // Cevabı kaydet veya güncelle
         const { error } = await supabase

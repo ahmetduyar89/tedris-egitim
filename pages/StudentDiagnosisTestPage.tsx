@@ -125,7 +125,36 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
 
             questions.forEach(q => {
                 const answer = answers[q.id];
-                const isCorrect = answer === q.correctAnswer;
+                let isCorrect = false;
+
+                if (answer) {
+                    const cleanAnswer = answer.trim();
+                    const cleanCorrect = q.correctAnswer.trim();
+
+                    // 1. Tam eşleşme
+                    if (cleanAnswer === cleanCorrect) {
+                        isCorrect = true;
+                    }
+                    // 2. Harf indeksi ve Prefix kontrolü
+                    else if (cleanCorrect.length === 1) {
+                        // a. İndeks kontrolü
+                        const answerIndex = q.options.indexOf(answer);
+                        if (answerIndex !== -1) {
+                            const answerLetter = String.fromCharCode(65 + answerIndex);
+                            if (answerLetter === cleanCorrect) {
+                                isCorrect = true;
+                            }
+                        }
+
+                        // b. Prefix kontrolü (Yedek)
+                        if (!isCorrect && (
+                            cleanAnswer.startsWith(`${cleanCorrect})`) ||
+                            cleanAnswer.startsWith(`${cleanCorrect}.`)
+                        )) {
+                            isCorrect = true;
+                        }
+                    }
+                }
 
                 if (isCorrect) correctCount++;
 

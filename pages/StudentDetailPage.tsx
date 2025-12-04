@@ -22,6 +22,7 @@ import { db, supabase } from '../services/dbAdapter';
 import CreatePDFTestModal from '../components/CreatePDFTestModal';
 import PDFTestResultModal from '../components/PDFTestResultModal';
 import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmission } from '../services/pdfTestService';
+import StudentPaymentSettings from '../components/StudentPaymentSettings';
 import * as privateLessonService from '../services/privateLessonService';
 
 
@@ -79,9 +80,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
     const [lessonStats, setLessonStats] = useState<LessonStats | null>(null);
     const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
     const [paymentConfig, setPaymentConfig] = useState<StudentPaymentConfig | null>(null);
-    const [isEditingPaymentConfig, setIsEditingPaymentConfig] = useState(false);
-    const [newPerLessonFee, setNewPerLessonFee] = useState<string>('0');
-    const [paymentConfigNotes, setPaymentConfigNotes] = useState<string>('');
+
 
 
     const loadData = useCallback(async () => {
@@ -312,8 +311,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 const config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
                 setPaymentConfig(config);
                 if (config) {
-                    setNewPerLessonFee(config.perLessonFee.toString());
-                    setPaymentConfigNotes(config.notes || '');
+
                 }
             } catch (error) {
                 console.error('Error loading lesson stats/payment data:', error);
@@ -1304,7 +1302,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         }
     };
 
-    const OverviewTab = () => (
+    const renderOverviewTab = () => (
         <div className="space-y-6 md:space-y-8">
             <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl shadow-lg p-4 md:p-6 border-l-4 border-green-500">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
@@ -1691,10 +1689,10 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                                     {/* Attendance Status Badge */}
                                                     {lesson.attendance && (
                                                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.attendanceStatus === 'completed'
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : lesson.attendance.attendanceStatus === 'missed'
-                                                                    ? 'bg-red-100 text-red-700'
-                                                                    : 'bg-orange-100 text-orange-700'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : lesson.attendance.attendanceStatus === 'missed'
+                                                                ? 'bg-red-100 text-red-700'
+                                                                : 'bg-orange-100 text-orange-700'
                                                             }`}>
                                                             {lesson.attendance.attendanceStatus === 'completed'
                                                                 ? '✓ Yapıldı'
@@ -1707,10 +1705,10 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                                     {/* Payment Status Badge */}
                                                     {lesson.attendance?.attendanceStatus === 'completed' && lesson.attendance.paymentStatus && (
                                                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.paymentStatus === 'paid'
-                                                                ? 'bg-blue-100 text-blue-700'
-                                                                : lesson.attendance.paymentStatus === 'partial'
-                                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                                    : 'bg-gray-100 text-gray-700'
+                                                            ? 'bg-blue-100 text-blue-700'
+                                                            : lesson.attendance.paymentStatus === 'partial'
+                                                                ? 'bg-yellow-100 text-yellow-700'
+                                                                : 'bg-gray-100 text-gray-700'
                                                             }`}>
                                                             {lesson.attendance.paymentStatus === 'paid'
                                                                 ? `💰 ${lesson.attendance.paymentAmount || 0} TL`
@@ -1742,120 +1740,19 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                     )}
 
                     {/* Payment Configuration */}
-                    <div className="bg-gradient-to-r from-yellow-50 to-amber-50 p-6 rounded-xl shadow-md border border-yellow-200">
-                        <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                            <svg className="w-6 h-6 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Ücret Ayarları
-                        </h4>
-                        {isEditingPaymentConfig ? (
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Ders Başı Ücret (TL)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={newPerLessonFee}
-                                        onChange={e => setNewPerLessonFee(e.target.value)}
-                                        onFocus={e => e.target.select()}
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Notlar</label>
-                                    <textarea
-                                        value={paymentConfigNotes}
-                                        onChange={e => setPaymentConfigNotes(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg py-2 px-3 h-20"
-                                        placeholder="Ücret ile ilgili notlar..."
-                                    />
-                                </div>
-                                <div className="flex space-x-3">
-                                    <button
-                                        type="button"
-                                        onClick={async () => {
-                                            try {
-                                                await privateLessonService.setStudentPaymentConfig(
-                                                    student.id,
-                                                    user.id,
-                                                    parseFloat(newPerLessonFee) || 0,
-                                                    'TL',
-                                                    paymentConfigNotes
-                                                );
-                                                const config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
-                                                setPaymentConfig(config);
-                                                setIsEditingPaymentConfig(false);
-                                                setToastMessage('Ücret ayarları kaydedildi!');
-                                            } catch (error) {
-                                                console.error('Error saving payment config:', error);
-                                                alert('Ücret ayarları kaydedilirken bir hata oluştu.');
-                                            }
-                                        }}
-                                        className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium"
-                                    >
-                                        Kaydet
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsEditingPaymentConfig(false);
-                                            if (paymentConfig) {
-                                                setNewPerLessonFee(paymentConfig.perLessonFee.toString());
-                                                setPaymentConfigNotes(paymentConfig.notes || '');
-                                            }
-                                        }}
-                                        className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 font-medium"
-                                    >
-                                        İptal
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {paymentConfig ? (
-                                    <>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-gray-700">Ders Başı Ücret:</span>
-                                            <span className="font-bold text-gray-900">{paymentConfig.perLessonFee} {paymentConfig.currency}</span>
-                                        </div>
-                                        {paymentConfig.notes && (
-                                            <div className="bg-white rounded-lg p-3 border border-yellow-300">
-                                                <p className="text-sm text-gray-700">{paymentConfig.notes}</p>
-                                            </div>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsEditingPaymentConfig(true)}
-                                            className="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 font-medium"
-                                        >
-                                            Düzenle
-                                        </button>
-                                    </>
-                                ) : (
-                                    <div className="text-center">
-                                        <p className="text-gray-600 mb-3">Henüz ücret ayarı yapılmamış</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsEditingPaymentConfig(true)}
-                                            className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 font-medium"
-                                        >
-                                            Ücret Ayarla
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    {/* Payment Configuration */}
+                    <StudentPaymentSettings
+                        studentId={student.id}
+                        teacherId={user.id}
+                        initialConfig={paymentConfig}
+                        onUpdate={setPaymentConfig}
+                    />
                 </div>
             )}
         </div>
     );
 
-    const HomeworkTab = () => (
+    const renderHomeworkTab = () => (
         <div className="bg-card-background p-4 md:p-6 rounded-xl shadow-md">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
                 <h3 className="text-lg md:text-xl font-bold font-poppins text-text-primary">Ödevler</h3>
@@ -1869,7 +1766,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         </div>
     );
 
-    const AnalyticsTab = () => (
+    const renderAnalyticsTab = () => (
         <div className="space-y-8">
             <LearningMap student={student} onGenerateReviewPackage={handleGenerateReviewPackage} />
         </div>
@@ -1934,9 +1831,9 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                             </nav>
                         </div>
 
-                        {activeTab === 'overview' && <OverviewTab />}
-                        {activeTab === 'homework' && <HomeworkTab />}
-                        {activeTab === 'analytics' && <AnalyticsTab />}
+                        {activeTab === 'overview' && renderOverviewTab()}
+                        {activeTab === 'homework' && renderHomeworkTab()}
+                        {activeTab === 'analytics' && renderAnalyticsTab()}
                     </div>
                 </main>
             )}

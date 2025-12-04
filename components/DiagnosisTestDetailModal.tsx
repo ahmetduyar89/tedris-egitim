@@ -211,12 +211,7 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                         </div>
                                     </div>
                                     {/* Raw Data Debug */}
-                                    <details className="mt-8 p-4 bg-gray-100 rounded-lg">
-                                        <summary className="text-xs text-gray-500 cursor-pointer">Geliştirici Verisi (Debug)</summary>
-                                        <pre className="mt-2 text-xs overflow-auto max-h-60">
-                                            {JSON.stringify(result.aiAnalysis, null, 2)}
-                                        </pre>
-                                    </details>
+
                                 </div>
                             ) : (
                                 <div className="space-y-4">

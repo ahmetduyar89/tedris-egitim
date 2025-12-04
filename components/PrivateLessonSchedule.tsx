@@ -3,6 +3,7 @@ import { supabase } from '../services/dbAdapter';
 import { User, Student, PrivateLesson, Subject, LessonAttendance, StudentPaymentConfig } from '../types';
 import * as optimizedAIService from '../services/optimizedAIService';
 import * as privateLessonService from '../services/privateLessonService';
+import OnlineLessonRoom from './OnlineLessonRoom';
 
 
 interface PrivateLessonScheduleProps {
@@ -733,8 +734,45 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         }
     };
 
+    const [activeOnlineLesson, setActiveOnlineLesson] = useState<{
+        roomName: string;
+        studentName: string;
+    } | null>(null);
+
+    const handleJoinOnlineLesson = (lesson: PrivateLesson) => {
+        // Create a unique room name: Tedris-Lesson-[LessonID]
+        // Sanitize ID to ensure it's URL safe
+        const safeId = lesson.id.replace(/[^a-zA-Z0-9]/g, '');
+        const roomName = `Tedris-Ders-${safeId}`;
+
+        setActiveOnlineLesson({
+            roomName,
+            studentName: lesson.studentName
+        });
+    };
+
+    const isLessonJoinable = (lesson: PrivateLesson) => {
+        const now = new Date();
+        const startTime = new Date(lesson.startTime);
+        const endTime = new Date(lesson.endTime);
+
+        // Allow joining 10 minutes before start until end time
+        const joinTime = new Date(startTime.getTime() - 10 * 60000);
+
+        return now >= joinTime && now <= endTime;
+    };
+
     return (
         <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-6 h-full flex flex-col">
+            {activeOnlineLesson && (
+                <OnlineLessonRoom
+                    roomName={activeOnlineLesson.roomName}
+                    userName={user.name || 'Öğretmen'}
+                    userEmail={user.email}
+                    isTeacher={true}
+                    onClose={() => setActiveOnlineLesson(null)}
+                />
+            )}
             {/* Header - Responsive */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold font-poppins text-gray-800">Özel Ders Programı</h2>
@@ -819,12 +857,13 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                         draggable
                                                         onDragStart={(e) => handleDragStart(e, lesson)}
                                                         onDragEnd={handleDragEnd}
-                                                        className="absolute left-1 right-1 rounded-lg p-2 cursor-move hover:opacity-90 transition-opacity group z-10 shadow-sm"
+                                                        onClick={() => handleLessonClick(lesson)}
+                                                        className="absolute left-1 right-1 rounded-md p-2 text-xs shadow-sm cursor-pointer hover:shadow-md transition-all z-10 group overflow-hidden"
                                                         style={{
-                                                            backgroundColor: lesson.color || '#FFB6C1',
                                                             top: `${topOffset}px`,
                                                             height: `${heightInPixels}px`,
-                                                            minHeight: '50px'
+                                                            backgroundColor: lesson.color || '#E0F2F1',
+                                                            borderLeft: `4px solid ${lesson.color ? lesson.color.replace('FF', 'CC') : '#26A69A'}`
                                                         }}
                                                     >
                                                         <button
@@ -841,17 +880,28 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                         </button>
                                                         <div
                                                             onClick={() => handleLessonClick(lesson)}
-                                                            className="w-full h-full"
+                                                            className="w-full h-full flex flex-col"
                                                         >
                                                             <div className="font-bold text-sm text-gray-800">
                                                                 {startTime.getHours().toString().padStart(2, '0')}:{startTime.getMinutes().toString().padStart(2, '0')}
                                                             </div>
-                                                            <div className="font-semibold text-gray-900">{lesson.studentName}</div>
-                                                            <div className="text-xs text-gray-700">{lesson.subject}</div>
-                                                            {duration > 60 && (
-                                                                <div className="text-xs text-gray-600 mt-1">
-                                                                    {duration} dk
-                                                                </div>
+                                                            <div className="font-semibold text-gray-900 truncate">{lesson.studentName}</div>
+                                                            <div className="text-xs text-gray-700 truncate">{lesson.subject}</div>
+
+                                                            {/* Online Lesson Join Button */}
+                                                            {isLessonJoinable(lesson) && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleJoinOnlineLesson(lesson);
+                                                                    }}
+                                                                    className="mt-auto w-full bg-red-500 hover:bg-red-600 text-white text-[10px] py-1 px-2 rounded flex items-center justify-center gap-1 transition-colors animate-pulse z-30 relative"
+                                                                >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                                                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                                                    </svg>
+                                                                    Katıl
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </div>

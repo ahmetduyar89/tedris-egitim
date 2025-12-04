@@ -1,84 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TEDRİS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              poppins: ['Poppins', 'sans-serif'],
-            },
-            colors: {
-              'primary': '#2BB4A9',      // Turquoise/Green
-              'primary-dark': '#249a90', // Darker Turquoise
-              'secondary': '#F05039',     // Red
-              'accent': '#F5C542',       // Yellow
-              'task': '#F0A239',         // Orange-Yellow for Görev
-              'success-brand': '#FFD700', // Gold for Başarı
-              'brand-black': '#000000',
 
-              'success': '#10B981',
-              'warning': '#F59E0B',
-              'error': '#EF4444',
-              
-              'background': '#F7F8FC',
-              'card-background': '#FFFFFF',
-              'text-primary': '#111827',
-              'text-secondary': '#6B7280',
-              'border': '#E5E7EB',
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEDRİS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            poppins: ['Poppins', 'sans-serif'],
+          },
+          colors: {
+            'primary': '#2BB4A9',      // Turquoise/Green
+            'primary-dark': '#249a90', // Darker Turquoise
+            'secondary': '#F05039',     // Red
+            'accent': '#F5C542',       // Yellow
+            'task': '#F0A239',         // Orange-Yellow for Görev
+            'success-brand': '#FFD700', // Gold for Başarı
+            'brand-black': '#000000',
+
+            'success': '#10B981',
+            'warning': '#F59E0B',
+            'error': '#EF4444',
+
+            'background': '#F7F8FC',
+            'card-background': '#FFFFFF',
+            'text-primary': '#111827',
+            'text-secondary': '#6B7280',
+            'border': '#E5E7EB',
+          },
+          borderRadius: {
+            'lg': '8px',
+            'xl': '12px',
+            '2xl': '16px',
+          },
+          boxShadow: {
+            'md': '0px 2px 6px rgba(0,0,0,0.06)',
+            'lg': '0px 4px 10px rgba(0,0,0,0.08)',
+            'xl': '0px 10px 15px -3px rgba(0,0,0,0.07), 0px 4px 6px -2px rgba(0,0,0,0.05)',
+            'primary': '0px 4px 12px rgba(43, 180, 169, 0.25)',
+            'secondary': '0px 4px 12px rgba(240, 80, 57, 0.25)',
+            'accent': '0px 4px 12px rgba(245, 197, 66, 0.25)',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'fade-in-down': 'fadeInDown 0.3s ease-out',
+            'fade-in-up': 'fadeInUp 0.3s ease-out',
+            'fade-in-right': 'fadeInRight 0.3s ease-out',
+            'blob': 'blob 7s infinite',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+            fadeInDown: { '0%': { opacity: 0, transform: 'translateY(-10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            fadeInRight: { '0%': { opacity: 0, transform: 'translateX(20px)' }, '100%': { opacity: 1, transform: 'translateX(0)' } },
+            blob: {
+              '0%': { transform: 'translate(0px, 0px) scale(1)' },
+              '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+              '100%': { transform: 'translate(0px, 0px) scale(1)' }
             },
-            borderRadius: {
-              'lg': '8px',
-              'xl': '12px',
-              '2xl': '16px',
-            },
-            boxShadow: {
-              'md': '0px 2px 6px rgba(0,0,0,0.06)',
-              'lg': '0px 4px 10px rgba(0,0,0,0.08)',
-              'xl': '0px 10px 15px -3px rgba(0,0,0,0.07), 0px 4px 6px -2px rgba(0,0,0,0.05)',
-              'primary': '0px 4px 12px rgba(43, 180, 169, 0.25)',
-              'secondary': '0px 4px 12px rgba(240, 80, 57, 0.25)',
-              'accent': '0px 4px 12px rgba(245, 197, 66, 0.25)',
-            },
-             animation: {
-              'fade-in': 'fadeIn 0.3s ease-out',
-              'fade-in-down': 'fadeInDown 0.3s ease-out',
-              'fade-in-up': 'fadeInUp 0.3s ease-out',
-              'fade-in-right': 'fadeInRight 0.3s ease-out',
-              'blob': 'blob 7s infinite',
-            },
-            keyframes: {
-              fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
-              fadeInDown: { '0%': { opacity: 0, transform: 'translateY(-10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-              fadeInUp: { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-              fadeInRight: { '0%': { opacity: 0, transform: 'translateX(20px)' }, '100%': { opacity: 1, transform: 'translateX(0)' } },
-              blob: {
-                '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                '100%': { transform: 'translate(0px, 0px) scale(1)' }
-              },
-            },
-          }
+          },
         }
       }
-    </script>
+    }
+  </script>
 
-    
-    <!-- Firebase SDKs (Moved to Head for correct loading order) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
-    
+
+  <!-- Firebase SDKs (Moved to Head for correct loading order) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-firestore-compat.js"></script>
+
+  <!-- Jitsi Meet API -->
+  <script src='https://meet.jit.si/external_api.js'></script>
+
   <script type="importmap">
 {
   "imports": {
@@ -92,8 +98,10 @@
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

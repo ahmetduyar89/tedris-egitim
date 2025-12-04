@@ -29,6 +29,8 @@ import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmis
 import { diagnosisTestManagementService } from '../services/diagnosisTestManagementService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import StudentDiagnosisTestPage from './StudentDiagnosisTestPage';
+import * as privateLessonService from '../services/privateLessonService';
+import OnlineLessonRoom from '../components/OnlineLessonRoom';
 
 // ... (inside StudentDashboard component)
 
@@ -233,6 +235,92 @@ const HomeworkWidget: React.FC<HomeworkWidgetProps> = ({ assignments, onOpenAssi
           +{unviewedOrIncomplete.length - 3} ödev daha
         </p>
       )}
+    </div>
+  );
+};
+
+interface UpcomingLessonsWidgetProps {
+  studentId: string;
+  onJoinLesson: (lesson: any) => void;
+}
+
+const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId, onJoinLesson }) => {
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        const data = await privateLessonService.getStudentLessons(studentId);
+        setLessons(data);
+      } catch (error) {
+        console.error('Error fetching lessons:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLessons();
+
+    // Refresh every minute to update "Join" button status
+    const interval = setInterval(fetchLessons, 60000);
+    return () => clearInterval(interval);
+  }, [studentId]);
+
+  if (loading || lessons.length === 0) return null;
+
+  const isLessonJoinable = (lesson: any) => {
+    const now = new Date();
+    const startTime = new Date(lesson.start_time);
+    const endTime = new Date(lesson.end_time);
+
+    // Allow joining 10 minutes before start until end time
+    const joinTime = new Date(startTime.getTime() - 10 * 60000);
+
+    return now >= joinTime && now <= endTime;
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-primary mb-6">
+      <h2 className="text-xl font-bold font-poppins text-primary mb-4 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        Yaklaşan Dersler
+      </h2>
+      <div className="space-y-3">
+        {lessons.map(lesson => {
+          const startTime = new Date(lesson.start_time);
+          const isJoinable = isLessonJoinable(lesson);
+
+          return (
+            <div key={lesson.id} className="border border-gray-100 rounded-xl p-4 bg-gray-50 flex justify-between items-center">
+              <div>
+                <div className="font-semibold text-gray-800">{lesson.subject}</div>
+                <div className="text-sm text-gray-500">
+                  {startTime.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} &middot; {startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+
+              {isJoinable ? (
+                <button
+                  onClick={() => onJoinLesson(lesson)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md animate-pulse flex items-center gap-2 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                  </svg>
+                  Derse Katıl
+                </button>
+              ) : (
+                <div className="text-xs font-medium text-gray-400 bg-gray-200 px-3 py-1 rounded-full">
+                  {startTime > new Date() ? 'Henüz Başlamadı' : 'Tamamlandı'}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -904,6 +992,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           </div>
           <div className="space-y-8">
             {studentData && <ProfileCard student={studentData} />}
+            <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
             <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
             <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
             <TestArea
@@ -1064,6 +1153,23 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         )}
       </div>
     );
+  };
+
+  const [activeOnlineLesson, setActiveOnlineLesson] = useState<{
+    roomName: string;
+    studentName: string;
+  } | null>(null);
+
+  const handleJoinOnlineLesson = (lesson: any) => {
+    // Create a unique room name: Tedris-Lesson-[LessonID]
+    // Sanitize ID to ensure it's URL safe
+    const safeId = lesson.id.replace(/[^a-zA-Z0-9]/g, '');
+    const roomName = `Tedris-Ders-${safeId}`;
+
+    setActiveOnlineLesson({
+      roomName,
+      studentName: user.name || 'Öğrenci'
+    });
   };
 
   const renderLibrary = () => (
@@ -1246,6 +1352,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
 
   return (
     <>
+      {activeOnlineLesson && (
+        <OnlineLessonRoom
+          roomName={activeOnlineLesson.roomName}
+          userName={user.name || 'Öğrenci'}
+          userEmail={user.email}
+          isTeacher={false}
+          onClose={() => setActiveOnlineLesson(null)}
+        />
+      )}
       {newItemsPopupNotifications && (
         <NewItemPopup notifications={newItemsPopupNotifications} onClose={handleClosePopup} />
       )}

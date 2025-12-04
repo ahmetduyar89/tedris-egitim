@@ -391,6 +391,28 @@ export async function getBulkPaymentSummaries(
     return summaries;
 }
 
+/**
+ * Get upcoming lessons for a student
+ */
+export async function getStudentLessons(
+    studentId: string,
+    limit: number = 5
+): Promise<any[]> {
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+        .from('private_lessons')
+        .select('*')
+        .eq('student_id', studentId)
+        .gte('end_time', now) // Only future or ongoing lessons
+        .order('start_time', { ascending: true })
+        .limit(limit);
+
+    if (error) throw error;
+
+    return data || [];
+}
+
 // ==================== Helper Functions ====================
 
 function mapAttendanceFromDB(data: any): LessonAttendance {

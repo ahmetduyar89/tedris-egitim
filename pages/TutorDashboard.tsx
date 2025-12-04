@@ -10,6 +10,7 @@ import RevenueOverview from '../components/RevenueOverview';
 import { supabase } from '../services/dbAdapter';
 import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
 import PrivateLessonSchedule from '../components/PrivateLessonSchedule';
+import OnlineLessonsPage from './OnlineLessonsPage';
 
 const TedrisLogo = () => (
     <svg className="h-10 w-auto" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -410,7 +411,7 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
     );
 };
 
-type View = 'students' | 'studentDetail' | 'library' | 'createMaterial' | 'questionBank' | 'diagnosisTests' | 'privateLessons';
+type View = 'students' | 'studentDetail' | 'library' | 'createMaterial' | 'questionBank' | 'diagnosisTests' | 'privateLessons' | 'onlineLessons';
 
 const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => void }> = ({ currentView, setView }) => {
     const navItems = [
@@ -419,14 +420,16 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
         { id: 'library', label: 'Kütüphane', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg> },
         { id: 'questionBank', label: 'Soru Bankası', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg> },
         { id: 'privateLessons', label: 'Özel Ders Programı', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg> },
+        { id: 'onlineLessons', label: 'Online Dersler', icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" /></svg> },
     ];
 
-    const isActive = (id: 'students' | 'library' | 'questionBank' | 'diagnosisTests') => {
+    const isActive = (id: View) => {
         if (id === 'students') return ['students', 'studentDetail'].includes(currentView);
         if (id === 'library') return ['library', 'createMaterial'].includes(currentView);
         if (id === 'questionBank') return currentView === 'questionBank';
         if (id === 'diagnosisTests') return currentView === 'diagnosisTests';
         if (id === 'privateLessons') return currentView === 'privateLessons';
+        if (id === 'onlineLessons') return currentView === 'onlineLessons';
         return false;
     }
 
@@ -721,6 +724,8 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 return <TeacherDiagnosisTestsPage user={user} onBack={() => setCurrentView('students')} />;
             case 'privateLessons':
                 return <PrivateLessonSchedule user={user} students={students} />;
+            case 'onlineLessons':
+                return <OnlineLessonsPage user={user} />;
             case 'students':
             default:
                 return renderStudentsList();

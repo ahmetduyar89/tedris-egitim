@@ -571,7 +571,7 @@ export interface PrivateLesson {
   endTime: string;
   subject: string;
   topic?: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'started';
   sourceLessonId?: string; // For virtual lessons to track the template source
   notes?: string;
   duration?: number; // in minutes

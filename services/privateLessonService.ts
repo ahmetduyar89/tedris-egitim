@@ -404,7 +404,7 @@ export async function getStudentLessons(
         .from('private_lessons')
         .select('*')
         .eq('student_id', studentId)
-        .gte('end_time', now) // Only future or ongoing lessons
+        .or(`end_time.gte.${now},status.eq.started`)
         .order('start_time', { ascending: true })
         .limit(limit);
 

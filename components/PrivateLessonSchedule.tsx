@@ -3,7 +3,7 @@ import { supabase } from '../services/dbAdapter';
 import { User, Student, PrivateLesson, Subject, LessonAttendance, StudentPaymentConfig } from '../types';
 import * as optimizedAIService from '../services/optimizedAIService';
 import * as privateLessonService from '../services/privateLessonService';
-import OnlineLessonRoom from './OnlineLessonRoom';
+
 
 
 interface PrivateLessonScheduleProps {
@@ -186,7 +186,10 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                 if (existingLesson) {
                     // Use the existing lesson from database
-                    currentWeekLessons.push(existingLesson);
+                    // If it's cancelled, we skip adding it to the schedule (effectively hiding it)
+                    if (existingLesson.status !== 'cancelled') {
+                        currentWeekLessons.push(existingLesson);
+                    }
                 } else {
                     // Create a virtual lesson based on template
                     // IMPORTANT: Clear specific content (notes, homework, topic) so they don't carry over to new weeks
@@ -694,31 +697,88 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
         try {
             if (mode === 'all') {
-                // Delete the source/template lesson to stop recurrence
-                // If it's a virtual lesson, use sourceLessonId. If real, use id.
-                const targetId = lessonToDelete.sourceLessonId || lessonToDelete.id;
+                // Delete the entire series
+                // We need to find all lessons (real, cancelled, etc.) that match this slot
+                // and delete them to stop recurrence and remove history for this slot.
 
-                const { error } = await supabase
+                const targetDate = new Date(lessonToDelete.startTime);
+                const targetDay = targetDate.getDay();
+                const targetHours = targetDate.getHours();
+                const targetMinutes = targetDate.getMinutes();
+                const studentId = lessonToDelete.studentId;
+
+                // 1. Fetch all lessons for this student/tutor to find matches
+                const { data: allStudentLessons, error: fetchError } = await supabase
                     .from('private_lessons')
-                    .delete()
-                    .eq('id', targetId);
+                    .select('id, start_time')
+                    .eq('tutor_id', user.id)
+                    .eq('student_id', studentId);
 
-                if (error) throw error;
+                if (fetchError) throw fetchError;
 
-                // Also remove from local state immediately
-                setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id && l.sourceLessonId !== targetId && l.id !== targetId));
-                alert('Ders programı tamamen silindi.');
-            } else {
-                // It's a real lesson, delete from DB
-                if (!lessonToDelete.id.startsWith('virtual-')) {
-                    const { error } = await supabase
+                // 2. Filter for same slot
+                const idsToDelete = allStudentLessons
+                    .filter(l => {
+                        const d = new Date(l.start_time);
+                        return d.getDay() === targetDay &&
+                            d.getHours() === targetHours &&
+                            d.getMinutes() === targetMinutes;
+                    })
+                    .map(l => l.id);
+
+                if (idsToDelete.length > 0) {
+                    const { error: deleteError } = await supabase
                         .from('private_lessons')
                         .delete()
+                        .in('id', idsToDelete);
+
+                    if (deleteError) throw deleteError;
+                }
+
+                // Also remove from local state
+                // We remove anything that matches the slot
+                setLessons(prev => prev.filter(l => {
+                    if (l.studentId !== studentId) return true;
+                    const d = new Date(l.startTime);
+                    return !(d.getDay() === targetDay && d.getHours() === targetHours && d.getMinutes() === targetMinutes);
+                }));
+
+                alert('Ders programı tamamen silindi.');
+            } else {
+                // Single lesson deletion
+                // Whether it's virtual or real, we want to "cancel" it for this specific date
+                // so it doesn't show up, but acts as a template if it was the source.
+
+                if (lessonToDelete.id.startsWith('virtual-')) {
+                    // Insert 'cancelled' record
+                    const { error } = await supabase
+                        .from('private_lessons')
+                        .insert([{
+                            tutor_id: user.id,
+                            student_id: lessonToDelete.studentId,
+                            start_time: lessonToDelete.startTime,
+                            end_time: lessonToDelete.endTime,
+                            subject: lessonToDelete.subject,
+                            status: 'cancelled',
+                            color: lessonToDelete.color,
+                            grade: lessonToDelete.grade
+                        }]);
+
+                    if (error) throw error;
+                } else {
+                    // Real lesson -> Update status to 'cancelled'
+                    // We DO NOT delete it, because if it's the source of a chain, 
+                    // deleting it would break the chain for future weeks (or make them disappear).
+                    // By marking it cancelled, it stays as a template but is hidden for this week.
+                    const { error } = await supabase
+                        .from('private_lessons')
+                        .update({ status: 'cancelled' })
                         .eq('id', lessonToDelete.id);
 
                     if (error) throw error;
                 }
-                // For both real and virtual, remove from local state
+
+                // Remove from local state
                 setLessons(prev => prev.filter(l => l.id !== lessonToDelete.id));
                 alert('Ders bu hafta için silindi.');
             }
@@ -734,45 +794,11 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         }
     };
 
-    const [activeOnlineLesson, setActiveOnlineLesson] = useState<{
-        roomName: string;
-        studentName: string;
-    } | null>(null);
 
-    const handleJoinOnlineLesson = (lesson: PrivateLesson) => {
-        // Create a unique room name: Tedris-Lesson-[LessonID]
-        // Sanitize ID to ensure it's URL safe
-        const safeId = lesson.id.replace(/[^a-zA-Z0-9]/g, '');
-        const roomName = `Tedris-Ders-${safeId}`;
-
-        setActiveOnlineLesson({
-            roomName,
-            studentName: lesson.studentName
-        });
-    };
-
-    const isLessonJoinable = (lesson: PrivateLesson) => {
-        const now = new Date();
-        const startTime = new Date(lesson.startTime);
-        const endTime = new Date(lesson.endTime);
-
-        // Allow joining 10 minutes before start until end time
-        const joinTime = new Date(startTime.getTime() - 10 * 60000);
-
-        return now >= joinTime && now <= endTime;
-    };
 
     return (
         <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-6 h-full flex flex-col">
-            {activeOnlineLesson && (
-                <OnlineLessonRoom
-                    roomName={activeOnlineLesson.roomName}
-                    userName={user.name || 'Öğretmen'}
-                    userEmail={user.email}
-                    isTeacher={true}
-                    onClose={() => setActiveOnlineLesson(null)}
-                />
-            )}
+
             {/* Header - Responsive */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold font-poppins text-gray-800">Özel Ders Programı</h2>
@@ -888,21 +914,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                             <div className="font-semibold text-gray-900 truncate">{lesson.studentName}</div>
                                                             <div className="text-xs text-gray-700 truncate">{lesson.subject}</div>
 
-                                                            {/* Online Lesson Join Button */}
-                                                            {isLessonJoinable(lesson) && (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleJoinOnlineLesson(lesson);
-                                                                    }}
-                                                                    className="mt-auto w-full bg-red-500 hover:bg-red-600 text-white text-[10px] py-1 px-2 rounded flex items-center justify-center gap-1 transition-colors animate-pulse z-30 relative"
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                                                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                                                                    </svg>
-                                                                    Katıl
-                                                                </button>
-                                                            )}
+
                                                         </div>
                                                     </div>
                                                 );
@@ -981,7 +993,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                                 <div className="text-sm text-gray-700 mb-1">
                                                                     {lesson.subject}
                                                                 </div>
-                                                                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                                                <div className="flex items-center space-x-3 text-xs text-gray-600 mb-2">
                                                                     <span className="flex items-center">
                                                                         <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -991,6 +1003,8 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                                                     <span>•</span>
                                                                     <span>{duration} dk</span>
                                                                 </div>
+
+
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1688,7 +1702,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     </div>
                 )
             }
-        </div >
+        </div>
     );
 };
 

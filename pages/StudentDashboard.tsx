@@ -270,52 +270,61 @@ const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId
   if (loading || lessons.length === 0) return null;
 
   const isLessonJoinable = (lesson: any) => {
-    const now = new Date();
-    const startTime = new Date(lesson.start_time);
-    const endTime = new Date(lesson.end_time);
+    return lesson.status === 'started';
+  };
 
-    // Allow joining 10 minutes before start until end time
-    const joinTime = new Date(startTime.getTime() - 10 * 60000);
-
-    return now >= joinTime && now <= endTime;
+  const handleJoinClick = (lesson: any) => {
+    onJoinLesson(lesson);
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-primary mb-6">
-      <h2 className="text-xl font-bold font-poppins text-primary mb-4 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-        Yaklaşan Dersler
-      </h2>
+    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <span className="bg-red-100 p-2 rounded-lg text-red-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+            </svg>
+          </span>
+          Yaklaşan Dersler
+        </h3>
+      </div>
+
       <div className="space-y-3">
-        {lessons.map(lesson => {
+        {lessons.map((lesson) => {
           const startTime = new Date(lesson.start_time);
-          const isJoinable = isLessonJoinable(lesson);
+          const isToday = new Date().toDateString() === startTime.toDateString();
+          const joinable = isLessonJoinable(lesson);
 
           return (
-            <div key={lesson.id} className="border border-gray-100 rounded-xl p-4 bg-gray-50 flex justify-between items-center">
-              <div>
-                <div className="font-semibold text-gray-800">{lesson.subject}</div>
-                <div className="text-sm text-gray-500">
-                  {startTime.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} &middot; {startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+            <div key={lesson.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:shadow-md transition-all">
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center justify-center bg-white w-12 h-12 rounded-lg border border-gray-200 shadow-sm">
+                  <span className="text-xs font-bold text-gray-500 uppercase">{startTime.toLocaleDateString('tr-TR', { month: 'short' })}</span>
+                  <span className="text-lg font-bold text-gray-800">{startTime.getDate()}</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-800">{lesson.subject}</h4>
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    {startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
               </div>
 
-              {isJoinable ? (
+              {joinable ? (
                 <button
-                  onClick={() => onJoinLesson(lesson)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md animate-pulse flex items-center gap-2 transition-colors"
+                  onClick={() => handleJoinClick(lesson)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-md animate-pulse flex items-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                  </svg>
                   Derse Katıl
                 </button>
               ) : (
-                <div className="text-xs font-medium text-gray-400 bg-gray-200 px-3 py-1 rounded-full">
-                  {startTime > new Date() ? 'Henüz Başlamadı' : 'Tamamlandı'}
-                </div>
+                <span className="text-xs font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                  {lesson.status === 'completed' ? 'Tamamlandı' : 'Bekleniyor'}
+                </span>
               )}
             </div>
           );

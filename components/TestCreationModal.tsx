@@ -6,6 +6,7 @@ import { db } from '../services/dbAdapter';
 
 interface TestCreationModalProps {
     student: Student;
+    teacherId: string;
     onClose: () => void;
     onTestCreated: (newTest: Test) => void;
 }
@@ -17,7 +18,7 @@ interface TopicSelection {
     count: number;
 }
 
-const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose, onTestCreated }) => {
+const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherId, onClose, onTestCreated }) => {
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -116,6 +117,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, onClose,
     const handleAssignTest = async () => {
         const testData: Omit<Test, 'id'> = {
             studentId: student.id,
+            teacherId: teacherId,
             title: title || 'Karma Test',
             subject: topics[0]?.subject || Subject.Mathematics,
             unit: 'Karma Deneme',

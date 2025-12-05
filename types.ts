@@ -100,6 +100,7 @@ export interface Test {
   id: string;
   title: string;
   studentId: string;
+  teacherId?: string;
   subject: Subject;
   unit: string;
   questions: Question[];

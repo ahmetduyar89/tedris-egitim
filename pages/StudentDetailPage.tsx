@@ -102,6 +102,25 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 if (!a.submissionDate && !b.submissionDate) return 0;
                 return new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime();
             });
+
+            // Auto-fix: Ensure tests have teacherId for RLS compatibility
+            const testsToFix = tests.filter(t => !t.teacherId && user.role === 'tutor');
+            if (testsToFix.length > 0) {
+                console.log(`[AutoFix] Updating teacherId for ${testsToFix.length} tests...`);
+                // Execute updates silently
+                Promise.all(testsToFix.map(t =>
+                    db.collection('tests').doc(t.id).update({ teacherId: user.id })
+                        .catch(err => console.error(`Failed to fix test ${t.id}:`, err))
+                )).then(() => {
+                    console.log('[AutoFix] Teacher IDs updated.');
+                });
+
+                // Update local state immediately
+                tests.forEach(t => {
+                    if (!t.teacherId && user.role === 'tutor') t.teacherId = user.id;
+                });
+            }
+
             setAssignedTests(tests);
 
             // Diagnosis Tests
@@ -1229,7 +1248,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
     const renderModals = () => (
         <>
-            {isCreatingTest && <TestCreationModal student={student} onClose={() => setIsCreatingTest(false)} onTestCreated={handleTestCreated} />}
+            {isCreatingTest && <TestCreationModal student={student} teacherId={user.id} onClose={() => setIsCreatingTest(false)} onTestCreated={handleTestCreated} />}
             {isCreatingReviewPackage && <ReviewPackageEditorModal studentId={student.id} topic={selectedTopic} isLoading={isGeneratingPackage} initialItems={generatedPackageItems} onClose={() => setIsCreatingReviewPackage(false)} onAssign={handleAssignReviewPackage} />}
             {isEditingProgram && programToEdit && <WeeklyProgramEditorModal program={programToEdit} onClose={() => setIsEditingProgram(false)} onSave={handleSaveProgram} />}
             <AiRecommendationModal isOpen={isRecommendModalOpen} onClose={() => setIsRecommendModalOpen(false)} recommendations={recommendations} onAddTask={handleAddTaskFromLibrary} />

@@ -23,7 +23,10 @@ import CreatePDFTestModal from '../components/CreatePDFTestModal';
 import PDFTestResultModal from '../components/PDFTestResultModal';
 import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmission } from '../services/pdfTestService';
 import StudentPaymentSettings from '../components/StudentPaymentSettings';
+import { diagnosisTestManagementService } from '../services/diagnosisTestManagementService';
+import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import * as privateLessonService from '../services/privateLessonService';
+
 
 import StudentOverviewTab from '../components/student-detail/StudentOverviewTab';
 import StudentHomeworkTab from '../components/student-detail/StudentHomeworkTab';
@@ -40,6 +43,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
     const [activeTab, setActiveTab] = useState<'overview' | 'homework' | 'analytics'>('overview');
     const [isCreatingTest, setIsCreatingTest] = useState(false);
     const [assignedTests, setAssignedTests] = useState<Test[]>([]);
+    const [diagnosisTestAssignments, setDiagnosisTestAssignments] = useState<DiagnosisTestAssignment[]>([]);
     const [weeklyProgram, setWeeklyProgram] = useState<WeeklyProgram | null>(null);
     const [viewingReport, setViewingReport] = useState<Test | null>(null);
 
@@ -99,6 +103,14 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 return new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime();
             });
             setAssignedTests(tests);
+
+            // Diagnosis Tests
+            try {
+                const diagnosisAssignments = await diagnosisTestManagementService.getStudentAssignments(student.id);
+                setDiagnosisTestAssignments(diagnosisAssignments);
+            } catch (error) {
+                console.error('Error fetching diagnosis test assignments:', error);
+            }
 
             // Program
             const programSnapshot = await db.collection('weeklyPrograms').where('studentId', '==', student.id).limit(1).get();
@@ -520,6 +532,71 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         } catch (e) {
             console.error("Error saving program", e);
             alert("Program kaydedilirken hata oluştu.");
+        }
+    };
+
+    const handleDeleteTest = async (testId: string) => {
+        if (!confirm('Bu testi silmek istediğinize emin misiniz?')) return;
+        try {
+            await db.collection('tests').doc(testId).delete();
+            setAssignedTests(prev => prev.filter(t => t.id !== testId));
+            setToastMessage('Test başarıyla silindi.');
+        } catch (error) {
+            console.error('Error deleting test:', error);
+            alert('Test silinirken bir hata oluştu.');
+        }
+    };
+
+    const handleDeleteQBAssignment = async (assignmentId: string) => {
+        if (!confirm('Bu soru bankası atamasını silmek istediğinize emin misiniz?')) return;
+        try {
+            await db.collection('question_bank_assignments').doc(assignmentId).delete();
+            setQuestionBankAssignments(prev => prev.filter(a => a.id !== assignmentId));
+            setToastMessage('Soru bankası ataması silindi.');
+        } catch (error) {
+            console.error('Error deleting QB assignment:', error);
+            alert('Silme işlemi başarısız oldu.');
+        }
+    };
+
+    const handleDeletePDFTest = async (testId: string) => {
+        if (!confirm('Bu PDF testini silmek istediğinize emin misiniz?')) return;
+        try {
+            // Assuming pdfTestService has a delete function or we use db directly
+            // Since PDF tests might have associated files, using service is better if available.
+            // Checking imports... import { ... } from '../services/pdfTestService';
+            // If deletePDFTest is not exported, I might need to add it or use db.
+            // Let's assume for now we delete the assignment/test record.
+            // Actually PDFTest is the test definition. If it's assigned to a student, it's usually the PDFTest record itself if created for student?
+            // Or is there an assignment record?
+            // getPDFTestsForStudent returns PDFTest[].
+            // Let's check pdfTestService.ts to see how to delete.
+            // For now, I will use a direct db delete if service not available, but let's try to use service or db.
+            // I'll use db.collection('pdf_tests').doc(testId).delete() for now as it seems to be the pattern.
+            // But wait, PDF tests are in Supabase usually?
+            // Let's check pdfTestService.ts content again.
+            // It uses supabase.from('pdf_tests')...
+            const { error } = await supabase.from('pdf_tests').delete().eq('id', testId);
+            if (error) throw error;
+
+            setPdfTests(prev => prev.filter(t => t.id !== testId));
+            setPdfTestSubmissions(prev => prev.filter(s => s.pdfTestId !== testId));
+            setToastMessage('PDF testi başarıyla silindi.');
+        } catch (error) {
+            console.error('Error deleting PDF test:', error);
+            alert('PDF testi silinirken bir hata oluştu.');
+        }
+    };
+
+    const handleDeleteDiagnosisTestAssignment = async (assignmentId: string) => {
+        if (!confirm('Bu tanı testi atamasını silmek istediğinize emin misiniz?')) return;
+        try {
+            await supabase.from('diagnosis_test_assignments').delete().eq('id', assignmentId);
+            setDiagnosisTestAssignments(prev => prev.filter(a => a.id !== assignmentId));
+            setToastMessage('Tanı testi ataması silindi.');
+        } catch (error) {
+            console.error('Error deleting diagnosis test assignment:', error);
+            alert('Silme işlemi başarısız oldu.');
         }
     };
 
@@ -1340,6 +1417,11 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 setIsEditingProgram(true);
             }}
             onUpdatePaymentConfig={setPaymentConfig}
+            onDeleteTest={handleDeleteTest}
+            onDeleteQBAssignment={handleDeleteQBAssignment}
+            onDeletePDFTest={handleDeletePDFTest}
+            diagnosisTestAssignments={diagnosisTestAssignments}
+            onDeleteDiagnosisTestAssignment={handleDeleteDiagnosisTestAssignment}
         />
     );
 

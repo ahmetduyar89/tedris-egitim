@@ -1,6 +1,7 @@
 import React from 'react';
 import { Student, Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment, QuestionBank, PrivateLesson, LessonStats, PaymentSummary, StudentPaymentConfig, WeeklyProgram } from '../../types';
 import { PDFTest, PDFTestSubmission } from '../../services/pdfTestService';
+import { DiagnosisTestAssignment } from '../../types/diagnosisTestTypes';
 import OverallAnalytics from '../OverallAnalytics';
 import EditableWeeklySchedule from '../EditableWeeklySchedule';
 import StudentPaymentSettings from '../StudentPaymentSettings';
@@ -36,6 +37,11 @@ interface StudentOverviewTabProps {
     onUpdateWeeklyProgram: (program: WeeklyProgram) => void;
     onEditProgram: () => void;
     onUpdatePaymentConfig: (config: StudentPaymentConfig) => void;
+    onDeleteTest: (testId: string) => void;
+    onDeleteQBAssignment: (assignmentId: string) => void;
+    onDeletePDFTest: (testId: string) => void;
+    diagnosisTestAssignments: DiagnosisTestAssignment[];
+    onDeleteDiagnosisTestAssignment: (assignmentId: string) => void;
 }
 
 const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
@@ -66,7 +72,12 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
     onDeleteFlashcard,
     onUpdateWeeklyProgram,
     onEditProgram,
-    onUpdatePaymentConfig
+    onUpdatePaymentConfig,
+    onDeleteTest,
+    onDeleteQBAssignment,
+    onDeletePDFTest,
+    diagnosisTestAssignments,
+    onDeleteDiagnosisTestAssignment
 }) => {
     return (
         <div className="space-y-6 md:space-y-8">
@@ -100,21 +111,58 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                 <div className="space-y-8">
                     <div className="bg-card-background p-6 rounded-xl shadow-md">
                         <h3 className="text-xl font-bold font-poppins text-text-primary mb-4">Atanmış Testler</h3>
-                        {(assignedTests.length > 0 || questionBankAssignments.length > 0 || pdfTestSubmissions.length > 0) ? (
+                        {(assignedTests.length > 0 || questionBankAssignments.length > 0 || pdfTests.length > 0 || diagnosisTestAssignments.length > 0) ? (
                             <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                {diagnosisTestAssignments.map(assignment => (
+                                    <li key={assignment.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-orange-400 group">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="font-semibold flex items-center">
+                                                    <span className="text-orange-600 mr-2">🩺</span>
+                                                    {assignment.test?.title || 'Tanı Testi'}
+                                                </p>
+                                                <p className={`text-sm font-medium ${assignment.status === 'completed' ? 'text-success' : 'text-warning'}`}>
+                                                    {assignment.status === 'completed' ? `Tamamlandı (Puan: ${assignment.score}%)` : 'Devam Ediyor'}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <button
+                                                    onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    title="Tanı Testini Sil"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
                                 {assignedTests.map(test => (
-                                    <li key={test.id} className="p-3 hover:bg-gray-50 rounded-lg">
+                                    <li key={test.id} className="p-3 hover:bg-gray-50 rounded-lg group">
                                         <div className="flex justify-between items-center">
                                             <div>
                                                 <p className="font-semibold">{test.title}</p>
                                                 <p className={`text-sm font-medium ${test.completed ? 'text-success' : 'text-warning'}`}>{test.completed ? `Tamamlandı (Puan: ${test.score}%)` : 'Beklemede'}</p>
                                             </div>
-                                            {test.completed && <button onClick={() => onShowAnalysis(test)} className="bg-primary text-white px-4 py-1 rounded-xl hover:bg-primary-dark">Raporu Gör</button>}
+                                            <div className="flex items-center space-x-2">
+                                                {test.completed && <button onClick={() => onShowAnalysis(test)} className="bg-primary text-white px-3 py-1 rounded-lg text-sm hover:bg-primary-dark">Rapor</button>}
+                                                <button
+                                                    onClick={() => onDeleteTest(test.id)}
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    title="Testi Sil"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     </li>
                                 ))}
                                 {questionBankAssignments.map(qbAssignment => (
-                                    <li key={qbAssignment.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-purple-400">
+                                    <li key={qbAssignment.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-purple-400 group">
                                         <div className="flex justify-between items-center">
                                             <div>
                                                 <p className="font-semibold flex items-center">
@@ -125,22 +173,34 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                     {qbAssignment.status === 'Tamamlandı' ? `Tamamlandı (${qbAssignment.score}/100 puan)` : qbAssignment.status}
                                                 </p>
                                             </div>
-                                            {qbAssignment.status === 'Tamamlandı' && (
+                                            <div className="flex items-center space-x-2">
+                                                {qbAssignment.status === 'Tamamlandı' && (
+                                                    <button
+                                                        onClick={() => onViewQBAssignment(qbAssignment)}
+                                                        className="bg-purple-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-700"
+                                                    >
+                                                        Sonuç
+                                                    </button>
+                                                )}
                                                 <button
-                                                    onClick={() => onViewQBAssignment(qbAssignment)}
-                                                    className="bg-purple-600 text-white px-4 py-1 rounded-xl hover:bg-purple-700"
+                                                    onClick={() => onDeleteQBAssignment(qbAssignment.id)}
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    title="Atamayı Sil"
                                                 >
-                                                    Sonuçları Gör
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
                                                 </button>
-                                            )}
+                                            </div>
                                         </div>
                                     </li>
                                 ))}
-                                {pdfTestSubmissions.map(submission => {
-                                    const pdfTest = pdfTests.find(t => t.id === submission.pdfTestId);
-                                    if (!pdfTest) return null;
+                                {pdfTests.map(pdfTest => {
+                                    const submission = pdfTestSubmissions.find(s => s.pdfTestId === pdfTest.id);
+                                    const isCompleted = submission && (submission.status === 'completed' || submission.status === 'time_expired');
+
                                     return (
-                                        <li key={submission.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-blue-400">
+                                        <li key={pdfTest.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-blue-400 group">
                                             <div className="flex justify-between items-center">
                                                 <div>
                                                     <p className="font-semibold flex items-center">
@@ -149,18 +209,29 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                         </svg>
                                                         {pdfTest.title}
                                                     </p>
-                                                    <p className={`text-sm font-medium ${submission.status === 'completed' || submission.status === 'time_expired' ? 'text-success' : 'text-warning'}`}>
-                                                        {submission.status === 'completed' || submission.status === 'time_expired' ? `Tamamlandı (${submission.scorePercentage?.toFixed(1)}%)` : 'Devam Ediyor'}
+                                                    <p className={`text-sm font-medium ${isCompleted ? 'text-success' : 'text-warning'}`}>
+                                                        {isCompleted ? `Tamamlandı (${submission.scorePercentage?.toFixed(1)}%)` : (submission ? 'Devam Ediyor' : 'Başlanmadı')}
                                                     </p>
                                                 </div>
-                                                {(submission.status === 'completed' || submission.status === 'time_expired') && (
+                                                <div className="flex items-center space-x-2">
+                                                    {isCompleted && submission && (
+                                                        <button
+                                                            onClick={() => onViewPDFTestResult(pdfTest, submission)}
+                                                            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700"
+                                                        >
+                                                            Sonuç
+                                                        </button>
+                                                    )}
                                                     <button
-                                                        onClick={() => onViewPDFTestResult(pdfTest, submission)}
-                                                        className="bg-blue-600 text-white px-4 py-1 rounded-xl hover:bg-blue-700"
+                                                        onClick={() => onDeletePDFTest(pdfTest.id)}
+                                                        className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="PDF Testini Sil"
                                                     >
-                                                        Sonuçları Gör
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                        </svg>
                                                     </button>
-                                                )}
+                                                </div>
                                             </div>
                                         </li>
                                     );

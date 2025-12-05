@@ -87,20 +87,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                <span className="text-gray-700 font-semibold text-sm">Yapay Zeka Destekli Eğitim</span>
+                <span className="text-gray-700 font-semibold text-sm">Profesyonel Eğitim Yönetim Sistemi</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-poppins leading-tight tracking-tight">
-                <span className="text-gray-900">Eğitimde</span>{' '}
+                <span className="text-gray-900">Özel Derslerinizi</span>{' '}
                 <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text inline-block animate-fade-in-up">
-                  Yeni Dönem
+                  Profesyonelce
                 </span>
                 <br />
-                <span className="text-gray-900">Başlıyor</span>
+                <span className="text-gray-900">Yönetin</span>
               </h1>
 
               <p className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-xl">
-                AI destekli test oluşturma, kişiselleştirilmiş öğrenme ve detaylı analizlerle öğretmenlere zaman kazandırın, öğrencileri başarıya taşıyın.
+                Öğrenci takibi, yapay zeka destekli analizler, otomatik ders programlama ve profesyonel raporlama. Özel ders veren öğretmenler ve eğitim koçları için hepsi bir arada çözüm.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -291,13 +291,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center mb-16">
             <div className="inline-block px-4 py-2 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full mb-4">
-              <span className="text-primary font-bold text-sm">✨ Özellikler</span>
+              <span className="text-primary font-bold text-sm">✨ Profesyonel Özellikler</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold font-poppins text-gray-900 mb-4">
               Neden <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">Tedris</span>?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Modern eğitim ihtiyaçları için tasarlanmış kapsamlı özellikler
+              Özel ders yönetiminde ihtiyacınız olan her şey, tek bir profesyonel panelde.
             </p>
           </div>
 

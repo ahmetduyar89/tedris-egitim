@@ -6,9 +6,10 @@ import { Mistake } from '../types';
 
 interface MistakeNotebookPageProps {
     user: User | null;
+    onBack?: () => void;
 }
 
-const MistakeNotebookPage: React.FC<MistakeNotebookPageProps> = ({ user }) => {
+const MistakeNotebookPage: React.FC<MistakeNotebookPageProps> = ({ user, onBack }) => {
     const [mistakes, setMistakes] = useState<Mistake[]>([]);
     const [loading, setLoading] = useState(true);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
@@ -73,6 +74,17 @@ const MistakeNotebookPage: React.FC<MistakeNotebookPageProps> = ({ user }) => {
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <div className="flex justify-between items-center mb-8">
                 <div>
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="mb-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Geri Dön
+                        </button>
+                    )}
                     <h1 className="text-3xl font-bold font-poppins text-gray-800">Akıllı Hata Defteri 📓</h1>
                     <p className="text-gray-600 mt-2">Hatalarından ders çıkar, eksiklerini kapat.</p>
                 </div>

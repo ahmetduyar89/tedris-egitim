@@ -311,7 +311,7 @@ const App: React.FC = () => {
               <span className="font-semibold text-gray-800">Hata Defteri</span>
               <div className="w-20"></div> {/* Spacer */}
             </div>
-            <MistakeNotebookPage user={currentUser} />
+            <MistakeNotebookPage user={currentUser} onBack={() => setView('dashboard')} />
           </div>
         );
       default:

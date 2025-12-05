@@ -115,20 +115,20 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                             <ul className="space-y-2 max-h-60 overflow-y-auto pr-2">
                                 {diagnosisTestAssignments.map(assignment => (
                                     <li key={assignment.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-orange-400 group">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="font-semibold flex items-center">
-                                                    <span className="text-orange-600 mr-2">🩺</span>
-                                                    {assignment.test?.title || 'Tanı Testi'}
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <div className="w-full">
+                                                <p className="font-semibold flex items-center break-words">
+                                                    <span className="text-orange-600 mr-2 flex-shrink-0">🩺</span>
+                                                    <span className="truncate">{assignment.test?.title || 'Tanı Testi'}</span>
                                                 </p>
-                                                <p className={`text-sm font-medium ${assignment.status === 'completed' ? 'text-success' : 'text-warning'}`}>
+                                                <p className={`text-sm font-medium ${assignment.status === 'completed' ? 'text-success' : 'text-warning'} ml-7`}>
                                                     {assignment.status === 'completed' ? `Tamamlandı (Puan: ${assignment.score}%)` : 'Devam Ediyor'}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                                                 <button
                                                     onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
-                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                                                     title="Tanı Testini Sil"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -141,16 +141,16 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                 ))}
                                 {assignedTests.map(test => (
                                     <li key={test.id} className="p-3 hover:bg-gray-50 rounded-lg group">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="font-semibold">{test.title}</p>
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <div className="w-full">
+                                                <p className="font-semibold truncate">{test.title}</p>
                                                 <p className={`text-sm font-medium ${test.completed ? 'text-success' : 'text-warning'}`}>{test.completed ? `Tamamlandı (Puan: ${test.score}%)` : 'Beklemede'}</p>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                {test.completed && <button onClick={() => onShowAnalysis(test)} className="bg-primary text-white px-3 py-1 rounded-lg text-sm hover:bg-primary-dark">Rapor</button>}
+                                            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                                                {test.completed && <button onClick={() => onShowAnalysis(test)} className="bg-primary text-white px-3 py-1 rounded-lg text-sm hover:bg-primary-dark whitespace-nowrap">Rapor</button>}
                                                 <button
                                                     onClick={() => onDeleteTest(test.id)}
-                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                                                     title="Testi Sil"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -163,28 +163,28 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                 ))}
                                 {questionBankAssignments.map(qbAssignment => (
                                     <li key={qbAssignment.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-purple-400 group">
-                                        <div className="flex justify-between items-center">
-                                            <div>
-                                                <p className="font-semibold flex items-center">
-                                                    <span className="text-purple-600 mr-2">📝</span>
-                                                    {qbAssignment.questionBank?.title || 'Soru Bankası Testi'}
+                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                            <div className="w-full">
+                                                <p className="font-semibold flex items-center break-words">
+                                                    <span className="text-purple-600 mr-2 flex-shrink-0">📝</span>
+                                                    <span className="truncate">{qbAssignment.questionBank?.title || 'Soru Bankası Testi'}</span>
                                                 </p>
-                                                <p className={`text-sm font-medium ${qbAssignment.status === 'Tamamlandı' ? 'text-success' : 'text-warning'}`}>
+                                                <p className={`text-sm font-medium ${qbAssignment.status === 'Tamamlandı' ? 'text-success' : 'text-warning'} ml-7`}>
                                                     {qbAssignment.status === 'Tamamlandı' ? `Tamamlandı (${qbAssignment.score}/100 puan)` : qbAssignment.status}
                                                 </p>
                                             </div>
-                                            <div className="flex items-center space-x-2">
+                                            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                                                 {qbAssignment.status === 'Tamamlandı' && (
                                                     <button
                                                         onClick={() => onViewQBAssignment(qbAssignment)}
-                                                        className="bg-purple-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-700"
+                                                        className="bg-purple-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-purple-700 whitespace-nowrap"
                                                     >
                                                         Sonuç
                                                     </button>
                                                 )}
                                                 <button
                                                     onClick={() => onDeleteQBAssignment(qbAssignment.id)}
-                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                                                     title="Atamayı Sil"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -201,30 +201,30 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
 
                                     return (
                                         <li key={pdfTest.id} className="p-3 hover:bg-gray-50 rounded-lg border-l-4 border-blue-400 group">
-                                            <div className="flex justify-between items-center">
-                                                <div>
-                                                    <p className="font-semibold flex items-center">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 mr-2">
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                                <div className="w-full">
+                                                    <p className="font-semibold flex items-center break-words">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 mr-2 flex-shrink-0">
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
                                                         </svg>
-                                                        {pdfTest.title}
+                                                        <span className="truncate">{pdfTest.title}</span>
                                                     </p>
-                                                    <p className={`text-sm font-medium ${isCompleted ? 'text-success' : 'text-warning'}`}>
+                                                    <p className={`text-sm font-medium ${isCompleted ? 'text-success' : 'text-warning'} ml-7`}>
                                                         {isCompleted ? `Tamamlandı (${submission.scorePercentage?.toFixed(1)}%)` : (submission ? 'Devam Ediyor' : 'Başlanmadı')}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center space-x-2">
+                                                <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                                                     {isCompleted && submission && (
                                                         <button
                                                             onClick={() => onViewPDFTestResult(pdfTest, submission)}
-                                                            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700"
+                                                            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 whitespace-nowrap"
                                                         >
                                                             Sonuç
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => onDeletePDFTest(pdfTest.id)}
-                                                        className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                                                         title="PDF Testini Sil"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

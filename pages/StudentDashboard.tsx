@@ -140,7 +140,7 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
               {completedTests.map(test => (
                 <li key={test.id} className="border border-border p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => test.analysis && onViewReport(test)}>
                   <h4 className="font-semibold text-gray-700">{test.title}</h4>
-                  <div className="flex justify-between items-center mt-2 text-sm">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center mt-2 text-sm gap-2">
                     <span className="font-bold text-primary">Puan: {test.score ?? 0}%</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${test.analysis ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {test.analysis ? 'Raporu Görüntüle' : 'Rapor Bekleniyor'}
@@ -157,9 +157,9 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
                     <span className="text-xs font-bold text-blue-600">PDF TEST</span>
                   </div>
                   <h4 className="font-semibold text-gray-700">{submission.pdfTest?.title || 'PDF Testi'}</h4>
-                  <div className="flex justify-between items-center mt-2 text-sm">
+                  <div className="flex flex-col sm:flex-row justify-between sm:items-center mt-2 text-sm gap-2">
                     <span className="font-bold text-blue-600">Puan: {submission.scorePercentage?.toFixed(1)}%</span>
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 w-max">
                       Tamamlandı
                     </span>
                   </div>

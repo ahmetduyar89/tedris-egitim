@@ -1493,7 +1493,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                             </div>
                         </div>
 
-                        <div className="border-b border-border mb-6 overflow-x-auto">
+                        <div className="border-b border-border mb-6 overflow-x-auto scrollbar-hide">
                             <nav className="-mb-px flex space-x-4 min-w-max" aria-label="Tabs">
                                 <button onClick={() => setActiveTab('overview')} className={tabClass('overview')}>Genel Bakış</button>
                                 <button onClick={() => setActiveTab('homework')} className={tabClass('homework')}>Ödevler</button>

@@ -33,7 +33,7 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
     try {
       const studentIds = students.map(s => s.id);
 
-      // 1. Fetch Diagnosis Assignments (AI Tests) - Validated table
+      // 1. Fetch Diagnosis Assignments (AI Tests)
       const { data: aiTests, error: aiError } = await supabase
         .from('diagnosis_test_assignments')
         .select('student_id, score, status, ai_analysis')
@@ -42,45 +42,60 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
 
       if (aiError) console.error('AI Tests fetch error:', aiError);
 
-      // 2. Fetch PDF Submissions - Using Supabase client directly as wrapper usually maps to table
+      // 2. Fetch PDF Submissions
       const { data: pdfTests, error: pdfError } = await supabase
         .from('pdf_test_submissions')
         .select('student_id, score_percentage')
         .in('student_id', studentIds)
         .eq('status', 'completed');
 
-      if (pdfError) console.warn('PDF Tests fetch error (might not exist yet):', pdfError);
+      if (pdfError) console.warn('PDF Tests fetch error:', pdfError);
 
-      // 3. Aggregate Data
+      // 3. Fetch Question Bank Assignments
+      const { data: qbTests, error: qbError } = await supabase
+        .from('question_bank_assignments')
+        .select('student_id, score, status, ai_feedback')
+        .in('student_id', studentIds)
+        .eq('status', 'Tamamlandı');
+
+      if (qbError) console.warn('Question Bank Tests fetch error:', qbError);
+
+      // 4. Aggregate Data
       const studentStats = new Map<string, { totalScore: number; count: number; weakTopics: Set<string> }>();
+
+      const processTest = (studentId: string, score: number, weakTopics: string[] = []) => {
+        const stats = studentStats.get(studentId) || { totalScore: 0, count: 0, weakTopics: new Set() };
+        stats.totalScore += score;
+        stats.count += 1;
+        weakTopics.forEach(t => stats.weakTopics.add(t));
+        studentStats.set(studentId, stats);
+      };
 
       // Process AI Tests
       (aiTests || []).forEach((test: any) => {
-        const stats = studentStats.get(test.student_id) || { totalScore: 0, count: 0, weakTopics: new Set() };
-        stats.totalScore += (test.score || 0);
-        stats.count += 1;
-
-        // Extract weak topics from AI Analysis if available
+        let topics: string[] = [];
         if (test.ai_analysis) {
-          if (test.ai_analysis.weakTopics && Array.isArray(test.ai_analysis.weakTopics)) {
-            test.ai_analysis.weakTopics.slice(0, 2).forEach((t: string) => stats.weakTopics.add(t));
-          } else if (test.ai_analysis.weaknesses && Array.isArray(test.ai_analysis.weaknesses)) {
-            test.ai_analysis.weaknesses.slice(0, 2).forEach((t: string) => stats.weakTopics.add(t));
-          }
+          if (Array.isArray(test.ai_analysis.weakTopics)) topics = test.ai_analysis.weakTopics;
+          else if (Array.isArray(test.ai_analysis.weaknesses)) topics = test.ai_analysis.weaknesses;
         }
-
-        studentStats.set(test.student_id, stats);
+        processTest(test.student_id, test.score || 0, topics.slice(0, 2));
       });
 
       // Process PDF Tests
       (pdfTests || []).forEach((test: any) => {
-        const stats = studentStats.get(test.student_id) || { totalScore: 0, count: 0, weakTopics: new Set() };
-        stats.totalScore += (test.score_percentage || 0);
-        stats.count += 1;
-        studentStats.set(test.student_id, stats);
+        processTest(test.student_id, test.score_percentage || 0);
       });
 
-      // 4. Create Alerts
+      // Process Question Bank Tests
+      (qbTests || []).forEach((test: any) => {
+        let topics: string[] = [];
+        if (test.ai_feedback && Array.isArray(test.ai_feedback.weaknesses)) {
+          topics = test.ai_feedback.weaknesses;
+        }
+        processTest(test.student_id, test.score || 0, topics.slice(0, 2));
+      });
+
+      // 5. Create Alerts
       const alerts: RiskAlert[] = [];
       let totalSystemScore = 0;
       let totalSystemCount = 0;
@@ -92,18 +107,15 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
           totalSystemScore += avg;
           totalSystemCount++;
 
-          // Determine Risk Level
           let riskLevel: 'high' | 'medium' | 'low' = 'low';
           if (avg < 50) riskLevel = 'high';
           else if (avg < 70) riskLevel = 'medium';
 
-          // Add to list if there is ANY risk or deficiency to show
-          // Showing all for "System Overview" logic, but sorting by risk
           alerts.push({
             student,
             averageScore: avg,
             testCount: stats.count,
-            weakTopics: Array.from(stats.weakTopics).slice(0, 2), // Top 2 unique weak topics
+            weakTopics: Array.from(stats.weakTopics).slice(0, 2),
             riskLevel
           });
         }
@@ -113,7 +125,6 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
         setSystemAverage(Math.round(totalSystemScore / totalSystemCount));
       }
 
-      // Sort: High risk first, then lowest score
       setRiskAlerts(alerts.sort((a, b) => {
         if (a.riskLevel === 'high' && b.riskLevel !== 'high') return -1;
         if (b.riskLevel === 'high' && a.riskLevel !== 'high') return 1;

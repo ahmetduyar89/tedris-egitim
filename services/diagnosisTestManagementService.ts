@@ -12,6 +12,7 @@ import {
     DiagnosisDetailedResult,
     DiagnosisTestStatus
 } from '../types/diagnosisTestTypes';
+import { mistakeService } from './mistakeService';
 
 export const diagnosisTestManagementService = {
     // ==================== ÖĞRETMEN: TEST OLUŞTURMA ====================
@@ -336,6 +337,8 @@ export const diagnosisTestManagementService = {
         }));
     },
 
+
+
     async completeTest(
         assignmentId: string,
         aiAnalysis: DiagnosisAIAnalysis,
@@ -349,16 +352,56 @@ export const diagnosisTestManagementService = {
         let totalCorrect = 0;
         let totalQuestions = 0;
 
+        // 1. Fetch answers to check correctness
+        const answers = await this.getAssignmentAnswers(assignmentId);
+
         if (results) {
             score = results.score;
             totalCorrect = results.totalCorrect;
             totalQuestions = results.totalQuestions;
         } else {
-            // Fallback: Toplam doğru sayısını veritabanından hesapla (Eski yöntem)
-            const answers = await this.getAssignmentAnswers(assignmentId);
+            // Fallback: Calculate statistics from DB
             totalCorrect = answers.filter(a => a.isCorrect).length;
             totalQuestions = answers.length;
             score = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+        }
+
+        // 2. Fetch assignment to get studentId and testId
+        const { data: assignmentData } = await supabase
+            .from('diagnosis_test_assignments')
+            .select('student_id, test_id')
+            .eq('id', assignmentId)
+            .single();
+
+        if (assignmentData) {
+            // 3. Fetch questions to get text and correct answer for the mistake log
+            const questions = await this.getTestQuestions(assignmentData.test_id);
+
+            // 4. Record mistakes
+            const mistakesPromise = answers
+                .filter(a => !a.isCorrect)
+                .map(async (answer) => {
+                    const question = questions.find(q => q.id === answer.questionId);
+                    if (question) {
+                        return mistakeService.addMistake({
+                            studentId: assignmentData.student_id,
+                            questionId: question.id,
+                            questionData: {
+                                text: question.questionText,
+                                options: question.options,
+                                type: 'multiple_choice', // Assuming mostly multiple choice for diagnosis
+                                topic: question.moduleName
+                            },
+                            studentAnswer: answer.studentAnswer,
+                            correctAnswer: question.correctAnswer,
+                            status: 'new',
+                            sourceType: 'test',
+                            sourceId: assignmentId
+                        });
+                    }
+                });
+
+            await Promise.all(mistakesPromise);
         }
 
         const { error } = await supabase

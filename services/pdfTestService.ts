@@ -1,5 +1,6 @@
 import { db, supabase } from './dbAdapter';
 import { createNotification } from './notificationService';
+import { mistakeService } from './mistakeService';
 
 export interface PDFTest {
   id: string;
@@ -347,6 +348,7 @@ export const submitPDFTest = async (
     let emptyCount = 0;
 
     for (let i = 1; i <= totalQuestions; i++) {
+      // ... (existing counting logic, same as before)
       const questionNum = i.toString();
       const studentAnswer = answers[questionNum];
       const correctAnswer = answerKey[questionNum];
@@ -379,6 +381,47 @@ export const submitPDFTest = async (
 
     const doc = await db.collection('pdf_test_submissions').doc(submissionId).get();
     const data = doc.data();
+
+    // --- Record Mistakes ---
+    const pdfTestId = data.pdf_test_id || data.pdfTestId;
+    const studentId = data.student_id || data.studentId;
+
+    if (pdfTestId && studentId && wrongCount > 0) {
+      // Fetch test details for context
+      const testDoc = await db.collection('pdf_tests').doc(pdfTestId).get();
+      if (testDoc.exists) {
+        const testData = testDoc.data();
+        const mistakesPromise = [];
+
+        for (let i = 1; i <= totalQuestions; i++) {
+          const qNum = i.toString();
+          const sAns = answers[qNum];
+          const cAns = answerKey[qNum];
+
+          // If answered and wrong
+          if (sAns && sAns.trim() !== '' && cAns && sAns.toUpperCase() !== cAns.toUpperCase()) {
+            mistakesPromise.push(mistakeService.addMistake({
+              studentId: studentId,
+              questionId: `pdf-${pdfTestId}-${qNum}`,
+              questionData: {
+                text: `${testData.title || 'PDF Test'} - Soru ${qNum}`,
+                type: 'multiple_choice',
+                options: ['A', 'B', 'C', 'D', 'E'].slice(0, testData.options_per_question || 4),
+                pdfUrl: testData.pdf_url || testData.pdfUrl,
+                questionNumber: i
+              },
+              studentAnswer: sAns,
+              correctAnswer: cAns,
+              status: 'new',
+              sourceType: 'test',
+              sourceId: submissionId
+            }));
+          }
+        }
+        await Promise.all(mistakesPromise);
+      }
+    }
+    // -----------------------
 
     return {
       id: doc.id,

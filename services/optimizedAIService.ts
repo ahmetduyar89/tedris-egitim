@@ -309,18 +309,4 @@ export const isAIConfigured = true; // Always true for now, or check env manuall
 export type { AppError };
 export { ErrorType };
 
-export const analyzeMistake = async (
-    question: string,
-    studentAnswer: string,
-    correctAnswer: string
-): Promise<{ explanation: string; hint: string; relatedTopic: string }> => {
-    const cacheKey = `mistake_analysis_${question.substring(0, 20)}_${studentAnswer.substring(0, 10)}`;
 
-    return withOptimizations(cacheKey, async () => {
-        return geminiService.analyzeMistake(
-            question,
-            studentAnswer,
-            correctAnswer
-        );
-    });
-};

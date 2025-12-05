@@ -10,7 +10,7 @@ import {
   getSubmissionForTest,
   PDFTestSubmission
 } from '../services/pdfTestService';
-import { mistakeService } from '../services/mistakeService';
+
 
 interface PDFTestTakingPageProps {
   user: User;
@@ -228,45 +228,7 @@ const PDFTestTakingPage: React.FC<PDFTestTakingPageProps> = ({ user, testId, onB
         test.totalQuestions
       );
 
-      // --- Smart Mistake Notebook Integration ---
-      try {
-        const mistakesToAdd: any[] = [];
-        for (let i = 1; i <= test.totalQuestions; i++) {
-          const questionNum = i.toString();
-          const studentAnswer = answers[questionNum];
-          const correctAnswer = test.answerKey[questionNum];
 
-          // If answer is wrong (and not empty, though empty is also wrong usually but let's stick to explicit wrong for now or include empty as wrong)
-          // Logic in submitPDFTest counts empty as empty, not wrong, but for mistake notebook we might want to capture wrong answers.
-          // Let's capture explicit wrong answers.
-          if (studentAnswer && correctAnswer && studentAnswer.toUpperCase() !== correctAnswer.toUpperCase()) {
-            mistakesToAdd.push({
-              studentId: user.id,
-              questionId: `${test.id}-q${questionNum}`, // Synthetic ID
-              questionData: {
-                text: `${test.title} - Soru ${questionNum}`,
-                question: `${test.title} - Soru ${questionNum}`, // For compatibility
-                pdfUrl: test.pdfUrl,
-                questionNumber: questionNum,
-                type: 'pdf_question'
-              },
-              studentAnswer: studentAnswer,
-              correctAnswer: correctAnswer,
-              status: 'new',
-              sourceType: 'test', // Using 'test' as generic type, or could add 'pdf_test' to types
-              sourceId: test.id
-            });
-          }
-        }
-
-        if (mistakesToAdd.length > 0) {
-          await Promise.all(mistakesToAdd.map(m => mistakeService.addMistake(m)));
-          console.log(`${mistakesToAdd.length} mistakes added to notebook.`);
-        }
-      } catch (mistakeError) {
-        console.error("Failed to add mistakes to notebook:", mistakeError);
-      }
-      // ------------------------------------------
 
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

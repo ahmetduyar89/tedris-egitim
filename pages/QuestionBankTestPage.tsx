@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { User, QuestionBankAssignment, QuestionBankQuestion } from '../types';
 import { db, supabase } from '../services/dbAdapter';
 import { calculateScore } from '../services/questionBankService';
-import { mistakeService } from '../services/mistakeService';
+
 
 interface QuestionBankTestPageProps {
   user: User;
@@ -301,69 +301,7 @@ const QuestionBankTestPage: React.FC<QuestionBankTestPageProps> = ({ user, assig
         // Continue with success logic (no change needed here as result structure matches)
         const { score, correctCount, totalQuestions, percentage, updatedModules, masteryUpdated } = result.result;
 
-        // --- Smart Mistake Notebook Integration ---
-        try {
-          const mistakesToAdd: any[] = [];
-          questions.forEach(q => {
-            const answer = answers[q.id];
-            let isCorrect = false;
 
-            if (q.type === 'multiple_choice' || q.type === 'true_false') {
-              if (answer && q.correct_answer) {
-                const cleanAnswer = String(answer).trim().toLowerCase();
-                const cleanCorrect = String(q.correct_answer).trim().toLowerCase();
-                if (cleanAnswer === cleanCorrect) {
-                  isCorrect = true;
-                }
-              }
-            } else if (q.type === 'open_ended') {
-              // For open ended, we might rely on AI evaluation or manual grading.
-              // If there is a model answer, we can check.
-              // For now, let's skip open ended or assume incorrect if not empty and no model answer match?
-              // Actually, open ended usually needs teacher/AI review.
-              // Let's skip automatic mistake adding for open ended for now unless we have immediate feedback.
-              // The submit function returns result, maybe it has detailed results?
-              // result.result doesn't seem to have per-question correctness.
-              // Let's assume strict equality for now if correct_answer exists.
-              if (answer && q.correct_answer && String(answer).trim().toLowerCase() === String(q.correct_answer).trim().toLowerCase()) {
-                isCorrect = true;
-              }
-            } else if (q.type === 'matching') {
-              // Matching logic is complex, let's skip for now or implement if needed.
-              // Assuming partial credit or full match?
-              // Let's skip matching for mistake notebook for now to avoid complexity.
-              isCorrect = true; // Placeholder to avoid adding as mistake
-            }
-
-            // If incorrect and answered (and not matching/open ended complex case)
-            if (!isCorrect && answer && (q.type === 'multiple_choice' || q.type === 'true_false')) {
-              mistakesToAdd.push({
-                studentId: user.id,
-                questionId: q.id,
-                questionData: {
-                  text: q.question,
-                  question: q.question, // For compatibility
-                  options: q.options,
-                  type: q.type,
-                  topic: q.topic
-                },
-                studentAnswer: String(answer),
-                correctAnswer: String(q.correct_answer),
-                status: 'new',
-                sourceType: 'test', // Using 'test' as generic type
-                sourceId: assignmentId
-              });
-            }
-          });
-
-          if (mistakesToAdd.length > 0) {
-            await Promise.all(mistakesToAdd.map(m => mistakeService.addMistake(m)));
-            console.log(`${mistakesToAdd.length} mistakes added to notebook.`);
-          }
-        } catch (mistakeError) {
-          console.error("Failed to add mistakes to notebook:", mistakeError);
-        }
-        // ------------------------------------------
 
         let alertMessage = `🎉 Test Tamamlandı!\n\n` +
           `📊 Puanınız: ${score}/100\n` +

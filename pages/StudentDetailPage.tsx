@@ -17,6 +17,7 @@ import CreateFlashcardModal from '../components/CreateFlashcardModal';
 import EditFlashcardModal from '../components/EditFlashcardModal';
 import OverallAnalytics from '../components/OverallAnalytics';
 import QuestionBankResultModal from '../components/QuestionBankResultModal';
+import MistakeNotebookPage from './MistakeNotebookPage';
 import { createNotification } from '../services/notificationService';
 import { db, supabase } from '../services/dbAdapter';
 import CreatePDFTestModal from '../components/CreatePDFTestModal';
@@ -40,7 +41,7 @@ interface StudentDetailPageProps {
 }
 
 const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, onBack, onLogout, onStudentUpdate }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'homework' | 'analytics'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'homework' | 'analytics' | 'mistakes'>('overview');
     const [isCreatingTest, setIsCreatingTest] = useState(false);
     const [assignedTests, setAssignedTests] = useState<Test[]>([]);
     const [diagnosisTestAssignments, setDiagnosisTestAssignments] = useState<DiagnosisTestAssignment[]>([]);
@@ -1498,12 +1499,14 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                 <button onClick={() => setActiveTab('overview')} className={tabClass('overview')}>Genel Bakış</button>
                                 <button onClick={() => setActiveTab('homework')} className={tabClass('homework')}>Ödevler</button>
                                 <button onClick={() => setActiveTab('analytics')} className={tabClass('analytics')}>Analizler</button>
+                                <button onClick={() => setActiveTab('mistakes')} className={tabClass('mistakes')}>Akıllı Hata Defteri</button>
                             </nav>
                         </div>
 
                         {activeTab === 'overview' && renderOverviewTab()}
                         {activeTab === 'homework' && renderHomeworkTab()}
                         {activeTab === 'analytics' && renderAnalyticsTab()}
+                        {activeTab === 'mistakes' && <MistakeNotebookPage studentId={student.id} />}
                     </div>
                 </main>
             )}

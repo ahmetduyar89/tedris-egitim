@@ -5,27 +5,31 @@ import { analyzeMistake } from '../services/optimizedAIService';
 import { Mistake } from '../types';
 
 interface MistakeNotebookPageProps {
-    user: User | null;
+    user?: User | null;
+    studentId?: string;
     onBack?: () => void;
 }
 
-const MistakeNotebookPage: React.FC<MistakeNotebookPageProps> = ({ user, onBack }) => {
+const MistakeNotebookPage: React.FC<MistakeNotebookPageProps> = ({ user, studentId, onBack }) => {
     const [mistakes, setMistakes] = useState<Mistake[]>([]);
     const [loading, setLoading] = useState(true);
     const [analyzingId, setAnalyzingId] = useState<string | null>(null);
     const [filter, setFilter] = useState<'new' | 'analyzed' | 'mastered' | 'all'>('new');
 
+    const targetId = studentId || user?.id;
+
     useEffect(() => {
-        if (user) {
+        if (targetId) {
             fetchMistakes();
         }
-    }, [user, filter]);
+    }, [targetId, filter]);
 
     const fetchMistakes = async () => {
+        if (!targetId) return;
         setLoading(true);
         try {
             const status = filter === 'all' ? undefined : filter;
-            const data = await mistakeService.getMistakes(user!.id, status);
+            const data = await mistakeService.getMistakes(targetId, status);
             setMistakes(data);
         } catch (error) {
             console.error("Error fetching mistakes:", error);
@@ -132,6 +136,14 @@ const MistakeNotebookPage: React.FC<MistakeNotebookPageProps> = ({ user, onBack 
                                         {new Date(mistake.createdAt).toLocaleDateString('tr-TR')}
                                     </span>
                                 </div>
+
+                                {mistake.questionData.sourceTitle && (
+                                    <div className="mb-2">
+                                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                            Test: {mistake.questionData.sourceTitle}
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="mb-6">
                                     <h4 className="font-bold text-gray-800 mb-2">Soru:</h4>

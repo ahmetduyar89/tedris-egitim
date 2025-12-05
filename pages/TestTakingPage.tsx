@@ -257,18 +257,26 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
       try {
         const wrongQuestions = submittedTest.questions.filter(q => !q.isCorrect);
         if (wrongQuestions.length > 0) {
-          await Promise.all(wrongQuestions.map(q =>
-            mistakeService.addMistake({
+          console.log('Adding mistakes to notebook:', wrongQuestions.length);
+          await Promise.all(wrongQuestions.map(q => {
+            // Ensure we have the student answer, falling back to the local state if needed
+            const actualStudentAnswer = q.studentAnswer || answers[q.id] || "Cevaplanmadı";
+
+            return mistakeService.addMistake({
               studentId: submittedTest.studentId,
               questionId: q.id,
-              questionData: q,
-              studentAnswer: q.studentAnswer || '',
-              correctAnswer: q.correctAnswer,
+              questionData: {
+                ...q,
+                sourceTitle: test.title, // Add context
+                question: q.text || "Soru metni bulunamadı" // Ensure text field for notebook
+              },
+              studentAnswer: actualStudentAnswer,
+              correctAnswer: q.correctAnswer || "Belirtilmedi",
               status: 'new',
               sourceType: 'test',
               sourceId: submittedTest.id
-            })
-          ));
+            });
+          }));
           console.log(`${wrongQuestions.length} mistakes added to notebook.`);
         }
       } catch (mistakeError) {

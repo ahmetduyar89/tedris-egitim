@@ -294,14 +294,3 @@ export const analyzeDiagnosisTest = async (
 };
 
 
-export const analyzeMistake = async (
-    question: string,
-    studentAnswer: string,
-    correctAnswer: string
-): Promise<{ explanation: string; hint: string; relatedTopic: string }> => {
-    return invokeAIFunction<{ explanation: string; hint: string; relatedTopic: string }>('analyzeMistake', {
-        question,
-        studentAnswer,
-        correctAnswer
-    });
-};

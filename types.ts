@@ -310,6 +310,25 @@ export interface QuestionBankAssignment {
   questionBank?: QuestionBank;
 }
 
+// --- Smart Mistake Notebook ---
+export interface Mistake {
+  id: string;
+  studentId: string;
+  questionId?: string;
+  questionData: any; // Full snapshot of the question
+  studentAnswer: string;
+  correctAnswer: string;
+  aiAnalysis?: {
+    explanation: string;
+    hint: string;
+    relatedTopic: string;
+  };
+  status: 'new' | 'analyzed' | 'mastered';
+  sourceType: 'test' | 'assignment' | 'quiz';
+  sourceId: string;
+  createdAt: string;
+}
+
 // --- AI Assistant ---
 export interface ChatMessage {
   id: string;

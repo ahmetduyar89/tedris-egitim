@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react';
+import MistakeNotebookPage from './pages/MistakeNotebookPage';
 import { User, UserRole } from './types';
 import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
@@ -10,11 +11,14 @@ const PublicSharePage = lazy(() => import('./pages/PublicSharePage'));
 const ContentViewerPage = lazy(() => import('./pages/ContentViewerPage'));
 import { supabase } from './services/dbAdapter';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
 
-type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer';
+type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer' | 'mistake-notebook';
+
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  useRealtimeNotifications(currentUser?.id);
   const [view, setView] = useState<View>('loading');
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [contentId, setContentId] = useState<string | null>(null);
@@ -276,12 +280,40 @@ const App: React.FC = () => {
           case UserRole.Tutor:
             return <TutorDashboard user={currentUser} onLogout={handleLogout} onNavigateToContent={handleNavigateToContent} />;
           case UserRole.Student:
-            return <StudentDashboard user={currentUser} onLogout={handleLogout} onNavigateToContent={handleNavigateToContent} />;
+            return <StudentDashboard
+              user={currentUser}
+              onLogout={handleLogout}
+              onNavigateToContent={handleNavigateToContent}
+              onNavigateToMistakeNotebook={() => setView('mistake-notebook')}
+            />;
           default:
             // This case might happen if role is not set, log them out.
             handleLogout();
             return null;
         }
+      case 'mistake-notebook':
+        if (!currentUser) {
+          setView('auth');
+          return null;
+        }
+        return (
+          <div className="min-h-screen bg-gray-50">
+            <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+              <button
+                onClick={() => setView('dashboard')}
+                className="text-gray-600 hover:text-gray-900 flex items-center"
+              >
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Geri Dön
+              </button>
+              <span className="font-semibold text-gray-800">Hata Defteri</span>
+              <div className="w-20"></div> {/* Spacer */}
+            </div>
+            <MistakeNotebookPage user={currentUser} />
+          </div>
+        );
       default:
         // Default to website view if something is wrong.
         return <LandingPage onNavigateToAuth={handleNavigateToAuth} />;

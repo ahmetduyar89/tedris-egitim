@@ -5,6 +5,7 @@ import { createNotification } from '../services/notificationService';
 import { db } from '../services/dbAdapter';
 import { masteryScoreService } from '../services/masteryScoreService';
 import { adaptivePlanService } from '../services/adaptivePlanService';
+import { mistakeService } from '../services/mistakeService';
 
 // A custom confirmation modal to replace window.confirm
 interface ConfirmationModalProps {
@@ -251,6 +252,29 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
           console.error("Failed to update mastery scores:", masteryError);
         }
       }
+
+      // --- Smart Mistake Notebook Integration ---
+      try {
+        const wrongQuestions = submittedTest.questions.filter(q => !q.isCorrect);
+        if (wrongQuestions.length > 0) {
+          await Promise.all(wrongQuestions.map(q =>
+            mistakeService.addMistake({
+              studentId: submittedTest.studentId,
+              questionId: q.id,
+              questionData: q,
+              studentAnswer: q.studentAnswer || '',
+              correctAnswer: q.correctAnswer,
+              status: 'new',
+              sourceType: 'test',
+              sourceId: submittedTest.id
+            })
+          ));
+          console.log(`${wrongQuestions.length} mistakes added to notebook.`);
+        }
+      } catch (mistakeError) {
+        console.error("Failed to add mistakes to notebook:", mistakeError);
+      }
+      // ------------------------------------------
 
     } catch (storageError) {
       console.error("Failed to save test results:", storageError);

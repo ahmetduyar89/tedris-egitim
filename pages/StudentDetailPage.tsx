@@ -103,24 +103,6 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 return new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime();
             });
 
-            // Auto-fix: Ensure tests have teacherId for RLS compatibility
-            const testsToFix = tests.filter(t => !t.teacherId && user.role === 'tutor');
-            if (testsToFix.length > 0) {
-                console.log(`[AutoFix] Updating teacherId for ${testsToFix.length} tests...`);
-                // Execute updates silently
-                Promise.all(testsToFix.map(t =>
-                    db.collection('tests').doc(t.id).update({ teacherId: user.id })
-                        .catch(err => console.error(`Failed to fix test ${t.id}:`, err))
-                )).then(() => {
-                    console.log('[AutoFix] Teacher IDs updated.');
-                });
-
-                // Update local state immediately
-                tests.forEach(t => {
-                    if (!t.teacherId && user.role === 'tutor') t.teacherId = user.id;
-                });
-            }
-
             setAssignedTests(tests);
 
             // Diagnosis Tests

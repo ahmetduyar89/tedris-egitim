@@ -3,18 +3,39 @@ import { Mistake } from '../types';
 
 export const mistakeService = {
     async addMistake(mistake: Omit<Mistake, 'id' | 'createdAt' | 'updatedAt'>): Promise<Mistake | null> {
+        // Map camelCase to snake_case for DB
+        const dbMistake = {
+            student_id: mistake.studentId,
+            question_id: mistake.questionId,
+            question_data: mistake.questionData,
+            student_answer: mistake.studentAnswer,
+            correct_answer: mistake.correctAnswer,
+            ai_analysis: mistake.aiAnalysis,
+            status: mistake.status,
+            source_type: mistake.sourceType,
+            source_id: mistake.sourceId,
+            // created_at is handled by DB default
+        };
+
         const { data, error } = await supabase
             .from('mistakes')
-            .insert([mistake])
+            .insert([dbMistake])
             .select()
             .single();
 
         if (error) {
             console.error('Error adding mistake:', error);
+            // Log the error but don't crash, return null
             return null;
         }
 
-        return data;
+        // Return the mapped data (we can reuse getMistakes mapping logic or just return input + id)
+        // Since we need to match the return type Mistake, let's just return what we have combined with ID/Timestamp
+        return {
+            id: data.id,
+            createdAt: data.created_at,
+            ...mistake
+        } as Mistake;
     },
 
     async getMistakes(studentId: string, status?: Mistake['status']): Promise<Mistake[]> {

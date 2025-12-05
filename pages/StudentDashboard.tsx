@@ -523,6 +523,35 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             });
           }
 
+          // Map AI feedback to Test analysis format if it exists
+          let analysis;
+          const feedback = data.ai_feedback || data.aiFeedback;
+
+          if (feedback) {
+            analysis = {
+              summary: {
+                correct: data.total_correct || data.totalCorrect || 0,
+                wrong: (data.total_questions || data.totalQuestions || 0) - (data.total_correct || data.totalCorrect || 0),
+                scorePercent: data.score || 0
+              },
+              analysis: {
+                weakTopics: feedback.weaknesses || [],
+                strongTopics: feedback.strengths || [],
+                recommendations: feedback.recommendations || [],
+                overallComment: feedback.overall || ''
+              },
+              // Create synthetic question evaluations so report charts show correct counts
+              questionEvaluations: Array.from({ length: (data.total_questions || data.totalQuestions || 0) }).map((_, i) => ({
+                id: `synthetic_${i}`,
+                text: `Soru ${i + 1}`,
+                type: 'Çoktan Seçmeli', // Default type
+                correctAnswer: '',
+                studentAnswer: '',
+                isCorrect: i < (data.total_correct || data.totalCorrect || 0)
+              })) as any[]
+            };
+          }
+
           return {
             id: doc.id,
             title: qbData?.title || 'Soru Bankası Testi',
@@ -537,7 +566,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
             submissionDate: data.completed_at || data.completedAt,
             isQuestionBankTest: true,
-            questionBankAssignmentId: doc.id
+            questionBankAssignmentId: doc.id,
+            analysis: analysis
           } as Test;
         } catch (error) {
           console.error('❌ Soru bankası yüklenirken hata (assignment:', doc.id, '):', error);

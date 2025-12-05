@@ -986,9 +986,24 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     return (
       <div className="p-4 md:p-8 space-y-8 animate-fade-in">
         {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} />}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Column */}
-          <div className="lg:col-span-1 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content (Left/Center) */}
+          <div className="lg:col-span-2">
+            {mergedWeeklyProgram ? (
+              <div className="mb-8">
+                <WeeklySchedule
+                  program={mergedWeeklyProgram}
+                  onTaskClick={handleTaskClick}
+                  isInteractive={true}
+                />
+              </div>
+            ) : (
+              <div className="bg-card-background p-6 rounded-2xl shadow-lg h-full flex items-center justify-center"><p>Henüz bir haftalık programın yok.</p></div>
+            )}
+          </div>
+
+          {/* Sidebar (Right) */}
+          <div className="space-y-8">
             {studentData && <ProfileCard student={studentData} />}
 
             {/* Mistake Notebook Button */}
@@ -1010,21 +1025,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             </div>
 
             <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
-            <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
-            <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
-          </div>
-          <div className="lg:col-span-3">
-            {mergedWeeklyProgram ? (
-              <div className="mb-8">
-                <WeeklySchedule
-                  program={mergedWeeklyProgram}
-                  onTaskClick={handleTaskClick}
-                  isInteractive={true}
-                />
-              </div>
-            ) : (
-              <div className="bg-card-background p-6 rounded-2xl shadow-lg h-full flex items-center justify-center"><p>Henüz bir haftalık programın yok.</p></div>
-            )}
             <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
             <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
             <TestArea

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { knowledgeGraphService, StudentMastery } from '../services/knowledgeGraphService';
-import { masteryScoreService } from '../services/masteryScoreService';
+import { supabase } from '../services/dbAdapter';
 import { Student } from '../types';
 
 interface RiskAlert {
   student: Student;
-  weakModules: StudentMastery[];
   averageScore: number;
-  totalAttempts: number;
+  testCount: number;
+  weakTopics: string[];
+  riskLevel: 'high' | 'medium' | 'low';
 }
 
 interface RiskAlertsPanelProps {
@@ -18,47 +18,110 @@ interface RiskAlertsPanelProps {
 const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStudent }) => {
   const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [systemAverage, setSystemAverage] = useState(0);
 
   useEffect(() => {
     if (students.length > 0) {
-      loadRiskAlerts();
+      loadComprehensiveRiskAnalysis();
     } else {
       setIsLoading(false);
     }
   }, [students]);
 
-  const loadRiskAlerts = async () => {
+  const loadComprehensiveRiskAnalysis = async () => {
     setIsLoading(true);
     try {
       const studentIds = students.map(s => s.id);
 
-      // Bulk fetch weak modules (threshold 0.5)
-      const bulkWeakModules = await knowledgeGraphService.getBulkWeakModules(studentIds, 0.5);
+      // 1. Fetch Diagnosis Assignments (AI Tests) - Validated table
+      const { data: aiTests, error: aiError } = await supabase
+        .from('diagnosis_test_assignments')
+        .select('student_id, score, status, ai_analysis')
+        .in('student_id', studentIds)
+        .eq('status', 'completed');
 
-      // Bulk fetch mastery statistics
-      const bulkStats = await masteryScoreService.getBulkMasteryStatistics(studentIds);
+      if (aiError) console.error('AI Tests fetch error:', aiError);
 
+      // 2. Fetch PDF Submissions - Using Supabase client directly as wrapper usually maps to table
+      const { data: pdfTests, error: pdfError } = await supabase
+        .from('pdf_test_submissions')
+        .select('student_id, score_percentage')
+        .in('student_id', studentIds)
+        .eq('status', 'completed');
+
+      if (pdfError) console.warn('PDF Tests fetch error (might not exist yet):', pdfError);
+
+      // 3. Aggregate Data
+      const studentStats = new Map<string, { totalScore: number; count: number; weakTopics: Set<string> }>();
+
+      // Process AI Tests
+      (aiTests || []).forEach((test: any) => {
+        const stats = studentStats.get(test.student_id) || { totalScore: 0, count: 0, weakTopics: new Set() };
+        stats.totalScore += (test.score || 0);
+        stats.count += 1;
+
+        // Extract weak topics from AI Analysis if available
+        if (test.ai_analysis) {
+          if (test.ai_analysis.weakTopics && Array.isArray(test.ai_analysis.weakTopics)) {
+            test.ai_analysis.weakTopics.slice(0, 2).forEach((t: string) => stats.weakTopics.add(t));
+          } else if (test.ai_analysis.weaknesses && Array.isArray(test.ai_analysis.weaknesses)) {
+            test.ai_analysis.weaknesses.slice(0, 2).forEach((t: string) => stats.weakTopics.add(t));
+          }
+        }
+
+        studentStats.set(test.student_id, stats);
+      });
+
+      // Process PDF Tests
+      (pdfTests || []).forEach((test: any) => {
+        const stats = studentStats.get(test.student_id) || { totalScore: 0, count: 0, weakTopics: new Set() };
+        stats.totalScore += (test.score_percentage || 0);
+        stats.count += 1;
+        studentStats.set(test.student_id, stats);
+      });
+
+      // 4. Create Alerts
       const alerts: RiskAlert[] = [];
+      let totalSystemScore = 0;
+      let totalSystemCount = 0;
 
       students.forEach(student => {
-        const weakModules = bulkWeakModules[student.id] || [];
-        const highAttemptModules = weakModules.filter(m => m.attemptsCount >= 3);
+        const stats = studentStats.get(student.id);
+        if (stats && stats.count > 0) {
+          const avg = Math.round(stats.totalScore / stats.count);
+          totalSystemScore += avg;
+          totalSystemCount++;
 
-        if (highAttemptModules.length > 0) {
-          const stats = bulkStats[student.id] || { averageScore: 0, totalAttempts: 0 };
+          // Determine Risk Level
+          let riskLevel: 'high' | 'medium' | 'low' = 'low';
+          if (avg < 50) riskLevel = 'high';
+          else if (avg < 70) riskLevel = 'medium';
 
+          // Add to list if there is ANY risk or deficiency to show
+          // Showing all for "System Overview" logic, but sorting by risk
           alerts.push({
             student,
-            weakModules: highAttemptModules,
-            averageScore: stats.averageScore,
-            totalAttempts: stats.totalAttempts,
+            averageScore: avg,
+            testCount: stats.count,
+            weakTopics: Array.from(stats.weakTopics).slice(0, 2), // Top 2 unique weak topics
+            riskLevel
           });
         }
       });
 
-      setRiskAlerts(alerts.sort((a, b) => b.weakModules.length - a.weakModules.length));
+      if (totalSystemCount > 0) {
+        setSystemAverage(Math.round(totalSystemScore / totalSystemCount));
+      }
+
+      // Sort: High risk first, then lowest score
+      setRiskAlerts(alerts.sort((a, b) => {
+        if (a.riskLevel === 'high' && b.riskLevel !== 'high') return -1;
+        if (b.riskLevel === 'high' && a.riskLevel !== 'high') return 1;
+        return a.averageScore - b.averageScore;
+      }));
+
     } catch (error) {
-      console.error('Error loading risk alerts:', error);
+      console.error('Error in risk analysis:', error);
     } finally {
       setIsLoading(false);
     }
@@ -66,106 +129,88 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
 
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg h-full min-h-[200px] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500 mx-auto"></div>
-          <p className="mt-3 text-gray-500 font-medium">Risk analizi yapılıyor...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (riskAlerts.length === 0) {
-    return (
-      <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-green-500 h-full flex flex-col justify-center">
-        <h2 className="text-xl font-bold font-poppins text-green-600 mb-2 flex items-center">
-          <span className="mr-2">✅</span> Risk Durumu
-        </h2>
-        <div className="text-center py-4">
-          <p className="text-lg font-semibold text-gray-800">Harika! Hiçbir öğrencide risk tespit edilmedi.</p>
-          <p className="text-sm text-gray-500 mt-1">Tüm öğrenciler beklenen performansın üzerinde.</p>
-        </div>
+      <div className="h-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border-l-4 border-red-500 h-full flex flex-col">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold font-poppins text-red-600 flex items-center">
-          <span className="mr-2">⚠️</span> Risk Alarmları
-        </h2>
-        <div className="bg-red-50 px-3 py-1 rounded-lg border border-red-100">
-          <span className="text-xl font-bold text-red-600">{riskAlerts.length}</span>
-          <span className="text-xs text-red-400 ml-1 font-medium">Öğrenci</span>
-        </div>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-h-[400px] min-h-[200px]">
+      {/* Minimal Header */}
+      <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+        <h3 className="text-sm font-bold font-poppins text-gray-800 flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          Risk Analizi
+        </h3>
+        <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+          G. Ort: %{systemAverage}
+        </span>
       </div>
 
-      <div className="space-y-4 flex-1 overflow-y-auto pr-1 custom-scrollbar">
-        {riskAlerts.map(alert => (
-          <div
-            key={alert.student.id}
-            className="bg-red-50/50 border border-red-100 p-4 rounded-xl hover:shadow-md transition-all cursor-pointer group"
-            onClick={() => onViewStudent(alert.student)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900 group-hover:text-red-600 transition-colors">{alert.student.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {alert.student.grade === 4 ? 'İlkokul' : `${alert.student.grade}. Sınıf`} • Ort: %{Math.round(alert.averageScore * 100)}
-                </p>
-              </div>
-              <div className="bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold border border-red-200">
-                {alert.weakModules.length} Kritik Konu
-              </div>
-            </div>
-
-            <div className="bg-white p-3 rounded-lg border border-red-100/50 shadow-sm">
-              <p className="text-[10px] uppercase tracking-wider font-bold text-red-500 mb-2">Müdahale Gerekenler</p>
-              <div className="space-y-2">
-                {alert.weakModules.slice(0, 3).map(module => (
-                  <div key={module.id} className="flex justify-between items-center text-sm">
-                    <div className="flex-1 truncate mr-2">
-                      <span className="text-gray-700 font-medium text-xs">
-                        {module.module?.title || 'Bilinmeyen Konu'}
-                      </span>
-                    </div>
-                    <div className="flex items-center text-xs">
-                      <span className="text-gray-400 mr-2">({module.attemptsCount} deneme)</span>
-                      <span className="text-red-600 font-bold bg-red-50 px-1.5 rounded">
-                        %{Math.round(module.masteryScore * 100)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {alert.weakModules.length > 3 && (
-                  <p className="text-xs text-gray-400 italic text-center pt-1 border-t border-gray-50 mt-1">
-                    +{alert.weakModules.length - 3} konu daha
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-center justify-end">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewStudent(alert.student);
-                }}
-                className="text-xs bg-white text-red-600 border border-red-200 px-3 py-1.5 rounded-lg font-medium hover:bg-red-50 transition-colors shadow-sm"
-              >
-                Detayları İncele →
-              </button>
-            </div>
+      {/* Compact List */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+        {riskAlerts.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-xs text-gray-400">Henüz saptanmış bir risk yok.</p>
           </div>
-        ))}
+        ) : (
+          riskAlerts.map(alert => (
+            <div
+              key={alert.student.id}
+              onClick={() => onViewStudent(alert.student)}
+              className={`group flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer hover:shadow-sm ${alert.riskLevel === 'high' ? 'border-red-100 bg-red-50/30' :
+                alert.riskLevel === 'medium' ? 'border-yellow-100 bg-yellow-50/30' :
+                  'border-gray-100 hover:bg-gray-50'
+                }`}
+            >
+              {/* Left: Score & Name */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className={`
+                  flex items-center justify-center w-9 h-9 rounded-full text-xs font-bold border-2 shrink-0
+                  ${alert.riskLevel === 'high' ? 'border-red-200 text-red-700 bg-red-50' :
+                    alert.riskLevel === 'medium' ? 'border-yellow-200 text-yellow-700 bg-yellow-50' :
+                      'border-green-200 text-green-700 bg-green-50'}
+                `}>
+                  %{alert.averageScore}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-semibold text-gray-800 truncate">{alert.student.name}</h4>
+                    {alert.riskLevel === 'high' && (
+                      <span className="text-[9px] font-bold bg-red-100 text-red-600 px-1.5 py-0.5 rounded uppercase tracking-wide shrink-0">Acil</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate flex items-center gap-1">
+                    {alert.weakTopics.length > 0 ? (
+                      <>
+                        <span className="text-red-400 font-medium whitespace-nowrap">Eksik:</span>
+                        <span className="truncate">{alert.weakTopics.join(', ')}</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400">{alert.testCount} test tamamlandı</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Action */}
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity pl-2">
+                <button className="p-1.5 text-gray-400 hover:text-primary hover:bg-blue-50 rounded-lg">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
-      <div className="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-100 flex gap-2">
-        <span className="text-lg">💡</span>
-        <p className="text-xs text-yellow-800 leading-relaxed">
-          <strong>Öneri:</strong> Bu öğrenciler 3+ denemeye rağmen %50 başarı altında kalmış. Birebir etüt planlayabilirsiniz.
-        </p>
+      {/* Footer Info */}
+      <div className="p-2 border-t border-gray-50 bg-gray-50/30 text-[10px] text-gray-400 text-center">
+        Tüm sınavlar otomatik analiz edilmiştir.
       </div>
     </div>
   );

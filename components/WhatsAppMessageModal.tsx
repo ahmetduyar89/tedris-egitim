@@ -85,7 +85,6 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
                 prefix = `Merhaba ${getFirstName(s.name)}`;
             }
 
-            const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long' });
             const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
 
             let homeworkText = '';
@@ -95,7 +94,7 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
                 homeworkText = `\n\n📚 Verilen ödevlerin düzenli olarak tamamlanması önemlidir.`;
             }
 
-            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
+            return `${prefix},\n\n${target === 'parent' ? `${studentRef} için verilen` : 'Verilen'} ödevlerin tamamlanması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
         }
     },
     payment: {

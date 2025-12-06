@@ -12,7 +12,7 @@ import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
 import PrivateLessonSchedule from '../components/PrivateLessonSchedule';
 import OnlineLessonsPage from './OnlineLessonsPage';
 import DashboardOverview from '../components/DashboardOverview';
-import WhatsAppMessageModal from '../components/WhatsAppMessageModal';
+
 
 const TedrisLogo = () => (
     <svg className="h-10 w-auto" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -578,14 +578,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
     const [sortBy, setSortBy] = useState<'name' | 'grade' | 'xp'>('name');
 
-    // WhatsApp Messaging
-    const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
-    const [selectedStudentForMessage, setSelectedStudentForMessage] = useState<string | undefined>(undefined);
 
-    const handleOpenMessageModal = (studentId?: string) => {
-        setSelectedStudentForMessage(studentId);
-        setIsMessageModalOpen(true);
-    };
 
     const loadStudents = useCallback(async () => {
         try {
@@ -732,15 +725,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                             <p className="text-gray-500 mt-1">{students.length} kayıtlı öğrenci</p>
                         </div>
 
-                        <button
-                            onClick={() => handleOpenMessageModal()}
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-md shadow-green-200"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                            </svg>
-                            <span>Mesaj Gönder</span>
-                        </button>
+
                         <button
                             onClick={() => setIsAddingStudent(true)}
                             className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-md shadow-indigo-200"
@@ -799,19 +784,6 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                                     onEdit={() => handleEditStudent(student)}
                                     onDelete={() => handleDeleteStudent(student)}
                                 >
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenMessageModal(student.id);
-                                        }}
-                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                        title="WhatsApp Mesajı Gönder"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                    </button>
-
                                 </StudentCard>
                             ))}
                         </div>
@@ -847,7 +819,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const renderContent = () => {
         switch (currentView) {
             case 'overview':
-                return <DashboardOverview user={user} students={students} onNavigateToSchedule={() => setCurrentView('privateLessons')} onViewStudent={handleSelectStudent} onOpenMessageModal={() => handleOpenMessageModal()} />;
+                return <DashboardOverview user={user} students={students} onNavigateToSchedule={() => setCurrentView('privateLessons')} onViewStudent={handleSelectStudent} />;
             case 'studentDetail':
                 return selectedStudent && <StudentDetailPage user={user} student={selectedStudent} onBack={handleBackToStudentList} onLogout={onLogout} onStudentUpdate={handleStudentUpdated} />;
             case 'library':
@@ -885,14 +857,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
             {isAddingStudent && <AddStudentModal tutor={user} onClose={() => setIsAddingStudent(false)} onStudentAdded={handleStudentAdded} />}
             {editingStudent && <EditStudentModal student={editingStudent} onClose={() => setEditingStudent(null)} onStudentUpdated={handleStudentEdited} />}
             {deletingStudent && <ConfirmDeleteModal studentName={deletingStudent.name} onConfirm={confirmDeleteStudent} onCancel={() => setDeletingStudent(null)} />}
-            {isMessageModalOpen && (
-                <WhatsAppMessageModal
-                    isOpen={isMessageModalOpen}
-                    onClose={() => setIsMessageModalOpen(false)}
-                    students={students}
-                    initialStudentId={selectedStudentForMessage}
-                />
-            )}
+
         </div>
     );
 };

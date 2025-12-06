@@ -12,7 +12,7 @@ import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
 import PrivateLessonSchedule from '../components/PrivateLessonSchedule';
 import OnlineLessonsPage from './OnlineLessonsPage';
 import DashboardOverview from '../components/DashboardOverview';
-
+import WhatsAppMessageModal from '../components/WhatsAppMessageModal';
 
 const TedrisLogo = () => (
     <svg className="h-10 w-auto" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -578,6 +578,14 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
     const [sortBy, setSortBy] = useState<'name' | 'grade' | 'xp'>('name');
 
+    // WhatsApp Messaging (only for Overview page)
+    const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+    const [selectedStudentForMessage, setSelectedStudentForMessage] = useState<string | undefined>(undefined);
+
+    const handleOpenMessageModal = (studentId?: string) => {
+        setSelectedStudentForMessage(studentId);
+        setIsMessageModalOpen(true);
+    };
 
 
     const loadStudents = useCallback(async () => {
@@ -819,7 +827,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const renderContent = () => {
         switch (currentView) {
             case 'overview':
-                return <DashboardOverview user={user} students={students} onNavigateToSchedule={() => setCurrentView('privateLessons')} onViewStudent={handleSelectStudent} />;
+                return <DashboardOverview user={user} students={students} onNavigateToSchedule={() => setCurrentView('privateLessons')} onViewStudent={handleSelectStudent} onOpenMessageModal={() => handleOpenMessageModal()} />;
             case 'studentDetail':
                 return selectedStudent && <StudentDetailPage user={user} student={selectedStudent} onBack={handleBackToStudentList} onLogout={onLogout} onStudentUpdate={handleStudentUpdated} />;
             case 'library':
@@ -857,7 +865,14 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
             {isAddingStudent && <AddStudentModal tutor={user} onClose={() => setIsAddingStudent(false)} onStudentAdded={handleStudentAdded} />}
             {editingStudent && <EditStudentModal student={editingStudent} onClose={() => setEditingStudent(null)} onStudentUpdated={handleStudentEdited} />}
             {deletingStudent && <ConfirmDeleteModal studentName={deletingStudent.name} onConfirm={confirmDeleteStudent} onCancel={() => setDeletingStudent(null)} />}
-
+            {isMessageModalOpen && (
+                <WhatsAppMessageModal
+                    isOpen={isMessageModalOpen}
+                    onClose={() => setIsMessageModalOpen(false)}
+                    students={students}
+                    initialStudentId={selectedStudentForMessage}
+                />
+            )}
         </div>
     );
 };

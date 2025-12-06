@@ -9,9 +9,10 @@ interface DashboardOverviewProps {
     students: Student[];
     onNavigateToSchedule: () => void;
     onViewStudent: (student: Student) => void;
+    onOpenMessageModal: () => void;
 }
 
-const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, onNavigateToSchedule, onViewStudent }) => {
+const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, onNavigateToSchedule, onViewStudent, onOpenMessageModal }) => {
     const [upcomingLessons, setUpcomingLessons] = useState<PrivateLesson[]>([]);
     const [loadingLessons, setLoadingLessons] = useState(true);
 
@@ -80,6 +81,15 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                     >
                         <span>📅</span>
                         <span>Programı Düzenle</span>
+                    </button>
+                    <button
+                        onClick={onOpenMessageModal}
+                        className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-green-200 transition-all flex items-center gap-2"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>Mesaj Gönder</span>
                     </button>
                 </div>
             </div>

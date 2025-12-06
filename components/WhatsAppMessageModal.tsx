@@ -188,15 +188,27 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         const student = students.find(s => s.id === selectedStudentId);
         if (!student) return;
 
-        let phone = '';
+        let rawPhone = '';
         if (targetPhone === 'parent') {
-            phone = student.parentPhone || student.contact || '';
+            rawPhone = student.parentPhone || student.contact || '';
         } else {
-            phone = student.contact || student.parentPhone || '';
+            // Priority to student contact
+            const studentContact = student.contact?.replace(/\D/g, '') || '';
+            // If student contact is missing or looks too short to be valid (less than 10 digits), try parent
+            if (studentContact.length < 10) {
+                rawPhone = student.parentPhone || '';
+            } else {
+                rawPhone = student.contact || '';
+            }
         }
 
         // Clean phone number
-        phone = phone.replace(/\D/g, '');
+        let phone = rawPhone.replace(/\D/g, '');
+
+        // Remove leading '00' if present (e.g., 0090...)
+        if (phone.startsWith('00')) {
+            phone = phone.substring(2);
+        }
 
         // Basic formatting for TR numbers if missing country code
         if (phone.length === 10 && phone.startsWith('5')) {

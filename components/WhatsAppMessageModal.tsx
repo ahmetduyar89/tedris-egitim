@@ -49,7 +49,9 @@ const getStudentSuffix = (name: string) => {
 
 type Honorific = 'Sayın' | 'Hanım' | 'Bey';
 
-const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific) => string }> = {
+import { supabase } from '../services/dbAdapter';
+
+const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string) => string }> = {
     general: {
         label: 'Genel Bilgilendirme',
         subject: 'Bilgilendirme',
@@ -72,7 +74,7 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
     homework: {
         label: 'Ödev Hatırlatma',
         subject: 'Ödev Takibi',
-        body: (s, target, honorific) => {
+        body: (s, target, honorific, homeworkInfo) => {
             let prefix = '';
             if (target === 'parent') {
                 const pName = s.parentName ? toTitleCase(s.parentName) : '';
@@ -86,7 +88,9 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
             const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long' });
             const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
 
-            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
+            const homeworkText = homeworkInfo ? `\n\nÖdev Detayı: ${homeworkInfo}` : '';
+
+            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
         }
     },
     payment: {
@@ -149,39 +153,86 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
     const [honorific, setHonorific] = useState<Honorific>('Hanım');
 
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedStudentId(initialStudentId || '');
-            if (initialStudentId) {
-                updateMessage(initialStudentId, 'general', 'parent', 'Hanım');
-            } else {
-                setMessageBody('');
-            }
-        }
-    }, [isOpen, initialStudentId]);
+    const [selectedStudentId, setSelectedStudentId] = useState(initialStudentId || '');
+    const [templateType, setTemplateType] = useState<MessageTemplateType>('general');
+    const [messageBody, setMessageBody] = useState('');
+    const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
+    const [honorific, setHonorific] = useState<Honorific>('Hanım');
+    const [homeworkInfo, setHomeworkInfo] = useState<string>('');
 
-    const updateMessage = (studentId: string, type: MessageTemplateType, target: 'parent' | 'student', selectedHonorific: Honorific) => {
-        const student = students.find(s => s.id === studentId);
-        if (student) {
-            setMessageBody(TEMPLATES[type].body(student, target, selectedHonorific));
+    // Fetch homework info when student changes or template becomes homework
+    useEffect(() => {
+        const fetchHomework = async () => {
+            if (!selectedStudentId || templateType !== 'homework') {
+                setHomeworkInfo('');
+                return;
+            }
+
+            try {
+                // Get today's start and end timestamps
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const { data, error } = await supabase
+                    .from('private_lessons')
+                    .select('homework, subject')
+                    .eq('student_id', selectedStudentId)
+                    .gte('start_time', today.toISOString())
+                    .lt('start_time', tomorrow.toISOString()); // Check lessons scheduled for TODAY
+
+                if (error) {
+                    console.error('Error fetching homework:', error);
+                    setHomeworkInfo('');
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    // Combine homeworks if multiple lessons
+                    const homeworks = data
+                        .filter(l => l.homework)
+                        .map(l => `${l.subject}: ${l.homework}`)
+                        .join('\n');
+                    setHomeworkInfo(homeworks);
+                } else {
+                    setHomeworkInfo('Henüz girilmiş bir ödev bulunmamaktadır.');
+                }
+            } catch (err) {
+                console.error('Error in fetchHomework:', err);
+                setHomeworkInfo('');
+            }
+        };
+
+        fetchHomework();
+    }, [selectedStudentId, templateType]);
+
+    // Update message body whenever dependencies change
+    useEffect(() => {
+        if (!isOpen) return;
+
+        // If initialStudentId is provided but not yet selected (on first open)
+        if (initialStudentId && !selectedStudentId) {
+            setSelectedStudentId(initialStudentId);
+            return;
         }
-    };
+
+        const student = students.find(s => s.id === selectedStudentId);
+        if (student) {
+            setMessageBody(TEMPLATES[templateType].body(student, targetPhone, honorific, homeworkInfo));
+        } else {
+            setMessageBody('');
+        }
+    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, initialStudentId, students]);
+
 
     const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const sid = e.target.value;
         setSelectedStudentId(sid);
-        if (sid) {
-            updateMessage(sid, templateType, targetPhone, honorific);
-        } else {
-            setMessageBody('');
-        }
     };
 
     const handleTemplateChange = (type: MessageTemplateType) => {
         setTemplateType(type);
-        if (selectedStudentId) {
-            updateMessage(selectedStudentId, type, targetPhone, honorific);
-        }
     };
 
     const handleSend = () => {
@@ -297,9 +348,6 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                         checked={targetPhone === 'parent'}
                                         onChange={() => {
                                             setTargetPhone('parent');
-                                            if (selectedStudentId) {
-                                                updateMessage(selectedStudentId, templateType, 'parent', honorific);
-                                            }
                                         }}
                                         className="text-primary focus:ring-primary h-4 w-4"
                                     />
@@ -315,9 +363,6 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                         checked={targetPhone === 'student'}
                                         onChange={() => {
                                             setTargetPhone('student');
-                                            if (selectedStudentId) {
-                                                updateMessage(selectedStudentId, templateType, 'student', honorific);
-                                            }
                                         }}
                                         className="text-primary focus:ring-primary h-4 w-4"
                                     />
@@ -336,9 +381,6 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                             key={h}
                                             onClick={() => {
                                                 setHonorific(h as Honorific);
-                                                if (selectedStudentId) {
-                                                    updateMessage(selectedStudentId, templateType, targetPhone, h as Honorific);
-                                                }
                                             }}
                                             className={`px-3 py-1 text-xs rounded-full border transition-colors ${honorific === h
                                                 ? 'bg-primary/10 border-primary text-primary font-medium'

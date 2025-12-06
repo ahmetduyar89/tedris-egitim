@@ -88,7 +88,12 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
             const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long' });
             const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
 
-            const homeworkText = homeworkInfo ? `\n\nÖdev Detayı: ${homeworkInfo}` : '';
+            let homeworkText = '';
+            if (homeworkInfo) {
+                homeworkText = `\n\n📚 *Bu Haftanın Ödevleri:*\n\n${homeworkInfo}`;
+            } else {
+                homeworkText = `\n\n📚 Verilen ödevlerin düzenli olarak tamamlanması önemlidir.`;
+            }
 
             return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
         }
@@ -259,23 +264,35 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                 // Format the output
                 // Sort subjects alphabetically
+                const subjectEmojis: Record<string, string> = {
+                    'Matematik': '🔢',
+                    'Fizik': '⚛️',
+                    'Kimya': '🧪',
+                    'Biyoloji': '🧬',
+                    'Türkçe': '📖',
+                    'İngilizce': '🇬🇧',
+                    'Tarih': '📜',
+                    'Coğrafya': '🌍',
+                    'Geometri': '📐',
+                    'Edebiyat': '✍️',
+                };
+
                 Object.keys(homeworkMap).sort().forEach(subject => {
                     const daysObj = homeworkMap[subject];
                     const days = Object.keys(daysObj);
 
                     if (days.length > 0) {
-                        allHomeworks.push(`*${subject}*:`);
+                        const emoji = subjectEmojis[subject] || '📝';
+                        allHomeworks.push(`${emoji} *${subject}*`);
 
-                        // Sort days? "Pazartesi", "Salı"... custom sort needed strictly speaking but generic sort is ok for now
-                        // Let's rely on standard order or insertion order. 
-                        // To be nice, we could sort by standard TR week days.
+                        // Sort days by Turkish week order
                         const TR_DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
                         days.sort((a, b) => {
                             return TR_DAYS.indexOf(a) - TR_DAYS.indexOf(b);
                         });
 
                         days.forEach(day => {
-                            allHomeworks.push(`- ${day}: ${daysObj[day]}`);
+                            allHomeworks.push(`  • ${day}: ${daysObj[day]}`);
                         });
                         allHomeworks.push(''); // spacing
                     }

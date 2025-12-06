@@ -449,19 +449,28 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
             onClick={onSelect}
         >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-            <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-4 flex-1 min-w-0">
-                        <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl h-14 w-14 flex items-center justify-center text-2xl font-bold font-poppins shadow-lg shadow-primary/30 flex-shrink-0">
+            <div className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-xl h-10 w-10 flex items-center justify-center text-lg font-bold font-poppins shadow-md shadow-primary/20 flex-shrink-0">
                             {student.name.charAt(0)}
                         </div>
-                        <div className="min-w-0">
-                            <h3 className="text-lg font-bold font-poppins text-gray-900 group-hover:text-primary transition-colors truncate" title={student.name}>{student.name}</h3>
-                            <div className="flex items-center space-x-2 mt-1 flex-wrap gap-y-1">
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-md whitespace-nowrap">
+                        <div className="min-w-0 flex-1 group/name">
+                            <div className="relative">
+                                <h3 className="text-base font-bold font-poppins text-gray-900 group-hover:text-primary transition-colors line-clamp-1 group-hover/name:line-clamp-none group-hover/name:absolute group-hover/name:bg-white group-hover/name:z-20 group-hover/name:shadow-sm group-hover/name:rounded px-1 -ml-1" title={student.name}>
+                                    {student.name}
+                                </h3>
+                                {/* Determine if we need the spacer for layout stability when hovering absolute */}
+                                <h3 className="text-base font-bold font-poppins text-transparent line-clamp-1 pointer-events-none select-none" aria-hidden="true">
+                                    {student.name}
+                                </h3>
+                            </div>
+
+                            <div className="flex items-center space-x-1.5 mt-0.5 flex-wrap gap-y-1">
+                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-medium rounded whitespace-nowrap">
                                     {student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}
                                 </span>
-                                <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-md border border-yellow-100 whitespace-nowrap">
+                                <span className="px-1.5 py-0.5 bg-yellow-50 text-yellow-700 text-[10px] sm:text-xs font-medium rounded border border-yellow-100 whitespace-nowrap">
                                     Seviye {student.level}
                                 </span>
                             </div>
@@ -471,14 +480,14 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
                         {children}
                         <button
                             onClick={handleEdit}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Düzenle"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
                         <button
                             onClick={handleDelete}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Sil"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -486,7 +495,7 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-6">
+                <div className="grid grid-cols-2 gap-3 mt-4">
                     <div className="bg-gray-50 rounded-xl p-3">
                         <p className="text-xs text-gray-500 mb-1">Toplam XP</p>
                         <p className="text-sm font-bold text-gray-900">{student.xp.toLocaleString()} XP</p>

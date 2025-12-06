@@ -838,7 +838,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const renderContent = () => {
         switch (currentView) {
             case 'overview':
-                return <DashboardOverview user={user} students={students} onNavigateToSchedule={() => setCurrentView('privateLessons')} onViewStudent={handleSelectStudent} />;
+                return <DashboardOverview user={user} students={students} onNavigateToSchedule={() => setCurrentView('privateLessons')} onViewStudent={handleSelectStudent} onOpenMessageModal={() => handleOpenMessageModal()} />;
             case 'studentDetail':
                 return selectedStudent && <StudentDetailPage user={user} student={selectedStudent} onBack={handleBackToStudentList} onLogout={onLogout} onStudentUpdate={handleStudentUpdated} />;
             case 'library':

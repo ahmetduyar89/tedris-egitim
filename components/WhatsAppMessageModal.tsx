@@ -10,37 +10,98 @@ interface WhatsAppMessageModalProps {
 
 type MessageTemplateType = 'general' | 'homework' | 'payment' | 'exam_info' | 'absent';
 
-const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student') => string }> = {
+const toTitleCase = (str: string) => {
+    return str.toLocaleLowerCase('tr-TR').split(' ').map(word => word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1)).join(' ');
+};
+
+const getFirstName = (fullName: string) => {
+    return toTitleCase(fullName).split(' ')[0];
+};
+
+const getStudentSuffix = (name: string) => {
+    const firstName = getFirstName(name);
+    const lastChar = firstName.slice(-1).toLowerCase();
+    const vowels = ['a', 'e', 'ı', 'i', 'o', 'ö', 'u', 'ü'];
+    const backVowels = ['a', 'ı', 'o', 'u'];
+    const frontVowels = ['e', 'i', 'ö', 'ü'];
+    // const unrounded = ['a', 'e', 'ı', 'i'];
+    // const rounded = ['o', 'ö', 'u', 'ü'];
+
+    if (!vowels.includes(lastChar)) {
+        // Ends with consonant
+        // Find last vowel
+        let lastVowel = 'e'; // fallback
+        for (let i = firstName.length - 1; i >= 0; i--) {
+            if (vowels.includes(firstName[i].toLowerCase())) {
+                lastVowel = firstName[i].toLowerCase();
+                break;
+            }
+        }
+        if (backVowels.includes(lastVowel)) return "'ın";
+        if (frontVowels.includes(lastVowel)) return "'in";
+    } else {
+        // Ends with vowel -> 'nın, 'nin
+        if (backVowels.includes(lastChar)) return "'nın";
+        if (frontVowels.includes(lastChar)) return "'nin";
+    }
+    return "'in"; // Default fallback
+};
+
+type Honorific = 'Sayın' | 'Hanım' | 'Bey';
+
+const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific) => string }> = {
     general: {
         label: 'Genel Bilgilendirme',
         subject: 'Bilgilendirme',
-        body: (s, target) => {
-            const prefix = target === 'parent'
-                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
-                : `Merhaba ${s.name}`;
+        body: (s, target, honorific) => {
+            let prefix = '';
+            if (target === 'parent') {
+                const pName = s.parentName ? toTitleCase(s.parentName) : '';
+                if (honorific === 'Sayın') prefix = `Merhaba Sayın ${pName || 'Veli'}`;
+                else if (pName) prefix = `Merhaba ${getFirstName(pName)} ${honorific}`;
+                else prefix = `Merhaba Sayın Veli`;
+            } else {
+                prefix = `Merhaba ${getFirstName(s.name)}`;
+            }
 
-            return `${prefix},\n\n${s.name} ile yaptığımız derslerde işlenilen konular ve ödev takibi hakkında sizi bilgilendirmek isterim.\n\nÖğrencimizin derse katılımı ve ödevlerini yapma durumu sürecin verimliliği açısından çok önemlidir. Bu konuda desteğinizi rica ederim.\n\nİyi günler dilerim.`;
+            const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
+
+            return `${prefix},\n\n${studentRef} ile yaptığımız derslerde işlenilen konular ve ödev takibi hakkında sizi bilgilendirmek isterim.\n\nÖğrencimizin derse katılımı ve ödevlerini yapma durumu sürecin verimliliği açısından çok önemlidir. Bu konuda desteğinizi rica ederim.\n\nİyi günler dilerim.`;
         }
     },
     homework: {
         label: 'Ödev Hatırlatma',
         subject: 'Ödev Takibi',
-        body: (s, target) => {
-            const prefix = target === 'parent'
-                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
-                : `Merhaba ${s.name}`;
-            const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long' });
+        body: (s, target, honorific) => {
+            let prefix = '';
+            if (target === 'parent') {
+                const pName = s.parentName ? toTitleCase(s.parentName) : '';
+                if (honorific === 'Sayın') prefix = `Merhaba Sayın ${pName || 'Veli'}`;
+                else if (pName) prefix = `Merhaba ${getFirstName(pName)} ${honorific}`;
+                else prefix = `Merhaba Sayın Veli`;
+            } else {
+                prefix = `Merhaba ${getFirstName(s.name)}`;
+            }
 
-            return `${prefix},\n\n${target === 'parent' ? `${s.name} isimli öğrencimizin` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
+            const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long' });
+            const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
+
+            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
         }
     },
     payment: {
         label: 'Ödeme Hatırlatma',
         subject: 'Ödeme Bilgilendirme',
-        body: (s, target) => {
-            const prefix = target === 'parent'
-                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
-                : `Merhaba ${s.name}`;
+        body: (s, target, honorific) => {
+            let prefix = '';
+            if (target === 'parent') {
+                const pName = s.parentName ? toTitleCase(s.parentName) : '';
+                if (honorific === 'Sayın') prefix = `Merhaba Sayın ${pName || 'Veli'}`;
+                else if (pName) prefix = `Merhaba ${getFirstName(pName)} ${honorific}`;
+                else prefix = `Merhaba Sayın Veli`;
+            } else {
+                prefix = `Merhaba ${getFirstName(s.name)}`;
+            }
 
             return `${prefix},\n\nÖzel ders ödemesi ile ilgili kısa bir hatırlatma yapmak istedim.\n\nMüsait olduğunuzda bilgi verebilirseniz çok sevinirim.\n\nİyi günler dilerim.`;
         }
@@ -48,10 +109,16 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
     exam_info: {
         label: 'Sınav Bilgilendirme',
         subject: 'Sınav Hazırlığı',
-        body: (s, target) => {
-            const prefix = target === 'parent'
-                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
-                : `Merhaba ${s.name}`;
+        body: (s, target, honorific) => {
+            let prefix = '';
+            if (target === 'parent') {
+                const pName = s.parentName ? toTitleCase(s.parentName) : '';
+                if (honorific === 'Sayın') prefix = `Merhaba Sayın ${pName || 'Veli'}`;
+                else if (pName) prefix = `Merhaba ${getFirstName(pName)} ${honorific}`;
+                else prefix = `Merhaba Sayın Veli`;
+            } else {
+                prefix = `Merhaba ${getFirstName(s.name)}`;
+            }
 
             return `${prefix},\n\nYaklaşan sınavlar için hazırlık programımız yoğun bir şekilde devam ediyor. ${target === 'parent' ? 'Öğrencimizin' : 'Senin'} evde yapacağı tekrarlar ve soru çözümleri bu süreçte çok kritik.\n\nBirlikte başaracağımıza inanıyorum.\n\nİyi çalışmalar dilerim.`;
         }
@@ -59,10 +126,16 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
     absent: {
         label: 'Devamsızlık',
         subject: 'Derse Katılım',
-        body: (s, target) => {
-            const prefix = target === 'parent'
-                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
-                : `Merhaba ${s.name}`;
+        body: (s, target, honorific) => {
+            let prefix = '';
+            if (target === 'parent') {
+                const pName = s.parentName ? toTitleCase(s.parentName) : '';
+                if (honorific === 'Sayın') prefix = `Merhaba Sayın ${pName || 'Veli'}`;
+                else if (pName) prefix = `Merhaba ${getFirstName(pName)} ${honorific}`;
+                else prefix = `Merhaba Sayın Veli`;
+            } else {
+                prefix = `Merhaba ${getFirstName(s.name)}`;
+            }
 
             return `${prefix},\n\nBugünkü derse katılım ${target === 'parent' ? 'sağlanmadı' : 'sağlamadın'}. Bir sorun yoktur umarım?\n\nTelafi dersi veya sonraki programımız için haberleşebiliriz.\n\nİyi günler dilerim.`;
         }
@@ -74,22 +147,23 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [templateType, setTemplateType] = useState<MessageTemplateType>('general');
     const [messageBody, setMessageBody] = useState('');
     const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
+    const [honorific, setHonorific] = useState<Honorific>('Hanım');
 
     useEffect(() => {
         if (isOpen) {
             setSelectedStudentId(initialStudentId || '');
             if (initialStudentId) {
-                updateMessage(initialStudentId, 'general', 'parent');
+                updateMessage(initialStudentId, 'general', 'parent', 'Hanım');
             } else {
                 setMessageBody('');
             }
         }
     }, [isOpen, initialStudentId]);
 
-    const updateMessage = (studentId: string, type: MessageTemplateType, target: 'parent' | 'student') => {
+    const updateMessage = (studentId: string, type: MessageTemplateType, target: 'parent' | 'student', selectedHonorific: Honorific) => {
         const student = students.find(s => s.id === studentId);
         if (student) {
-            setMessageBody(TEMPLATES[type].body(student, target));
+            setMessageBody(TEMPLATES[type].body(student, target, selectedHonorific));
         }
     };
 
@@ -97,7 +171,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         const sid = e.target.value;
         setSelectedStudentId(sid);
         if (sid) {
-            updateMessage(sid, templateType, targetPhone);
+            updateMessage(sid, templateType, targetPhone, honorific);
         } else {
             setMessageBody('');
         }
@@ -106,7 +180,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const handleTemplateChange = (type: MessageTemplateType) => {
         setTemplateType(type);
         if (selectedStudentId) {
-            updateMessage(selectedStudentId, type, targetPhone);
+            updateMessage(selectedStudentId, type, targetPhone, honorific);
         }
     };
 
@@ -195,43 +269,68 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                     {/* Target Selector */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Alıcı</label>
-                        <div className="flex space-x-4">
-                            <label className="flex items-center cursor-pointer">
-                                <input
-                                    type="radio"
-                                    checked={targetPhone === 'parent'}
-                                    onChange={() => {
-                                        setTargetPhone('parent');
-                                        if (selectedStudentId) {
-                                            updateMessage(selectedStudentId, templateType, 'parent');
-                                        }
-                                    }}
-                                    className="text-primary focus:ring-primary h-4 w-4"
-                                />
-                                <span className="ml-2 text-sm text-gray-700">
-                                    Veli
-                                    {selectedStudent?.parentName && <span className="text-xs text-gray-500 ml-1">({selectedStudent.parentName})</span>}
-                                    {selectedStudent?.parentPhone && <span className="text-xs text-gray-500 ml-1">({selectedStudent.parentPhone})</span>}
-                                </span>
-                            </label>
-                            <label className="flex items-center cursor-pointer">
-                                <input
-                                    type="radio"
-                                    checked={targetPhone === 'student'}
-                                    onChange={() => {
-                                        setTargetPhone('student');
-                                        if (selectedStudentId) {
-                                            updateMessage(selectedStudentId, templateType, 'student');
-                                        }
-                                    }}
-                                    className="text-primary focus:ring-primary h-4 w-4"
-                                />
-                                <span className="ml-2 text-sm text-gray-700">
-                                    Öğrenci
-                                    {selectedStudent?.contact && <span className="text-xs text-gray-500 ml-1">({selectedStudent.contact})</span>}
-                                </span>
-                            </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Alıcı Bilgileri</label>
+                        <div className="flex flex-col space-y-3">
+                            <div className="flex space-x-4">
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        checked={targetPhone === 'parent'}
+                                        onChange={() => {
+                                            setTargetPhone('parent');
+                                            if (selectedStudentId) {
+                                                updateMessage(selectedStudentId, templateType, 'parent', honorific);
+                                            }
+                                        }}
+                                        className="text-primary focus:ring-primary h-4 w-4"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">
+                                        Veli
+                                        {selectedStudent?.parentName && <span className="text-xs text-gray-500 ml-1">({selectedStudent.parentName})</span>}
+                                        {selectedStudent?.parentPhone && <span className="text-xs text-gray-500 ml-1">({selectedStudent.parentPhone})</span>}
+                                    </span>
+                                </label>
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        checked={targetPhone === 'student'}
+                                        onChange={() => {
+                                            setTargetPhone('student');
+                                            if (selectedStudentId) {
+                                                updateMessage(selectedStudentId, templateType, 'student', honorific);
+                                            }
+                                        }}
+                                        className="text-primary focus:ring-primary h-4 w-4"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">
+                                        Öğrenci
+                                        {selectedStudent?.contact && <span className="text-xs text-gray-500 ml-1">({selectedStudent.contact})</span>}
+                                    </span>
+                                </label>
+                            </div>
+
+                            {targetPhone === 'parent' && (
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-gray-600">Hitap Şekli:</span>
+                                    {['Hanım', 'Bey', 'Sayın'].map((h) => (
+                                        <button
+                                            key={h}
+                                            onClick={() => {
+                                                setHonorific(h as Honorific);
+                                                if (selectedStudentId) {
+                                                    updateMessage(selectedStudentId, templateType, targetPhone, h as Honorific);
+                                                }
+                                            }}
+                                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${honorific === h
+                                                ? 'bg-primary/10 border-primary text-primary font-medium'
+                                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {h}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 

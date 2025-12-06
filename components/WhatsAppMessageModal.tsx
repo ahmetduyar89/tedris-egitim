@@ -49,7 +49,7 @@ const getStudentSuffix = (name: string) => {
 
 type Honorific = 'Sayın' | 'Hanım' | 'Bey';
 
-import { supabase } from '../services/dbAdapter';
+import { supabase, db } from '../services/dbAdapter';
 
 const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string) => string }> = {
     general: {
@@ -180,90 +180,178 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 const endOfWeek = new Date(startOfWeek);
                 endOfWeek.setDate(startOfWeek.getDate() + 7); // Next Monday 00:00
 
-                // Fetch ALL lessons to handle both "This Week" and "Templates"
-                const { data, error } = await supabase
+                console.log('[WhatsApp Homework] Fetching homework for student:', selectedStudentId);
+                console.log('[WhatsApp Homework] Week range:', startOfWeek, 'to', endOfWeek);
+
+                // Map to store merged homeworks: { "Subject": { "Day": "task" } }
+                const homeworkMap: Record<string, Record<string, string>> = {};
+
+                // ========================================
+                // 1. Fetch from PRIVATE_LESSONS (Özel Ders Programı)
+                // ========================================
+                const { data: lessonsData, error: lessonsError } = await supabase
                     .from('private_lessons')
                     .select('homework, subject, start_time, status')
                     .eq('student_id', selectedStudentId)
                     .neq('status', 'cancelled');
 
-                if (error) {
-                    console.error('Error fetching homework:', error);
-                    setHomeworkInfo('');
-                    return;
-                }
+                console.log('[WhatsApp Homework] Private lessons query result:', { data: lessonsData, error: lessonsError });
 
-                if (!data || data.length === 0) {
-                    setHomeworkInfo('');
-                    return;
-                }
-
-                const allHomeworks: string[] = [];
-                // Map to store merged homeworks: { "Subject": { "Pazartesi": "task" } }
-                const homeworkMap: Record<string, Record<string, string>> = {};
-
-                // Filter for THIS WEEK's lessons first
-                const thisWeekLessons = data.filter(l => {
-                    const d = new Date(l.start_time);
-                    return d >= startOfWeek && d < endOfWeek;
-                });
-
-                // If we have lessons this week with homework, we prioritize them (active plan)
-                // Otherwise, use the latest past lessons as fallback (recurring/templates)
-                let lessonsToProcess = thisWeekLessons.filter(l => l.homework);
-
-                if (lessonsToProcess.length === 0) {
-                    // Fallback: Group by subject and take the latest lesson for each
-                    const latestBySubject: Record<string, any> = {};
-                    data.forEach(l => {
-                        if (!l.homework) return;
-                        if (!latestBySubject[l.subject] || new Date(l.start_time) > new Date(latestBySubject[l.subject].start_time)) {
-                            latestBySubject[l.subject] = l;
-                        }
+                if (!lessonsError && lessonsData && lessonsData.length > 0) {
+                    // Filter for THIS WEEK's lessons first
+                    const thisWeekLessons = lessonsData.filter(l => {
+                        const d = new Date(l.start_time);
+                        return d >= startOfWeek && d < endOfWeek;
                     });
-                    lessonsToProcess = Object.values(latestBySubject);
-                }
 
-                // Process the selected lessons
-                lessonsToProcess.forEach(l => {
-                    // Initialize subject map
-                    if (!homeworkMap[l.subject]) {
-                        homeworkMap[l.subject] = {};
-                    }
+                    // If we have lessons this week with homework, we prioritize them
+                    let lessonsToProcess = thisWeekLessons.filter(l => l.homework);
 
-                    try {
-                        const parsed = JSON.parse(l.homework);
-                        // parsed = { "Pazartesi": "...", "Salı": "..." }
-                        Object.entries(parsed).forEach(([day, task]) => {
-                            if (typeof task === 'string' && task.trim()) {
-                                // Merge tasks if multiple lessons define same day for same subject (unlikely but safe)
-                                if (homeworkMap[l.subject][day]) {
-                                    if (!homeworkMap[l.subject][day].includes(task.trim())) {
-                                        homeworkMap[l.subject][day] += ` | ${task.trim()}`;
-                                    }
-                                } else {
-                                    homeworkMap[l.subject][day] = task.trim();
-                                }
+                    if (lessonsToProcess.length === 0) {
+                        // Fallback: Group by subject and take the latest lesson for each
+                        const latestBySubject: Record<string, any> = {};
+                        lessonsData.forEach(l => {
+                            if (!l.homework) return;
+                            if (!latestBySubject[l.subject] || new Date(l.start_time) > new Date(latestBySubject[l.subject].start_time)) {
+                                latestBySubject[l.subject] = l;
                             }
                         });
-                    } catch (e) {
-                        // Legacy text fallback
-                        if (typeof l.homework === 'string' && l.homework.trim()) {
-                            const lessonDate = new Date(l.start_time);
-                            const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
-                            const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+                        lessonsToProcess = Object.values(latestBySubject);
+                    }
 
-                            if (homeworkMap[l.subject][normalizedDay]) {
-                                homeworkMap[l.subject][normalizedDay] += ` | ${l.homework.trim()}`;
-                            } else {
-                                homeworkMap[l.subject][normalizedDay] = l.homework.trim();
+                    // Process the selected lessons
+                    lessonsToProcess.forEach(l => {
+                        if (!homeworkMap[l.subject]) {
+                            homeworkMap[l.subject] = {};
+                        }
+
+                        try {
+                            const parsed = JSON.parse(l.homework);
+                            Object.entries(parsed).forEach(([day, task]) => {
+                                if (typeof task === 'string' && task.trim()) {
+                                    if (homeworkMap[l.subject][day]) {
+                                        if (!homeworkMap[l.subject][day].includes(task.trim())) {
+                                            homeworkMap[l.subject][day] += ` | ${task.trim()}`;
+                                        }
+                                    } else {
+                                        homeworkMap[l.subject][day] = task.trim();
+                                    }
+                                }
+                            });
+                        } catch (e) {
+                            // Legacy text fallback
+                            if (typeof l.homework === 'string' && l.homework.trim()) {
+                                const lessonDate = new Date(l.start_time);
+                                const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+                                const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+
+                                if (homeworkMap[l.subject][normalizedDay]) {
+                                    homeworkMap[l.subject][normalizedDay] += ` | ${l.homework.trim()}`;
+                                } else {
+                                    homeworkMap[l.subject][normalizedDay] = l.homework.trim();
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
 
-                // Format the output
-                // Sort subjects alphabetically
+                // ========================================
+                // 2. Fetch from ASSIGNMENTS (Tedris Plan - Öğrenci Sayfası)
+                // ========================================
+                const { data: assignmentsData, error: assignmentsError } = await supabase
+                    .from('assignments')
+                    .select('title, description, subject, due_date, status')
+                    .eq('student_id', selectedStudentId)
+                    .gte('due_date', startOfWeek.toISOString())
+                    .lt('due_date', endOfWeek.toISOString());
+
+                console.log('[WhatsApp Homework] Assignments query result:', { data: assignmentsData, error: assignmentsError });
+
+                if (!assignmentsError && assignmentsData && assignmentsData.length > 0) {
+                    assignmentsData.forEach(assignment => {
+                        const subject = assignment.subject || 'Genel';
+                        const dueDate = new Date(assignment.due_date);
+                        const dayName = dueDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+                        const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+
+                        if (!homeworkMap[subject]) {
+                            homeworkMap[subject] = {};
+                        }
+
+                        const taskText = assignment.description || assignment.title;
+                        if (taskText && taskText.trim()) {
+                            if (homeworkMap[subject][normalizedDay]) {
+                                if (!homeworkMap[subject][normalizedDay].includes(taskText.trim())) {
+                                    homeworkMap[subject][normalizedDay] += ` | ${taskText.trim()}`;
+                                }
+                            } else {
+                                homeworkMap[subject][normalizedDay] = taskText.trim();
+                            }
+                        }
+                    });
+                }
+
+                // ========================================
+                // 3. Fetch from WEEKLY_PROGRAMS (Tedris Plan - Haftalık Görevler)
+                // ========================================
+                // Use Firebase to match StudentDashboard data source
+                try {
+                    const programSnapshot = await db.collection('weeklyPrograms')
+                        .where('studentId', '==', selectedStudentId)
+                        .limit(1)
+                        .get();
+
+                    console.log('[WhatsApp Homework] Weekly programs query result:', {
+                        empty: programSnapshot.empty
+                    });
+
+                    if (!programSnapshot.empty) {
+                        const programDoc = programSnapshot.docs[0];
+                        const weeklyProgramData = programDoc.data();
+
+                        console.log('[WhatsApp Homework] Weekly program data:', weeklyProgramData);
+
+                        if (weeklyProgramData && weeklyProgramData.days) {
+                            const days = weeklyProgramData.days;
+
+                            days.forEach((day: any) => {
+                                const dayName = day.day;
+                                const tasks = day.tasks || [];
+
+                                tasks.forEach((task: any) => {
+                                    // Only include tasks that are of type "Ödev" (homework)
+                                    if (task.type === 'Ödev') {
+                                        const subject = task.subject || 'Genel';
+                                        const taskText = task.description || task.title;
+
+                                        if (!homeworkMap[subject]) {
+                                            homeworkMap[subject] = {};
+                                        }
+
+                                        if (taskText && taskText.trim()) {
+                                            if (homeworkMap[subject][dayName]) {
+                                                if (!homeworkMap[subject][dayName].includes(taskText.trim())) {
+                                                    homeworkMap[subject][dayName] += ` | ${taskText.trim()}`;
+                                                }
+                                            } else {
+                                                homeworkMap[subject][dayName] = taskText.trim();
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                    } else {
+                        console.log('[WhatsApp Homework] No weekly program found for student');
+                    }
+                } catch (weeklyProgramError) {
+                    console.error('[WhatsApp Homework] Error fetching weekly program:', weeklyProgramError);
+                }
+
+                // ========================================
+                // 4. Format the output
+                // ========================================
+                const allHomeworks: string[] = [];
                 const subjectEmojis: Record<string, string> = {
                     'Matematik': '🔢',
                     'Fizik': '⚛️',
@@ -276,6 +364,8 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     'Geometri': '📐',
                     'Edebiyat': '✍️',
                 };
+
+                console.log('[WhatsApp Homework] Final homework map:', homeworkMap);
 
                 Object.keys(homeworkMap).sort().forEach(subject => {
                     const daysObj = homeworkMap[subject];
@@ -298,11 +388,17 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     }
                 });
 
+                console.log('[WhatsApp Homework] All homeworks array:', allHomeworks);
+
                 if (allHomeworks.length > 0) {
-                    setHomeworkInfo(allHomeworks.join('\n').trim());
+                    const finalHomework = allHomeworks.join('\n').trim();
+                    console.log('[WhatsApp Homework] Final homework info:', finalHomework);
+                    setHomeworkInfo(finalHomework);
                 } else {
+                    console.log('[WhatsApp Homework] No homework found from any source');
                     setHomeworkInfo('');
                 }
+
 
             } catch (err) {
                 console.error('Error in fetchHomework:', err);

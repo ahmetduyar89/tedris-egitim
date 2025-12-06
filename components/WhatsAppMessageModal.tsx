@@ -165,16 +165,28 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
             try {
                 // Get today's start and end timestamps
                 const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
+                const dayName = today.toLocaleDateString('tr-TR', { weekday: 'long' });
+                // Normalize dayName to match keys in database (Title Case)
+                // e.g., "cumartesi" -> "Cumartesi"
+                const normalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+
+                // We want to find the lesson that covers "today".
+                // Since lessons repeat weekly or are specific to a date, and the logic in PrivateLessonSchedule
+                // saves a specific lesson instance for the week when homework is added,
+                // we should look for a lesson record that intersects with today.
+
+                // Set range for the whole day
+                const startOfDay = new Date(today);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(today);
+                endOfDay.setHours(23, 59, 59, 999);
 
                 const { data, error } = await supabase
                     .from('private_lessons')
                     .select('homework, subject')
                     .eq('student_id', selectedStudentId)
-                    .gte('start_time', today.toISOString())
-                    .lt('start_time', tomorrow.toISOString()); // Check lessons scheduled for TODAY
+                    .gte('start_time', startOfDay.toISOString())
+                    .lt('start_time', endOfDay.toISOString());
 
                 if (error) {
                     console.error('Error fetching homework:', error);
@@ -183,14 +195,35 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 }
 
                 if (data && data.length > 0) {
-                    // Combine homeworks if multiple lessons
-                    const homeworks = data
-                        .filter(l => l.homework)
-                        .map(l => `${l.subject}: ${l.homework}`)
-                        .join('\n');
-                    setHomeworkInfo(homeworks);
+                    const homeworks: string[] = [];
+
+                    data.forEach(l => {
+                        if (!l.homework) return;
+
+                        try {
+                            // Homework is stored as JSON string: {"Pazartesi": "...", "Salı": "..."}
+                            // or potentially plain string in legacy data (though unlikely based on analysis)
+                            const parsed = JSON.parse(l.homework);
+                            const dailyHomework = parsed[normalizedDayName];
+
+                            if (dailyHomework && dailyHomework.trim()) {
+                                homeworks.push(`${l.subject}: ${dailyHomework}`);
+                            }
+                        } catch (e) {
+                            // If not JSON, assume it's direct text (legacy fallback)
+                            if (l.homework.trim()) {
+                                homeworks.push(`${l.subject}: ${l.homework}`);
+                            }
+                        }
+                    });
+
+                    if (homeworks.length > 0) {
+                        setHomeworkInfo(homeworks.join('\n'));
+                    } else {
+                        setHomeworkInfo(''); // No homework found for THIS day specifically
+                    }
                 } else {
-                    setHomeworkInfo('Henüz girilmiş bir ödev bulunmamaktadır.');
+                    setHomeworkInfo('');
                 }
             } catch (err) {
                 console.error('Error in fetchHomework:', err);

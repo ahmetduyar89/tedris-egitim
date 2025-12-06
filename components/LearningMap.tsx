@@ -226,26 +226,26 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
     }, [nodes]);
 
     return (
-        <div className="bg-card-background p-6 rounded-2xl shadow-lg relative min-h-[500px]">
-            <h2 className="text-2xl font-bold font-poppins text-accent mb-4">Tedris Harita 🗺️</h2>
-            {isLoading && <div className="text-center p-10">Harita yükleniyor...</div>}
+        <div className="bg-card-background p-4 md:p-6 rounded-2xl shadow-lg relative min-h-[400px] md:min-h-[500px]">
+            <h2 className="text-xl md:text-2xl font-bold font-poppins text-accent mb-3 md:mb-4">Tedris Harita 🗺️</h2>
+            {isLoading && <div className="text-center p-10 text-sm md:text-base">Harita yükleniyor...</div>}
             {!isLoading && nodes.length === 0 && (
-                <div className="text-center p-10 text-text-secondary">
+                <div className="text-center p-8 md:p-10 text-text-secondary text-sm md:text-base">
                     Öğrenme haritanızı oluşturmak için lütfen bir test çözün.
                 </div>
             )}
 
-            <div className="flex flex-col md:flex-row justify-around gap-4">
+            <div className="flex flex-col md:flex-row justify-around gap-3 md:gap-4">
                 {Object.entries(groupedNodes).map(([status, groupNodes]) => (
                     <div key={status} className="flex-1">
-                        <h3 className={`font-bold font-poppins text-lg mb-4 text-center ${statusConfig[status as MapNodeStatus].textColor}`}>{statusConfig[status as MapNodeStatus].label}</h3>
-                        <div className="flex flex-col items-center gap-4 p-4 bg-background rounded-lg min-h-[300px]">
+                        <h3 className={`font-bold font-poppins text-base md:text-lg mb-3 md:mb-4 text-center ${statusConfig[status as MapNodeStatus].textColor}`}>{statusConfig[status as MapNodeStatus].label}</h3>
+                        <div className="flex flex-col items-center gap-3 md:gap-4 p-3 md:p-4 bg-background rounded-lg min-h-[200px] md:min-h-[300px]">
                             {Array.isArray(groupNodes) && groupNodes.map(node => (
                                 <div
                                     key={node.name}
                                     onClick={() => handleNodeClick(node)}
-                                    className={`p-3 rounded-lg text-white font-semibold text-center cursor-pointer transition-transform hover:scale-105 ${statusConfig[node.status].color}`}
-                                    style={{ minWidth: '120px', maxWidth: '240px' }}
+                                    className={`p-2 md:p-3 rounded-lg text-white font-semibold text-center cursor-pointer transition-transform hover:scale-105 active:scale-95 ${statusConfig[node.status].color} w-full text-sm md:text-base`}
+                                    style={{ maxWidth: '240px' }}
                                 >
                                     {node.name}
                                     <span className="block text-xs opacity-80">{node.score}%</span>
@@ -258,39 +258,39 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
 
             {/* Detail Panel */}
             {selectedNode && (
-                <div className="absolute top-0 right-0 h-full w-full md:w-2/5 bg-white/80 backdrop-blur-sm border-l border-border p-6 z-10 animate-fade-in-right overflow-y-auto">
-                    <button onClick={() => setSelectedNode(null)} className="absolute top-4 right-4 text-text-secondary hover:text-text-primary text-2xl">&times;</button>
-                    <h3 className="text-2xl font-bold font-poppins mb-1">{selectedNode.name}</h3>
-                    <p className={`font-semibold text-lg mb-4 ${statusConfig[selectedNode.status].textColor}`}>{statusConfig[selectedNode.status].label} ({selectedNode.score}%)</p>
+                <div className="fixed md:absolute inset-0 md:top-0 md:right-0 md:h-full w-full md:w-2/5 bg-white md:bg-white/80 md:backdrop-blur-sm md:border-l border-border p-4 md:p-6 z-50 md:z-10 animate-fade-in-right overflow-y-auto">
+                    <button onClick={() => setSelectedNode(null)} className="absolute top-3 md:top-4 right-3 md:right-4 text-text-secondary hover:text-text-primary text-2xl md:text-3xl">&times;</button>
+                    <h3 className="text-xl md:text-2xl font-bold font-poppins mb-1 pr-8">{selectedNode.name}</h3>
+                    <p className={`font-semibold text-base md:text-lg mb-4 ${statusConfig[selectedNode.status].textColor}`}>{statusConfig[selectedNode.status].label} ({selectedNode.score}%)</p>
 
                     {selectedNode.status !== 'mastered' && onGenerateReviewPackage && (
                         <button
                             onClick={() => { onGenerateReviewPackage(selectedNode.name); setSelectedNode(null); }}
-                            className="w-full bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary-dark mb-6"
+                            className="w-full bg-primary text-white text-xs md:text-sm font-semibold px-3 md:px-4 py-2 rounded-lg hover:bg-primary-dark mb-4 md:mb-6"
                         >
                             Bu Konu İçin AI Telafi Paketi Oluştur
                         </button>
                     )}
 
-                    <h4 className="font-bold font-poppins text-gray-700 mb-2 mt-4">Gelişim Grafiği</h4>
+                    <h4 className="font-bold font-poppins text-gray-700 mb-2 mt-4 text-sm md:text-base">Gelişim Grafiği</h4>
                     {selectedNode.history.length > 1 ? (
-                        <ResponsiveContainer width="100%" height={150}>
-                            <LineChart data={selectedNode.history} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                        <ResponsiveContainer width="100%" height={120}>
+                            <LineChart data={selectedNode.history} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                                <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                                <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
                                 <Tooltip />
                                 <Line type="monotone" dataKey="score" stroke="#4F46E5" strokeWidth={2} name="Puan" />
                             </LineChart>
                         </ResponsiveContainer>
                     ) : (
-                        <p className="text-sm text-gray-500">Gelişim grafiği için yeterli test verisi yok.</p>
+                        <p className="text-xs md:text-sm text-gray-500">Gelişim grafiği için yeterli test verisi yok.</p>
                     )}
 
-                    <h4 className="font-bold font-poppins text-gray-700 mb-3 mt-6">İlgili Sorular ({selectedNode.questions.length})</h4>
-                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                    <h4 className="font-bold font-poppins text-gray-700 mb-2 md:mb-3 mt-4 md:mt-6 text-sm md:text-base">İlgili Sorular ({selectedNode.questions.length})</h4>
+                    <div className="space-y-2 md:space-y-3 max-h-48 md:max-h-60 overflow-y-auto pr-2">
                         {selectedNode.questions.map((q, index) => (
-                            <div key={`${q.id}-${index}`} className={`p-3 rounded-lg text-xs ${q.isCorrect ? 'bg-green-50 border-l-4 border-green-400' : 'bg-red-50 border-l-4 border-red-400'}`}>
+                            <div key={`${q.id}-${index}`} className={`p-2 md:p-3 rounded-lg text-xs ${q.isCorrect ? 'bg-green-50 border-l-4 border-green-400' : 'bg-red-50 border-l-4 border-red-400'}`}>
                                 <p className="font-medium text-gray-800">{q.text}</p>
                                 <p className="mt-1"><strong className="font-bold">Cevabın:</strong> {q.studentAnswer}</p>
                                 {!q.isCorrect && <p><strong className="font-bold">Doğru Cevap:</strong> {q.correctAnswer}</p>}
@@ -298,13 +298,13 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                         ))}
                     </div>
 
-                    <h4 className="font-bold font-poppins text-primary mb-3 mt-6">💡 AI Önerileri</h4>
-                    {isAiLoading && <p>Öneriler getiriliyor...</p>}
-                    <div className="space-y-3">
+                    <h4 className="font-bold font-poppins text-primary mb-2 md:mb-3 mt-4 md:mt-6 text-sm md:text-base">💡 AI Önerileri</h4>
+                    {isAiLoading && <p className="text-xs md:text-sm">Öneriler getiriliyor...</p>}
+                    <div className="space-y-2 md:space-y-3">
                         {recommendations.map((rec, index) => (
-                            <div key={index} className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                                <p className="font-semibold">{rec.title} <span className="text-xs font-normal text-text-secondary">({rec.type})</span></p>
-                                <p className="text-sm text-text-secondary mt-1">{rec.description}</p>
+                            <div key={index} className="p-2 md:p-3 bg-primary/10 rounded-lg border border-primary/20">
+                                <p className="font-semibold text-sm md:text-base">{rec.title} <span className="text-xs font-normal text-text-secondary">({rec.type})</span></p>
+                                <p className="text-xs md:text-sm text-text-secondary mt-1">{rec.description}</p>
                             </div>
                         ))}
                     </div>

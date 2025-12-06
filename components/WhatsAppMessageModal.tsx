@@ -128,13 +128,22 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
                 prefix = `Merhaba ${getFirstName(s.name)}`;
             }
 
-            const studentRef = target === 'parent' ? 'Öğrencimizin' : 'Senin';
+            const studentRef = target === 'parent' ? getFirstName(s.name) : 'senin';
+            const studentName = target === 'parent' ? getFirstName(s.name) : '';
 
-            let message = `${prefix},\n\nYaklaşan sınavlar için hazırlık programımız yoğun bir şekilde devam ediyor. ${studentRef} evde yapacağı tekrarlar ve soru çözümleri bu süreçte çok kritik.`;
+            let message = `${prefix},\n\n`;
 
             // Add test result if available
             if (testResultInfo) {
+                if (target === 'parent') {
+                    message += `${studentName}'nin en son yaptığı sınav sonucu aşağıdadır:`;
+                } else {
+                    message += `En son yaptığın sınav sonucu:`;
+                }
                 message += testResultInfo;
+                message += `\n\n${target === 'parent' ? `${studentName}'nin` : 'Senin'} evde yapacağı tekrarlar ve soru çözümleri başarı için çok önemli.`;
+            } else {
+                message += `${target === 'parent' ? `${studentName}'nin` : 'Senin'} evde yapacağı tekrarlar ve soru çözümleri başarı için çok önemli.`;
             }
 
             message += `\n\nBirlikte başaracağımıza inanıyorum.\n\nİyi çalışmalar dilerim.`;

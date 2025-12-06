@@ -85,18 +85,18 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
             <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Tanı Testleri</h1>
-                        <p className="text-gray-600 mt-1">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Tanı Testleri</h1>
+                        <p className="text-sm md:text-base text-gray-600 mt-1">
                             Öğrencilerinizin seviyesini belirlemek için yapay zeka destekli testler oluşturun
                         </p>
                     </div>
                     <button
                         onClick={() => setView('create')}
-                        className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        className="w-full sm:w-auto px-4 md:px-6 py-2.5 md:py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm md:text-base"
                     >
                         <span className="text-xl">+</span>
                         <span>Yeni Test Oluştur</span>

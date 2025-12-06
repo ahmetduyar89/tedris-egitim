@@ -8,7 +8,9 @@ export interface MistakeData {
         text: string;
         options?: string[];
         type: string; // 'multiple_choice', 'open_ended', etc.
-        topic: string;
+        topic?: string;
+        pdfUrl?: string;
+        questionNumber?: number;
     };
     studentAnswer: string | undefined;
     correctAnswer: string;

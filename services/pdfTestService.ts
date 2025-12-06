@@ -1,6 +1,6 @@
 import { db, supabase } from './dbAdapter';
 import { createNotification } from './notificationService';
-import { mistakeService } from './mistakeService';
+import mistakeService from './mistakesService';
 
 export interface PDFTest {
   id: string;

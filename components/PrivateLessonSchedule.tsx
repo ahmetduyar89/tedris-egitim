@@ -639,6 +639,45 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         window.open(whatsappUrl, '_blank');
     };
 
+    const handleSendHomeworkReminder = () => {
+        if (!selectedStudent || !selectedLesson) return;
+
+        // Get today's homework from the weekly homework map
+        // The keys in weeklyHomework are 'Pazartesi', 'Salı', etc.
+        // We need to find which day matches today (or the lesson day if intended)
+
+        // Strategy: Send the homework for the specific day of the lesson
+        const lessonDate = new Date(selectedLesson.startTime);
+        let dayIndex = lessonDate.getDay() - 1;
+        if (dayIndex === -1) dayIndex = 6; // Sunday fix for Turkish week
+        const dayName = DAYS_TR[dayIndex];
+
+        const todaysHomework = weeklyHomework[dayName];
+
+        if (!todaysHomework || todaysHomework.trim() === '') {
+            alert('Bu güne ait herhangi bir ödev bulunamadı.');
+            return;
+        }
+
+        let message = `Merhaba Sayın Veli,\n\n` +
+            `📚 *${selectedStudent.name}* için ${dayName} günü ödev hatırlatmasıdır:\n\n` +
+            `📝 *Ödev:* ${todaysHomework}\n\n` +
+            `İyi akşamlar dileriz.`;
+
+        const encodedMessage = encodeURIComponent(message);
+
+        // Prioritize parent phone if available, fallback to student contact
+        const phoneNumber = selectedStudent.parentPhone?.replace(/\D/g, '') || selectedStudent.contact?.replace(/\D/g, '') || '';
+
+        if (!phoneNumber) {
+            alert('Kayıtlı Veli veya Öğrenci telefon numarası bulunamadı.');
+            return;
+        }
+
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+    };
+
     const weekDays = useMemo(() => {
         const days = [];
         for (let i = 0; i < 7; i++) {
@@ -1324,13 +1363,22 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 pt-4">
                                     <button
+                                        onClick={handleSendHomeworkReminder}
+                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-blue-600 text-blue-600 rounded-xl hover:bg-blue-50 flex items-center justify-center space-x-2 text-sm sm:text-base order-2 sm:order-1 mt-2 sm:mt-0"
+                                    >
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>Ödev Hatırlat (Veli)</span>
+                                    </button>
+                                    <button
                                         onClick={handleWhatsAppShare}
                                         className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 flex items-center justify-center space-x-2 text-sm sm:text-base order-2 sm:order-1"
                                     >
                                         <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                         </svg>
-                                        <span>WhatsApp Paylaş</span>
+                                        <span>Ders Özeti (Öğrenci)</span>
                                     </button>
                                     <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 order-1 sm:order-2">
                                         <button onClick={() => setIsStudentDetailModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">

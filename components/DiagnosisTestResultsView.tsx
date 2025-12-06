@@ -191,6 +191,41 @@ const DiagnosisTestResultsView: React.FC<DiagnosisTestResultsViewProps> = ({ tes
                                                     Detayları Gör
                                                 </button>
                                             )}
+                                            {assignment.status === 'completed' && (
+                                                <button
+                                                    onClick={() => {
+                                                        const studentName = assignment.student?.name || 'Öğrenci';
+                                                        const testName = test.title;
+                                                        const score = assignment.score || 0;
+                                                        const correct = assignment.totalCorrect || 0;
+                                                        const total = assignment.totalQuestions || 0;
+
+                                                        // Fallback to contact if parent contact not available
+                                                        // Now using the mapped parentPhone from the service
+                                                        const phone = assignment.student?.parentPhone?.replace(/\D/g, '') || assignment.student?.contact?.replace(/\D/g, '') || '';
+
+                                                        if (!phone) {
+                                                            alert('Öğrenci telefon numarası bulunamadı.');
+                                                            return;
+                                                        }
+
+                                                        const message = `Merhaba Sayın Veli,\n\n` +
+                                                            `📊 *${studentName}* isimli öğrencimizin *${testName}* deneme sınavı sonuçları:\n\n` +
+                                                            `✅ *Puan:* ${score}\n` +
+                                                            `🎯 *Doğru Sayısı:* ${correct} / ${total}\n\n` +
+                                                            `Başarılarının devamını dileriz.`;
+
+                                                        const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                                                        window.open(whatsappUrl, '_blank');
+                                                    }}
+                                                    className="ml-3 text-green-600 hover:text-green-800"
+                                                    title="WhatsApp ile Paylaş"
+                                                >
+                                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                                    </svg>
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

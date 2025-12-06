@@ -49,7 +49,11 @@ export interface Student {
   name: string;
   grade: number;
   tutorId: string;
+  // Contact Information
   contact?: string;
+  parentName?: string;
+  parentPhone?: string;
+
   // Gamification fields
   level: number;
   xp: number;

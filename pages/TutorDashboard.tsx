@@ -12,6 +12,7 @@ import TeacherDiagnosisTestsPage from './TeacherDiagnosisTestsPage';
 import PrivateLessonSchedule from '../components/PrivateLessonSchedule';
 import OnlineLessonsPage from './OnlineLessonsPage';
 import DashboardOverview from '../components/DashboardOverview';
+import WhatsAppMessageModal from '../components/WhatsAppMessageModal';
 
 const TedrisLogo = () => (
     <svg className="h-10 w-auto" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -28,6 +29,9 @@ const TedrisLogo = () => (
 const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdded: (newStudent: Student) => void }> = ({ tutor, onClose, onStudentAdded }) => {
     const [name, setName] = useState('');
     const [grade, setGrade] = useState(5);
+    const [phone, setPhone] = useState('');
+    const [parentName, setParentName] = useState('');
+    const [parentPhone, setParentPhone] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -101,6 +105,9 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                         name: name.trim(),
                         grade: grade,
                         tutor_id: tutor.id,
+                        contact: phone.trim(),
+                        parent_name: parentName.trim(),
+                        parent_phone: parentPhone.trim(),
                         level: 1,
                         xp: 0,
                         learning_loop_status: LearningLoopStatus.Initial,
@@ -114,6 +121,9 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                     name: name.trim(),
                     grade: grade,
                     tutorId: tutor.id,
+                    contact: phone.trim(),
+                    parentName: parentName.trim(),
+                    parentPhone: parentPhone.trim(),
                     level: 1,
                     xp: 0,
                     badges: [],
@@ -175,6 +185,38 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                         </select>
                     </div>
                     <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Telefon</label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="5XX XXX XX XX"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Veli Adı Soyadı</label>
+                            <input
+                                type="text"
+                                value={parentName}
+                                onChange={e => setParentName(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                placeholder="Anne/Baba Adı"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Veli Telefon</label>
+                            <input
+                                type="tel"
+                                value={parentPhone}
+                                onChange={e => setParentPhone(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                placeholder="5XX XXX XX XX"
+                            />
+                        </div>
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci E-posta (Giriş için)</label>
                         <input
                             type="email"
@@ -234,6 +276,9 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
 const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStudentUpdated: (updatedStudent: Student) => void }> = ({ student, onClose, onStudentUpdated }) => {
     const [name, setName] = useState(student.name);
     const [grade, setGrade] = useState(student.grade);
+    const [phone, setPhone] = useState(student.contact || '');
+    const [parentName, setParentName] = useState(student.parentName || '');
+    const [parentPhone, setParentPhone] = useState(student.parentPhone || '');
     const [isAiAssistantEnabled, setIsAiAssistantEnabled] = useState(student.isAiAssistantEnabled ?? true);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,12 +291,27 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
         try {
             const { error: updateError } = await supabase
                 .from('students')
-                .update({ name, grade, is_ai_assistant_enabled: isAiAssistantEnabled })
+                .update({
+                    name,
+                    grade,
+                    is_ai_assistant_enabled: isAiAssistantEnabled,
+                    contact: phone,
+                    parent_name: parentName,
+                    parent_phone: parentPhone
+                })
                 .eq('id', student.id);
 
             if (updateError) throw updateError;
 
-            const updatedStudent = { ...student, name, grade, isAiAssistantEnabled };
+            const updatedStudent = {
+                ...student,
+                name,
+                grade,
+                isAiAssistantEnabled,
+                contact: phone,
+                parentName,
+                parentPhone
+            };
             onStudentUpdated(updatedStudent);
             onClose();
         } catch (error: any) {
@@ -282,6 +342,38 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                             <option value={4}>İlkokul</option>
                             {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Telefon</label>
+                        <input
+                            type="tel"
+                            value={phone}
+                            onChange={e => setPhone(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="5XX XXX XX XX"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Veli Adı Soyadı</label>
+                            <input
+                                type="text"
+                                value={parentName}
+                                onChange={e => setParentName(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                placeholder="Anne/Baba Adı"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Veli Telefon</label>
+                            <input
+                                type="tel"
+                                value={parentPhone}
+                                onChange={e => setParentPhone(e.target.value)}
+                                className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                placeholder="5XX XXX XX XX"
+                            />
+                        </div>
                     </div>
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                         <label className="flex items-center space-x-3 cursor-pointer">
@@ -340,7 +432,7 @@ interface TutorDashboardProps {
     onNavigateToContent: (contentId: string) => void;
 }
 
-const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: () => void; onDelete: () => void }> = ({ student, onSelect, onEdit, onDelete }) => {
+const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: () => void; onDelete: () => void; children?: React.ReactNode }> = ({ student, onSelect, onEdit, onDelete, children }) => {
     const handleEdit = (e: React.MouseEvent) => {
         e.stopPropagation();
         onEdit();
@@ -376,6 +468,7 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
                         </div>
                     </div>
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        {children}
                         <button
                             onClick={handleEdit}
                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -476,6 +569,15 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
     const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
     const [sortBy, setSortBy] = useState<'name' | 'grade' | 'xp'>('name');
 
+    // WhatsApp Messaging
+    const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+    const [selectedStudentForMessage, setSelectedStudentForMessage] = useState<string | undefined>(undefined);
+
+    const handleOpenMessageModal = (studentId?: string) => {
+        setSelectedStudentForMessage(studentId);
+        setIsMessageModalOpen(true);
+    };
+
     const loadStudents = useCallback(async () => {
         try {
             setIsLoadingStudents(true);
@@ -492,6 +594,8 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 grade: row.grade,
                 tutorId: row.tutor_id,
                 contact: row.contact,
+                parentName: row.parent_name,
+                parentPhone: row.parent_phone,
                 level: row.level,
                 xp: row.xp,
                 badges: [],
@@ -620,8 +724,17 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                         </div>
 
                         <button
+                            onClick={() => handleOpenMessageModal()}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-md shadow-green-200"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span>Mesaj Gönder</span>
+                        </button>
+                        <button
                             onClick={() => setIsAddingStudent(true)}
-                            className="bg-primary text-white px-6 py-3 rounded-xl hover:bg-primary-dark font-semibold shadow-lg shadow-primary/30 flex items-center gap-2 transition-all transform hover:-translate-y-0.5"
+                            className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 shadow-md shadow-indigo-200"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                             Yeni Öğrenci Ekle
@@ -676,7 +789,21 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                                     onSelect={() => handleSelectStudent(student)}
                                     onEdit={() => handleEditStudent(student)}
                                     onDelete={() => handleDeleteStudent(student)}
-                                />
+                                >
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenMessageModal(student.id);
+                                        }}
+                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                        title="WhatsApp Mesajı Gönder"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                    </button>
+
+                                </StudentCard>
                             ))}
                         </div>
                     ) : (
@@ -749,6 +876,14 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
             {isAddingStudent && <AddStudentModal tutor={user} onClose={() => setIsAddingStudent(false)} onStudentAdded={handleStudentAdded} />}
             {editingStudent && <EditStudentModal student={editingStudent} onClose={() => setEditingStudent(null)} onStudentUpdated={handleStudentEdited} />}
             {deletingStudent && <ConfirmDeleteModal studentName={deletingStudent.name} onConfirm={confirmDeleteStudent} onCancel={() => setDeletingStudent(null)} />}
+            {isMessageModalOpen && (
+                <WhatsAppMessageModal
+                    isOpen={isMessageModalOpen}
+                    onClose={() => setIsMessageModalOpen(false)}
+                    students={students}
+                    initialStudentId={selectedStudentForMessage}
+                />
+            )}
         </div>
     );
 };

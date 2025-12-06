@@ -12,7 +12,7 @@ import {
     DiagnosisDetailedResult,
     DiagnosisTestStatus
 } from '../types/diagnosisTestTypes';
-import { mistakeService } from './mistakeService';
+import mistakeService from './mistakesService';
 
 export const diagnosisTestManagementService = {
     // ==================== ÖĞRETMEN: TEST OLUŞTURMA ====================
@@ -198,7 +198,13 @@ export const diagnosisTestManagementService = {
             aiAnalysis: d.ai_analysis,
             createdAt: d.created_at,
             updatedAt: d.updated_at,
-            student: d.students
+            student: d.students ? {
+                ...d.students,
+                // Manually map fields that might differ between DB (snake_case) and Type (camelCase)
+                // if the automatic mapping isn't sufficient or if types.ts has camelCase definitions
+                parentName: d.students.parent_name,
+                parentPhone: d.students.parent_phone
+            } : undefined
         }));
     },
 

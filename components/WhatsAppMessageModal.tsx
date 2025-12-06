@@ -152,12 +152,6 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [messageBody, setMessageBody] = useState('');
     const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
     const [honorific, setHonorific] = useState<Honorific>('Hanım');
-
-    const [selectedStudentId, setSelectedStudentId] = useState(initialStudentId || '');
-    const [templateType, setTemplateType] = useState<MessageTemplateType>('general');
-    const [messageBody, setMessageBody] = useState('');
-    const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
-    const [honorific, setHonorific] = useState<Honorific>('Hanım');
     const [homeworkInfo, setHomeworkInfo] = useState<string>('');
 
     // Fetch homework info when student changes or template becomes homework

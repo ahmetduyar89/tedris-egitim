@@ -451,23 +451,23 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-secondary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
             <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                        <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl h-14 w-14 flex items-center justify-center text-2xl font-bold font-poppins shadow-lg shadow-primary/30">
+                    <div className="flex items-center space-x-4 flex-1 min-w-0">
+                        <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl h-14 w-14 flex items-center justify-center text-2xl font-bold font-poppins shadow-lg shadow-primary/30 flex-shrink-0">
                             {student.name.charAt(0)}
                         </div>
-                        <div>
-                            <h3 className="text-lg font-bold font-poppins text-gray-900 group-hover:text-primary transition-colors">{student.name}</h3>
-                            <div className="flex items-center space-x-2 mt-1">
-                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-md">
+                        <div className="min-w-0">
+                            <h3 className="text-lg font-bold font-poppins text-gray-900 group-hover:text-primary transition-colors truncate" title={student.name}>{student.name}</h3>
+                            <div className="flex items-center space-x-2 mt-1 flex-wrap gap-y-1">
+                                <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-md whitespace-nowrap">
                                     {student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}
                                 </span>
-                                <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-md border border-yellow-100">
+                                <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-md border border-yellow-100 whitespace-nowrap">
                                     Seviye {student.level}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex-shrink-0 ml-2 relative z-10">
                         {children}
                         <button
                             onClick={handleEdit}

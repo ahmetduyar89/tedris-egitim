@@ -10,31 +10,62 @@ interface WhatsAppMessageModalProps {
 
 type MessageTemplateType = 'general' | 'homework' | 'payment' | 'exam_info' | 'absent';
 
-const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student) => string }> = {
+const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student') => string }> = {
     general: {
         label: 'Genel Bilgilendirme',
         subject: 'Bilgilendirme',
-        body: (s) => `Merhaba Sayın Veli,\n\n${s.name} öğrencimiz ile ilgili genel bir bilgilendirme yapmak istedik.\n\n[Mesajınızı buraya yazınız]\n\nİyi günler dileriz.`
+        body: (s, target) => {
+            const prefix = target === 'parent'
+                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
+                : `Merhaba ${s.name}`;
+
+            return `${prefix},\n\n${s.name} ile yaptığımız derslerde işlenilen konular ve ödev takibi hakkında sizi bilgilendirmek isterim.\n\nÖğrencimizin derse katılımı ve ödevlerini yapma durumu sürecin verimliliği açısından çok önemlidir. Bu konuda desteğinizi rica ederim.\n\nİyi günler dilerim.`;
+        }
     },
     homework: {
         label: 'Ödev Hatırlatma',
         subject: 'Ödev Takibi',
-        body: (s) => `Merhaba Sayın Veli,\n\n${s.name} isimli öğrencimizin bu haftaki ödevlerini tamamlaması konusunda desteğinizi rica ederiz.\n\nİyi akşamlar.`
+        body: (s, target) => {
+            const prefix = target === 'parent'
+                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
+                : `Merhaba ${s.name}`;
+            const today = new Date().toLocaleDateString('tr-TR', { weekday: 'long' });
+
+            return `${prefix},\n\n${target === 'parent' ? `${s.name} isimli öğrencimizin` : 'Bugünkü'} ${today} günü için verilen ödevlerini tamamlaması konusunda hatırlatma yapmak istedim.\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
+        }
     },
     payment: {
         label: 'Ödeme Hatırlatma',
         subject: 'Ödeme Bilgilendirme',
-        body: (s) => `Merhaba Sayın Veli,\n\n${s.name} öğrencimizin özel ders ödemesi ile ilgili hatırlatma yapmak istedik.\n\nMüsait olduğunuzda bilgi verebilirseniz seviniriz.\n\nİyi günler.`
+        body: (s, target) => {
+            const prefix = target === 'parent'
+                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
+                : `Merhaba ${s.name}`;
+
+            return `${prefix},\n\nÖzel ders ödemesi ile ilgili kısa bir hatırlatma yapmak istedim.\n\nMüsait olduğunuzda bilgi verebilirseniz çok sevinirim.\n\nİyi günler dilerim.`;
+        }
     },
     exam_info: {
         label: 'Sınav Bilgilendirme',
         subject: 'Sınav Hazırlığı',
-        body: (s) => `Merhaba Sayın Veli,\n\n${s.name} öğrencimizin yaklaşan sınavları için hazırlık programımız devam etmektedir. Öğrencimizin çalışmalarını evde de tekrar etmesi başarısını artıracaktır.\n\nİyi çalışmalar.`
+        body: (s, target) => {
+            const prefix = target === 'parent'
+                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
+                : `Merhaba ${s.name}`;
+
+            return `${prefix},\n\nYaklaşan sınavlar için hazırlık programımız yoğun bir şekilde devam ediyor. ${target === 'parent' ? 'Öğrencimizin' : 'Senin'} evde yapacağı tekrarlar ve soru çözümleri bu süreçte çok kritik.\n\nBirlikte başaracağımıza inanıyorum.\n\nİyi çalışmalar dilerim.`;
+        }
     },
     absent: {
         label: 'Devamsızlık',
         subject: 'Derse Katılım',
-        body: (s) => `Merhaba Sayın Veli,\n\n${s.name} öğrencimiz bugünkü derse katılım sağlamamıştır. Bilginiz dahilinde miydi?\n\nİyi günler.`
+        body: (s, target) => {
+            const prefix = target === 'parent'
+                ? `Merhaba ${s.parentName || 'Sayın Veli'}`
+                : `Merhaba ${s.name}`;
+
+            return `${prefix},\n\nBugünkü derse katılım ${target === 'parent' ? 'sağlanmadı' : 'sağlamadın'}. Bir sorun yoktur umarım?\n\nTelafi dersi veya sonraki programımız için haberleşebiliriz.\n\nİyi günler dilerim.`;
+        }
     }
 };
 
@@ -48,17 +79,17 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         if (isOpen) {
             setSelectedStudentId(initialStudentId || '');
             if (initialStudentId) {
-                updateMessage(initialStudentId, 'general');
+                updateMessage(initialStudentId, 'general', 'parent');
             } else {
                 setMessageBody('');
             }
         }
     }, [isOpen, initialStudentId]);
 
-    const updateMessage = (studentId: string, type: MessageTemplateType) => {
+    const updateMessage = (studentId: string, type: MessageTemplateType, target: 'parent' | 'student') => {
         const student = students.find(s => s.id === studentId);
         if (student) {
-            setMessageBody(TEMPLATES[type].body(student));
+            setMessageBody(TEMPLATES[type].body(student, target));
         }
     };
 
@@ -66,7 +97,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         const sid = e.target.value;
         setSelectedStudentId(sid);
         if (sid) {
-            updateMessage(sid, templateType);
+            updateMessage(sid, templateType, targetPhone);
         } else {
             setMessageBody('');
         }
@@ -75,7 +106,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const handleTemplateChange = (type: MessageTemplateType) => {
         setTemplateType(type);
         if (selectedStudentId) {
-            updateMessage(selectedStudentId, type);
+            updateMessage(selectedStudentId, type, targetPhone);
         }
     };
 
@@ -152,8 +183,8 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                     key={key}
                                     onClick={() => handleTemplateChange(key as MessageTemplateType)}
                                     className={`px-3 py-2 text-xs sm:text-sm rounded-lg border transition-colors text-left ${templateType === key
-                                            ? 'bg-primary/10 border-primary text-primary font-medium'
-                                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-primary/10 border-primary text-primary font-medium'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     {template.label}
@@ -170,11 +201,17 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                 <input
                                     type="radio"
                                     checked={targetPhone === 'parent'}
-                                    onChange={() => setTargetPhone('parent')}
+                                    onChange={() => {
+                                        setTargetPhone('parent');
+                                        if (selectedStudentId) {
+                                            updateMessage(selectedStudentId, templateType, 'parent');
+                                        }
+                                    }}
                                     className="text-primary focus:ring-primary h-4 w-4"
                                 />
                                 <span className="ml-2 text-sm text-gray-700">
                                     Veli
+                                    {selectedStudent?.parentName && <span className="text-xs text-gray-500 ml-1">({selectedStudent.parentName})</span>}
                                     {selectedStudent?.parentPhone && <span className="text-xs text-gray-500 ml-1">({selectedStudent.parentPhone})</span>}
                                 </span>
                             </label>
@@ -182,7 +219,12 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                 <input
                                     type="radio"
                                     checked={targetPhone === 'student'}
-                                    onChange={() => setTargetPhone('student')}
+                                    onChange={() => {
+                                        setTargetPhone('student');
+                                        if (selectedStudentId) {
+                                            updateMessage(selectedStudentId, templateType, 'student');
+                                        }
+                                    }}
                                     className="text-primary focus:ring-primary h-4 w-4"
                                 />
                                 <span className="ml-2 text-sm text-gray-700">

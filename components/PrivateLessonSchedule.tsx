@@ -634,6 +634,12 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
         const encodedMessage = encodeURIComponent(message);
         const phoneNumber = selectedStudent.contact?.replace(/\D/g, '') || '';
+
+        if (!phoneNumber) {
+            alert('Öğrenci telefon numarası bulunamadı. Lütfen öğrenci bilgilerini kontrol edin.');
+            return;
+        }
+
         const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
 
         window.open(whatsappUrl, '_blank');
@@ -670,7 +676,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         const phoneNumber = selectedStudent.parentPhone?.replace(/\D/g, '') || selectedStudent.contact?.replace(/\D/g, '') || '';
 
         if (!phoneNumber) {
-            alert('Kayıtlı Veli veya Öğrenci telefon numarası bulunamadı.');
+            alert('Veli veya öğrenci telefon numarası bulunamadı. Lütfen öğrenci bilgilerini kontrol edin.');
             return;
         }
 

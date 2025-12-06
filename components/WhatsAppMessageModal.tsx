@@ -51,7 +51,7 @@ type Honorific = 'Sayın' | 'Hanım' | 'Bey';
 
 import { supabase, db } from '../services/dbAdapter';
 
-const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string) => string }> = {
+const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string) => string }> = {
     general: {
         label: 'Genel Bilgilendirme',
         subject: 'Bilgilendirme',
@@ -94,7 +94,7 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
                 homeworkText = `\n\n📚 Verilen ödevlerin düzenli olarak tamamlanması önemlidir.`;
             }
 
-            return `${prefix},\n\n${target === 'parent' ? `${studentRef} için verilen` : 'Verilen'} ödevlerin tamamlanması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
+            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : ''} Verilen ödevlerin tamamlanması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
         }
     },
     payment: {
@@ -117,7 +117,7 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
     exam_info: {
         label: 'Sınav Bilgilendirme',
         subject: 'Sınav Hazırlığı',
-        body: (s, target, honorific) => {
+        body: (s, target, honorific, homeworkInfo, testResultInfo) => {
             let prefix = '';
             if (target === 'parent') {
                 const pName = s.parentName ? toTitleCase(s.parentName) : '';
@@ -128,7 +128,18 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
                 prefix = `Merhaba ${getFirstName(s.name)}`;
             }
 
-            return `${prefix},\n\nYaklaşan sınavlar için hazırlık programımız yoğun bir şekilde devam ediyor. ${target === 'parent' ? 'Öğrencimizin' : 'Senin'} evde yapacağı tekrarlar ve soru çözümleri bu süreçte çok kritik.\n\nBirlikte başaracağımıza inanıyorum.\n\nİyi çalışmalar dilerim.`;
+            const studentRef = target === 'parent' ? 'Öğrencimizin' : 'Senin';
+
+            let message = `${prefix},\n\nYaklaşan sınavlar için hazırlık programımız yoğun bir şekilde devam ediyor. ${studentRef} evde yapacağı tekrarlar ve soru çözümleri bu süreçte çok kritik.`;
+
+            // Add test result if available
+            if (testResultInfo) {
+                message += testResultInfo;
+            }
+
+            message += `\n\nBirlikte başaracağımıza inanıyorum.\n\nİyi çalışmalar dilerim.`;
+
+            return message;
         }
     },
     absent: {
@@ -157,6 +168,8 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
     const [honorific, setHonorific] = useState<Honorific>('Hanım');
     const [homeworkInfo, setHomeworkInfo] = useState<string>('');
+    const [testResultInfo, setTestResultInfo] = useState<string>('');
+
 
     // Fetch homework info when student changes or template becomes homework
     useEffect(() => {
@@ -408,6 +421,118 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         fetchHomework();
     }, [selectedStudentId, templateType]);
 
+    // Fetch latest test result when student changes or template becomes exam_info
+    useEffect(() => {
+        const fetchLatestTestResult = async () => {
+            if (!selectedStudentId || templateType !== 'exam_info') {
+                setTestResultInfo('');
+                return;
+            }
+
+            try {
+                // Fetch from multiple sources and find the most recent
+                const [diagnosisTests, qbAssignments, pdfSubmissions] = await Promise.all([
+                    // Diagnosis tests
+                    supabase
+                        .from('diagnosis_test_assignments')
+                        .select('*, diagnosis_test:diagnosis_tests(*)')
+                        .eq('student_id', selectedStudentId)
+                        .eq('status', 'completed')
+                        .order('completed_at', { ascending: false })
+                        .limit(1),
+
+                    // Question bank assignments
+                    supabase
+                        .from('question_bank_assignments')
+                        .select('*, question_bank:question_banks(*)')
+                        .eq('student_id', selectedStudentId)
+                        .eq('status', 'Tamamlandı')
+                        .order('completed_at', { ascending: false })
+                        .limit(1),
+
+                    // PDF test submissions
+                    supabase
+                        .from('pdf_test_submissions')
+                        .select('*, pdf_test:pdf_tests(*)')
+                        .eq('student_id', selectedStudentId)
+                        .in('status', ['completed', 'time_expired'])
+                        .order('submitted_at', { ascending: false })
+                        .limit(1)
+                ]);
+
+                const allTests: Array<{ date: Date, type: string, title: string, score: number, total?: number }> = [];
+
+                // Process diagnosis tests
+                if (diagnosisTests.data && diagnosisTests.data.length > 0) {
+                    const test = diagnosisTests.data[0];
+                    allTests.push({
+                        date: new Date(test.completed_at),
+                        type: 'Tanı Testi',
+                        title: test.diagnosis_test?.title || 'Tanı Testi',
+                        score: test.score || 0,
+                        total: test.total_questions
+                    });
+                }
+
+                // Process question bank assignments
+                if (qbAssignments.data && qbAssignments.data.length > 0) {
+                    const test = qbAssignments.data[0];
+                    allTests.push({
+                        date: new Date(test.completed_at),
+                        type: 'Soru Bankası',
+                        title: test.question_bank?.title || 'Soru Bankası Testi',
+                        score: test.score || 0,
+                        total: test.total_questions
+                    });
+                }
+
+                // Process PDF test submissions
+                if (pdfSubmissions.data && pdfSubmissions.data.length > 0) {
+                    const test = pdfSubmissions.data[0];
+                    allTests.push({
+                        date: new Date(test.submitted_at),
+                        type: 'PDF Test',
+                        title: test.pdf_test?.title || 'PDF Testi',
+                        score: test.score_percentage || 0,
+                        total: test.pdf_test?.total_questions
+                    });
+                }
+
+                // Find the most recent test
+                if (allTests.length > 0) {
+                    const latestTest = allTests.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+
+                    const dateStr = latestTest.date.toLocaleDateString('tr-TR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+
+                    let resultText = `\n\n📊 *Son Sınav Sonucu:*\n`;
+                    resultText += `📝 *Test:* ${latestTest.title}\n`;
+                    resultText += `📅 *Tarih:* ${dateStr}\n`;
+
+                    if (latestTest.total) {
+                        resultText += `✅ *Sonuç:* ${latestTest.score}%`;
+                    } else {
+                        resultText += `✅ *Puan:* ${latestTest.score}%`;
+                    }
+
+                    setTestResultInfo(resultText);
+                } else {
+                    setTestResultInfo('');
+                }
+
+            } catch (err) {
+                console.error('Error fetching latest test result:', err);
+                setTestResultInfo('');
+            }
+        };
+
+        fetchLatestTestResult();
+    }, [selectedStudentId, templateType]);
+
+
     // Update message body whenever dependencies change
     useEffect(() => {
         if (!isOpen) return;
@@ -420,11 +545,11 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
         const student = students.find(s => s.id === selectedStudentId);
         if (student) {
-            setMessageBody(TEMPLATES[templateType].body(student, targetPhone, honorific, homeworkInfo));
+            setMessageBody(TEMPLATES[templateType].body(student, targetPhone, honorific, homeworkInfo, testResultInfo));
         } else {
             setMessageBody('');
         }
-    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, initialStudentId, students]);
+    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, initialStudentId, students]);
 
 
     const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

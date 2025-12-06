@@ -192,26 +192,32 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     const sortedData = data.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
                     sortedData.forEach(l => {
-                        const lessonDate = new Date(l.start_time);
-                        // Check if this lesson falls on the same day of the week
-                        if (lessonDate.getDay() === currentDayOfWeek) {
-                            // If we already added homework for this subject (from a newer record), skip older ones
-                            // This is a heuristic: usually one lesson per subject per day
-                            if (processedSubjects.has(l.subject)) return;
+                        // We do NOT restrict by lessonDate.getDay() === currentDayOfWeek anymore.
+                        // A lesson on Monday can assign homework for Saturday.
+                        // We simply check if this lesson has homework defined for "Today's Day Name".
 
-                            if (!l.homework) return;
+                        // If we already added homework for this subject (from a newer record), skip older ones
+                        if (processedSubjects.has(l.subject)) return;
 
-                            try {
-                                const parsed = JSON.parse(l.homework);
-                                const dailyHomework = parsed[normalizedDayName];
+                        if (!l.homework) return;
 
-                                if (dailyHomework && dailyHomework.trim()) {
-                                    homeworks.push(`${l.subject}: ${dailyHomework}`);
-                                    processedSubjects.add(l.subject);
-                                }
-                            } catch (e) {
-                                // Legacy text fallback
-                                if (l.homework.trim()) {
+                        try {
+                            const parsed = JSON.parse(l.homework);
+                            const dailyHomework = parsed[normalizedDayName];
+
+                            if (dailyHomework && dailyHomework.trim()) {
+                                homeworks.push(`${l.subject}: ${dailyHomework}`);
+                                processedSubjects.add(l.subject);
+                            }
+                        } catch (e) {
+                            // Legacy text fallback: checks if the generic text field is used
+                            // But usually legacy text was meant for "Next Lesson". 
+                            // If we are strictly looking for "Today's" homework, generic text is ambiguous.
+                            // However, let's include it if the lesson was actually TODAY, otherwise it's weird to show "Do pg 10" from a Monday lesson on Saturday if it wasn't keyed.
+                            // So for legacy/string homework, we reinstate the day check.
+                            if (typeof l.homework === 'string' && l.homework.trim()) {
+                                const lessonDate = new Date(l.start_time);
+                                if (lessonDate.getDay() === currentDayOfWeek) {
                                     homeworks.push(`${l.subject}: ${l.homework}`);
                                     processedSubjects.add(l.subject);
                                 }

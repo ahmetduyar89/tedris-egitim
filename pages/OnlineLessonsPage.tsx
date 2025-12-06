@@ -207,7 +207,7 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
             {activeLesson && (
                 <React.Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 text-white">Yükleniyor...</div>}>
                     <OnlineLessonRoom
@@ -220,14 +220,14 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
                 </React.Suspense>
             )}
 
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Online Dersler</h1>
-                    <p className="text-gray-500">Öğrencilerinizle yapacağınız online dersleri buradan yönetin.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Online Dersler</h1>
+                    <p className="text-sm md:text-base text-gray-500">Öğrencilerinizle yapacağınız online dersleri buradan yönetin.</p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
-                    className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-md text-sm md:text-base"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -238,27 +238,34 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
 
             {loading ? (
                 <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>
+            ) : lessons.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 md:p-12 text-center">
+                    <div className="text-4xl mb-4">📹</div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">Henüz planlanmış bir online dersiniz yok.</h3>
+                    <p className="text-sm md:text-base text-gray-500 mb-6">Öğrencilerinizle online ders yapmak için yeni bir ders oluşturun.</p>
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="bg-primary hover:bg-primary-dark text-white px-6 py-2.5 rounded-lg transition-colors"
+                    >
+                        İlk Dersi Oluştur
+                    </button>
+                </div>
             ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih / Saat</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğrenci</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders / Konu</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {lessons.length === 0 ? (
+                <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                        Henüz planlanmış bir online dersiniz yok.
-                                    </td>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih / Saat</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğrenci</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders / Konu</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
                                 </tr>
-                            ) : (
-                                lessons.map((lesson) => {
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {lessons.map((lesson) => {
                                     const startTime = new Date(lesson.startTime);
                                     const isToday = new Date().toDateString() === startTime.toDateString();
 
@@ -317,11 +324,86 @@ const OnlineLessonsPage: React.FC<OnlineLessonsPageProps> = ({ user }) => {
                                             </td>
                                         </tr>
                                     );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                        {lessons.map((lesson) => {
+                            const startTime = new Date(lesson.startTime);
+                            return (
+                                <div key={lesson.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm">
+                                                {lesson.studentName?.substring(0, 2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-gray-900">{lesson.studentName}</div>
+                                                <div className="text-sm text-gray-500">{lesson.subject}</div>
+                                            </div>
+                                        </div>
+                                        <span className={`px-2 py-1 text-xs font-semibold rounded-full 
+                          ${lesson.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                lesson.status === 'started' ? 'bg-red-100 text-red-800 animate-pulse' :
+                                                    'bg-blue-100 text-blue-800'}`}>
+                                            {lesson.status === 'completed' ? 'Tamamlandı' :
+                                                lesson.status === 'started' ? 'Devam Ediyor' : 'Planlandı'}
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-2 mb-4 text-sm">
+                                        <div className="flex items-center text-gray-600">
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            {startTime.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'short' })}
+                                        </div>
+                                        <div className="flex items-center text-gray-600">
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            {startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} ({lesson.duration} dk)
+                                        </div>
+                                        {lesson.topic && (
+                                            <div className="flex items-center text-gray-600">
+                                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                                </svg>
+                                                {lesson.topic}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        {lesson.status !== 'completed' && (
+                                            <button
+                                                onClick={() => handleStartLesson(lesson)}
+                                                className={`flex-1 ${lesson.status === 'started' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'} text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors`}
+                                            >
+                                                {lesson.status === 'started' ? 'Derse Dön' : 'Başlat'}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleOpenModal(lesson)}
+                                            className="flex-1 text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            Düzenle
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteLesson(lesson.id)}
+                                            className="text-red-600 bg-red-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            Sil
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </>
             )}
 
             {/* Create/Edit Modal */}

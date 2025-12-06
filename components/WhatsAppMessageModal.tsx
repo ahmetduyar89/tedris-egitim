@@ -198,6 +198,13 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         // Clean phone number
         phone = phone.replace(/\D/g, '');
 
+        // Basic formatting for TR numbers if missing country code
+        if (phone.length === 10 && phone.startsWith('5')) {
+            phone = '90' + phone;
+        } else if (phone.length === 11 && phone.startsWith('0')) {
+            phone = '9' + phone; // Converts 0532... to 90532...
+        }
+
         if (!phone) {
             alert('Seçilen kişi için geçerli bir telefon numarası bulunamadı.');
             return;

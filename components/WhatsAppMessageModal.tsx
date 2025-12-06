@@ -163,19 +163,24 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
             }
 
             try {
-                // Get today's details
+                // Determine "This Week" range (Monday to Sunday)
                 const today = new Date();
-                const currentDayOfWeek = today.getDay(); // 0=Sunday, 6=Saturday
-                const dayName = today.toLocaleDateString('tr-TR', { weekday: 'long' });
-                const normalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+                const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
+                const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek; // Adjust to Monday
 
-                // Fetch ALL lessons for this student to find recurring templates
-                // We emulate the PrivateLessonSchedule logic which projects past lessons to current week
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() + diffToMon);
+                startOfWeek.setHours(0, 0, 0, 0);
+
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 7); // Next Monday 00:00
+
+                // Fetch ALL lessons to handle both "This Week" and "Templates"
                 const { data, error } = await supabase
                     .from('private_lessons')
                     .select('homework, subject, start_time, status')
                     .eq('student_id', selectedStudentId)
-                    .neq('status', 'cancelled'); // Ignore cancelled lessons
+                    .neq('status', 'cancelled');
 
                 if (error) {
                     console.error('Error fetching homework:', error);
@@ -183,59 +188,105 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     return;
                 }
 
-                if (data && data.length > 0) {
-                    const allHomeworks: string[] = [];
-                    // Track unique subjects to avoid duplicates if multiple old lessons exist for same slot
-                    const processedSubjects = new Set<string>();
+                if (!data || data.length === 0) {
+                    setHomeworkInfo('');
+                    return;
+                }
 
-                    // Sort by start_time descending to get most recent version of a lesson first
-                    const sortedData = data.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+                const allHomeworks: string[] = [];
+                // Map to store merged homeworks: { "Subject": { "Pazartesi": "task" } }
+                const homeworkMap: Record<string, Record<string, string>> = {};
 
-                    sortedData.forEach(l => {
-                        if (processedSubjects.has(l.subject)) return;
+                // Filter for THIS WEEK's lessons first
+                const thisWeekLessons = data.filter(l => {
+                    const d = new Date(l.start_time);
+                    return d >= startOfWeek && d < endOfWeek;
+                });
 
+                // If we have lessons this week with homework, we prioritize them (active plan)
+                // Otherwise, use the latest past lessons as fallback (recurring/templates)
+                let lessonsToProcess = thisWeekLessons.filter(l => l.homework);
+
+                if (lessonsToProcess.length === 0) {
+                    // Fallback: Group by subject and take the latest lesson for each
+                    const latestBySubject: Record<string, any> = {};
+                    data.forEach(l => {
                         if (!l.homework) return;
-
-                        try {
-                            const parsed = JSON.parse(l.homework);
-                            // parsed is { "Pazartesi": "...", "Salı": "..." }
-
-                            const subjectHomeworks: string[] = [];
-
-                            Object.entries(parsed).forEach(([day, task]) => {
-                                if (typeof task === 'string' && task.trim()) {
-                                    subjectHomeworks.push(`- ${day}: ${task.trim()}`);
-                                }
-                            });
-
-                            if (subjectHomeworks.length > 0) {
-                                // Add subject header
-                                allHomeworks.push(`*${l.subject}*:`);
-                                allHomeworks.push(...subjectHomeworks);
-                                allHomeworks.push(''); // Empty line for spacing
-                                processedSubjects.add(l.subject);
-                            }
-                        } catch (e) {
-                            // Legacy text fallback
-                            if (typeof l.homework === 'string' && l.homework.trim()) {
-                                const lessonDate = new Date(l.start_time);
-                                const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
-                                allHomeworks.push(`*${l.subject}* (${dayName}):`);
-                                allHomeworks.push(`- ${l.homework.trim()}`);
-                                allHomeworks.push('');
-                                processedSubjects.add(l.subject);
-                            }
+                        if (!latestBySubject[l.subject] || new Date(l.start_time) > new Date(latestBySubject[l.subject].start_time)) {
+                            latestBySubject[l.subject] = l;
                         }
                     });
+                    lessonsToProcess = Object.values(latestBySubject);
+                }
 
-                    if (allHomeworks.length > 0) {
-                        setHomeworkInfo(allHomeworks.join('\n').trim());
-                    } else {
-                        setHomeworkInfo('');
+                // Process the selected lessons
+                lessonsToProcess.forEach(l => {
+                    // Initialize subject map
+                    if (!homeworkMap[l.subject]) {
+                        homeworkMap[l.subject] = {};
                     }
+
+                    try {
+                        const parsed = JSON.parse(l.homework);
+                        // parsed = { "Pazartesi": "...", "Salı": "..." }
+                        Object.entries(parsed).forEach(([day, task]) => {
+                            if (typeof task === 'string' && task.trim()) {
+                                // Merge tasks if multiple lessons define same day for same subject (unlikely but safe)
+                                if (homeworkMap[l.subject][day]) {
+                                    if (!homeworkMap[l.subject][day].includes(task.trim())) {
+                                        homeworkMap[l.subject][day] += ` | ${task.trim()}`;
+                                    }
+                                } else {
+                                    homeworkMap[l.subject][day] = task.trim();
+                                }
+                            }
+                        });
+                    } catch (e) {
+                        // Legacy text fallback
+                        if (typeof l.homework === 'string' && l.homework.trim()) {
+                            const lessonDate = new Date(l.start_time);
+                            const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+                            const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+
+                            if (homeworkMap[l.subject][normalizedDay]) {
+                                homeworkMap[l.subject][normalizedDay] += ` | ${l.homework.trim()}`;
+                            } else {
+                                homeworkMap[l.subject][normalizedDay] = l.homework.trim();
+                            }
+                        }
+                    }
+                });
+
+                // Format the output
+                // Sort subjects alphabetically
+                Object.keys(homeworkMap).sort().forEach(subject => {
+                    const daysObj = homeworkMap[subject];
+                    const days = Object.keys(daysObj);
+
+                    if (days.length > 0) {
+                        allHomeworks.push(`*${subject}*:`);
+
+                        // Sort days? "Pazartesi", "Salı"... custom sort needed strictly speaking but generic sort is ok for now
+                        // Let's rely on standard order or insertion order. 
+                        // To be nice, we could sort by standard TR week days.
+                        const TR_DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+                        days.sort((a, b) => {
+                            return TR_DAYS.indexOf(a) - TR_DAYS.indexOf(b);
+                        });
+
+                        days.forEach(day => {
+                            allHomeworks.push(`- ${day}: ${daysObj[day]}`);
+                        });
+                        allHomeworks.push(''); // spacing
+                    }
+                });
+
+                if (allHomeworks.length > 0) {
+                    setHomeworkInfo(allHomeworks.join('\n').trim());
                 } else {
                     setHomeworkInfo('');
                 }
+
             } catch (err) {
                 console.error('Error in fetchHomework:', err);
                 setHomeworkInfo('');

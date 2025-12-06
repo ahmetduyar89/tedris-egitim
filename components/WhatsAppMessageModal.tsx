@@ -184,7 +184,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 }
 
                 if (data && data.length > 0) {
-                    const homeworks: string[] = [];
+                    const allHomeworks: string[] = [];
                     // Track unique subjects to avoid duplicates if multiple old lessons exist for same slot
                     const processedSubjects = new Set<string>();
 
@@ -192,41 +192,44 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     const sortedData = data.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
                     sortedData.forEach(l => {
-                        // We do NOT restrict by lessonDate.getDay() === currentDayOfWeek anymore.
-                        // A lesson on Monday can assign homework for Saturday.
-                        // We simply check if this lesson has homework defined for "Today's Day Name".
-
-                        // If we already added homework for this subject (from a newer record), skip older ones
                         if (processedSubjects.has(l.subject)) return;
 
                         if (!l.homework) return;
 
                         try {
                             const parsed = JSON.parse(l.homework);
-                            const dailyHomework = parsed[normalizedDayName];
+                            // parsed is { "Pazartesi": "...", "Salı": "..." }
 
-                            if (dailyHomework && dailyHomework.trim()) {
-                                homeworks.push(`${l.subject}: ${dailyHomework}`);
+                            const subjectHomeworks: string[] = [];
+
+                            Object.entries(parsed).forEach(([day, task]) => {
+                                if (typeof task === 'string' && task.trim()) {
+                                    subjectHomeworks.push(`- ${day}: ${task.trim()}`);
+                                }
+                            });
+
+                            if (subjectHomeworks.length > 0) {
+                                // Add subject header
+                                allHomeworks.push(`*${l.subject}*:`);
+                                allHomeworks.push(...subjectHomeworks);
+                                allHomeworks.push(''); // Empty line for spacing
                                 processedSubjects.add(l.subject);
                             }
                         } catch (e) {
-                            // Legacy text fallback: checks if the generic text field is used
-                            // But usually legacy text was meant for "Next Lesson". 
-                            // If we are strictly looking for "Today's" homework, generic text is ambiguous.
-                            // However, let's include it if the lesson was actually TODAY, otherwise it's weird to show "Do pg 10" from a Monday lesson on Saturday if it wasn't keyed.
-                            // So for legacy/string homework, we reinstate the day check.
+                            // Legacy text fallback
                             if (typeof l.homework === 'string' && l.homework.trim()) {
                                 const lessonDate = new Date(l.start_time);
-                                if (lessonDate.getDay() === currentDayOfWeek) {
-                                    homeworks.push(`${l.subject}: ${l.homework}`);
-                                    processedSubjects.add(l.subject);
-                                }
+                                const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+                                allHomeworks.push(`*${l.subject}* (${dayName}):`);
+                                allHomeworks.push(`- ${l.homework.trim()}`);
+                                allHomeworks.push('');
+                                processedSubjects.add(l.subject);
                             }
                         }
                     });
 
-                    if (homeworks.length > 0) {
-                        setHomeworkInfo(homeworks.join('\n'));
+                    if (allHomeworks.length > 0) {
+                        setHomeworkInfo(allHomeworks.join('\n').trim());
                     } else {
                         setHomeworkInfo('');
                     }

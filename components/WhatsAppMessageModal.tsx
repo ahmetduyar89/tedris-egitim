@@ -163,30 +163,19 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
             }
 
             try {
-                // Get today's start and end timestamps
+                // Get today's details
                 const today = new Date();
+                const currentDayOfWeek = today.getDay(); // 0=Sunday, 6=Saturday
                 const dayName = today.toLocaleDateString('tr-TR', { weekday: 'long' });
-                // Normalize dayName to match keys in database (Title Case)
-                // e.g., "cumartesi" -> "Cumartesi"
                 const normalizedDayName = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
 
-                // We want to find the lesson that covers "today".
-                // Since lessons repeat weekly or are specific to a date, and the logic in PrivateLessonSchedule
-                // saves a specific lesson instance for the week when homework is added,
-                // we should look for a lesson record that intersects with today.
-
-                // Set range for the whole day
-                const startOfDay = new Date(today);
-                startOfDay.setHours(0, 0, 0, 0);
-                const endOfDay = new Date(today);
-                endOfDay.setHours(23, 59, 59, 999);
-
+                // Fetch ALL lessons for this student to find recurring templates
+                // We emulate the PrivateLessonSchedule logic which projects past lessons to current week
                 const { data, error } = await supabase
                     .from('private_lessons')
-                    .select('homework, subject')
+                    .select('homework, subject, start_time, status')
                     .eq('student_id', selectedStudentId)
-                    .gte('start_time', startOfDay.toISOString())
-                    .lt('start_time', endOfDay.toISOString());
+                    .neq('status', 'cancelled'); // Ignore cancelled lessons
 
                 if (error) {
                     console.error('Error fetching homework:', error);
@@ -196,23 +185,36 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                 if (data && data.length > 0) {
                     const homeworks: string[] = [];
+                    // Track unique subjects to avoid duplicates if multiple old lessons exist for same slot
+                    const processedSubjects = new Set<string>();
 
-                    data.forEach(l => {
-                        if (!l.homework) return;
+                    // Sort by start_time descending to get most recent version of a lesson first
+                    const sortedData = data.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
 
-                        try {
-                            // Homework is stored as JSON string: {"Pazartesi": "...", "Salı": "..."}
-                            // or potentially plain string in legacy data (though unlikely based on analysis)
-                            const parsed = JSON.parse(l.homework);
-                            const dailyHomework = parsed[normalizedDayName];
+                    sortedData.forEach(l => {
+                        const lessonDate = new Date(l.start_time);
+                        // Check if this lesson falls on the same day of the week
+                        if (lessonDate.getDay() === currentDayOfWeek) {
+                            // If we already added homework for this subject (from a newer record), skip older ones
+                            // This is a heuristic: usually one lesson per subject per day
+                            if (processedSubjects.has(l.subject)) return;
 
-                            if (dailyHomework && dailyHomework.trim()) {
-                                homeworks.push(`${l.subject}: ${dailyHomework}`);
-                            }
-                        } catch (e) {
-                            // If not JSON, assume it's direct text (legacy fallback)
-                            if (l.homework.trim()) {
-                                homeworks.push(`${l.subject}: ${l.homework}`);
+                            if (!l.homework) return;
+
+                            try {
+                                const parsed = JSON.parse(l.homework);
+                                const dailyHomework = parsed[normalizedDayName];
+
+                                if (dailyHomework && dailyHomework.trim()) {
+                                    homeworks.push(`${l.subject}: ${dailyHomework}`);
+                                    processedSubjects.add(l.subject);
+                                }
+                            } catch (e) {
+                                // Legacy text fallback
+                                if (l.homework.trim()) {
+                                    homeworks.push(`${l.subject}: ${l.homework}`);
+                                    processedSubjects.add(l.subject);
+                                }
                             }
                         }
                     });
@@ -220,7 +222,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     if (homeworks.length > 0) {
                         setHomeworkInfo(homeworks.join('\n'));
                     } else {
-                        setHomeworkInfo(''); // No homework found for THIS day specifically
+                        setHomeworkInfo('');
                     }
                 } else {
                     setHomeworkInfo('');

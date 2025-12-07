@@ -107,6 +107,15 @@ export async function logActivity(
             await unlockStreakMilestone(studentId, streakResult.milestoneValue);
         }
 
+        // Update daily goals automatically
+        const { updateDailyGoalsFromActivity, awardActivityXP } = await import('./activityTracker');
+        await updateDailyGoalsFromActivity(studentId, activityType, activityDetails);
+
+        // Award XP
+        if (xpEarned > 0) {
+            await awardActivityXP(studentId, xpEarned);
+        }
+
         const activity: StudentActivity = {
             id: activityData.id,
             studentId: activityData.student_id,
@@ -423,9 +432,9 @@ export async function getStreakLeaderboard(limit: number = 10): Promise<Array<{
 
         if (error) throw error;
 
-        return (data || []).map(item => ({
+        return (data || []).map((item: any) => ({
             studentId: item.student_id,
-            studentName: item.students.name,
+            studentName: item.students?.name || 'Unknown',
             currentStreak: item.current_streak,
             longestStreak: item.longest_streak
         }));

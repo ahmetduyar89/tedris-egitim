@@ -21,6 +21,7 @@ import FlashcardWidget from '../components/FlashcardWidget';
 import StreakWidget from '../components/StreakWidget';
 import DailyGoalsCard from '../components/DailyGoalsCard';
 import AchievementNotification from '../components/AchievementNotification';
+import { logActivity } from '../services/streakService';
 import { getNotificationsForUser, markNotificationsAsRead } from '../services/notificationService';
 import { db, supabase } from '../services/dbAdapter';
 import MasteryMapVisualization from '../components/MasteryMapVisualization';
@@ -954,7 +955,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     setActiveView('submitHomework');
   };
 
-  const handleHomeworkSubmit = (submission: Submission) => {
+  const handleHomeworkSubmit = async (submission: Submission) => {
+    try {
+      // Log activity for streak and daily goals
+      await logActivity(user.id, 'assignment_submitted', {
+        assignmentId: submission.assignmentId,
+        submissionId: submission.id
+      }, 15); // 15 XP for submitting homework
+
+      console.log('✅ Homework submission activity logged successfully');
+    } catch (error) {
+      console.error('❌ Error logging homework activity:', error);
+    }
+
     loadStudentData(); // Reload all data
     setActiveView('dashboard');
     setActiveAssignment(null);
@@ -991,7 +1004,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     }
   };
 
-  const handleTestComplete = () => {
+  const handleTestComplete = async () => {
+    try {
+      // Log activity for streak and daily goals
+      await logActivity(user.id, 'test_completed', {
+        testId: activeTest?.id,
+        testTitle: activeTest?.title
+      }, 20); // 20 XP for completing a test
+
+      console.log('✅ Test activity logged successfully');
+    } catch (error) {
+      console.error('❌ Error logging test activity:', error);
+    }
+
     loadStudentData();
     setToast({ message: '🎉 Test tamamlandı! Öğrenme Haritası güncellendi.', type: 'success' });
     setTimeout(() => {
@@ -1005,7 +1030,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     setActiveView('takingPDFTest');
   };
 
-  const handlePDFTestComplete = () => {
+  const handlePDFTestComplete = async () => {
+    try {
+      // Log activity for streak and daily goals
+      await logActivity(user.id, 'test_completed', {
+        testId: activePDFTestId,
+        testType: 'PDF'
+      }, 20); // 20 XP for completing a PDF test
+
+      console.log('✅ PDF Test activity logged successfully');
+    } catch (error) {
+      console.error('❌ Error logging PDF test activity:', error);
+    }
+
     loadStudentData();
     setToast({ message: '🎉 PDF Test tamamlandı!', type: 'success' });
     setTimeout(() => {

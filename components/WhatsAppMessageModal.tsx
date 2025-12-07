@@ -178,6 +178,8 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [honorific, setHonorific] = useState<Honorific>('Hanım');
     const [homeworkInfo, setHomeworkInfo] = useState<string>('');
     const [testResultInfo, setTestResultInfo] = useState<string>('');
+    const [isBulkSend, setIsBulkSend] = useState(false);
+    const [bulkSendProgress, setBulkSendProgress] = useState<{ current: number; total: number } | null>(null);
 
 
     // Fetch homework info when student changes or template becomes homework
@@ -547,18 +549,25 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         if (!isOpen) return;
 
         // If initialStudentId is provided but not yet selected (on first open)
-        if (initialStudentId && !selectedStudentId) {
+        if (initialStudentId && !selectedStudentId && !isBulkSend) {
             setSelectedStudentId(initialStudentId);
             return;
         }
 
-        const student = students.find(s => s.id === selectedStudentId);
-        if (student) {
-            setMessageBody(TEMPLATES[templateType].body(student, targetPhone, honorific, homeworkInfo, testResultInfo));
+        // For bulk send, show preview using first student
+        if (isBulkSend && students.length > 0) {
+            const previewStudent = students[0];
+            const previewMessage = TEMPLATES[templateType].body(previewStudent, targetPhone, honorific, homeworkInfo, testResultInfo);
+            setMessageBody(`📝 ÖNIZLEME (${previewStudent.name} için):\n\n${previewMessage}\n\n---\n\nℹ️ Her öğrenci için mesaj kişiselleştirilecektir.`);
         } else {
-            setMessageBody('');
+            const student = students.find(s => s.id === selectedStudentId);
+            if (student) {
+                setMessageBody(TEMPLATES[templateType].body(student, targetPhone, honorific, homeworkInfo, testResultInfo));
+            } else {
+                setMessageBody('');
+            }
         }
-    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, initialStudentId, students]);
+    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, initialStudentId, students, isBulkSend]);
 
 
     const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -570,48 +579,287 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         setTemplateType(type);
     };
 
-    const handleSend = () => {
-        const student = students.find(s => s.id === selectedStudentId);
-        if (!student) return;
+    const handleSend = async () => {
+        if (isBulkSend) {
+            // Bulk send to all students
+            const validStudents = students.filter(s => {
+                const phone = targetPhone === 'parent'
+                    ? (s.parentPhone || s.contact)
+                    : (s.contact || s.parentPhone);
+                return phone && phone.trim().length > 0;
+            });
 
-        let rawPhone = '';
-        if (targetPhone === 'parent') {
-            rawPhone = student.parentPhone || student.contact || '';
-        } else {
-            // Priority to student contact
-            const studentContact = student.contact?.replace(/\D/g, '') || '';
-            // If student contact is missing or looks too short to be valid (less than 10 digits), try parent
-            if (studentContact.length < 10) {
-                rawPhone = student.parentPhone || '';
-            } else {
-                rawPhone = student.contact || '';
+            if (validStudents.length === 0) {
+                alert('Geçerli telefon numarası olan öğrenci bulunamadı.');
+                return;
             }
+
+            const confirmed = confirm(
+                `${validStudents.length} öğrenciye toplu mesaj gönderilecek. Devam etmek istiyor musunuz?\n\n` +
+                `Not: Her öğrenci için WhatsApp penceresi açılacak ve mesajı manuel olarak göndermeniz gerekecek.`
+            );
+
+            if (!confirmed) return;
+
+            setBulkSendProgress({ current: 0, total: validStudents.length });
+
+            for (let i = 0; i < validStudents.length; i++) {
+                const student = validStudents[i];
+                setBulkSendProgress({ current: i + 1, total: validStudents.length });
+
+                // Get personalized homework info for this student if template is homework
+                let personalizedHomework = '';
+                if (templateType === 'homework') {
+                    try {
+                        // Fetch homework for this specific student
+                        const today = new Date();
+                        const dayOfWeek = today.getDay();
+                        const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+                        const startOfWeek = new Date(today);
+                        startOfWeek.setDate(today.getDate() + diffToMon);
+                        startOfWeek.setHours(0, 0, 0, 0);
+                        const endOfWeek = new Date(startOfWeek);
+                        endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+                        const homeworkMap: Record<string, Record<string, string>> = {};
+
+                        // Fetch from private_lessons
+                        const { data: lessonsData } = await supabase
+                            .from('private_lessons')
+                            .select('homework, subject, start_time, status')
+                            .eq('student_id', student.id)
+                            .neq('status', 'cancelled');
+
+                        if (lessonsData && lessonsData.length > 0) {
+                            const thisWeekLessons = lessonsData.filter(l => {
+                                const d = new Date(l.start_time);
+                                return d >= startOfWeek && d < endOfWeek;
+                            });
+
+                            let lessonsToProcess = thisWeekLessons.filter(l => l.homework);
+                            if (lessonsToProcess.length === 0) {
+                                const latestBySubject: Record<string, any> = {};
+                                lessonsData.forEach(l => {
+                                    if (!l.homework) return;
+                                    if (!latestBySubject[l.subject] || new Date(l.start_time) > new Date(latestBySubject[l.subject].start_time)) {
+                                        latestBySubject[l.subject] = l;
+                                    }
+                                });
+                                lessonsToProcess = Object.values(latestBySubject);
+                            }
+
+                            lessonsToProcess.forEach(l => {
+                                if (!homeworkMap[l.subject]) homeworkMap[l.subject] = {};
+                                try {
+                                    const parsed = JSON.parse(l.homework);
+                                    Object.entries(parsed).forEach(([day, task]) => {
+                                        if (typeof task === 'string' && task.trim()) {
+                                            if (homeworkMap[l.subject][day]) {
+                                                if (!homeworkMap[l.subject][day].includes(task.trim())) {
+                                                    homeworkMap[l.subject][day] += ` | ${task.trim()}`;
+                                                }
+                                            } else {
+                                                homeworkMap[l.subject][day] = task.trim();
+                                            }
+                                        }
+                                    });
+                                } catch (e) {
+                                    if (typeof l.homework === 'string' && l.homework.trim()) {
+                                        const lessonDate = new Date(l.start_time);
+                                        const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+                                        const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+                                        if (homeworkMap[l.subject][normalizedDay]) {
+                                            homeworkMap[l.subject][normalizedDay] += ` | ${l.homework.trim()}`;
+                                        } else {
+                                            homeworkMap[l.subject][normalizedDay] = l.homework.trim();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        // Fetch from assignments
+                        const { data: assignmentsData } = await supabase
+                            .from('assignments')
+                            .select('title, description, subject, due_date, status')
+                            .eq('student_id', student.id)
+                            .gte('due_date', startOfWeek.toISOString())
+                            .lt('due_date', endOfWeek.toISOString());
+
+                        if (assignmentsData && assignmentsData.length > 0) {
+                            assignmentsData.forEach(assignment => {
+                                const subject = assignment.subject || 'Genel';
+                                const dueDate = new Date(assignment.due_date);
+                                const dayName = dueDate.toLocaleDateString('tr-TR', { weekday: 'long' });
+                                const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+                                if (!homeworkMap[subject]) homeworkMap[subject] = {};
+                                const taskText = assignment.description || assignment.title;
+                                if (taskText && taskText.trim()) {
+                                    if (homeworkMap[subject][normalizedDay]) {
+                                        if (!homeworkMap[subject][normalizedDay].includes(taskText.trim())) {
+                                            homeworkMap[subject][normalizedDay] += ` | ${taskText.trim()}`;
+                                        }
+                                    } else {
+                                        homeworkMap[subject][normalizedDay] = taskText.trim();
+                                    }
+                                }
+                            });
+                        }
+
+                        // Fetch from weekly_programs
+                        try {
+                            const programSnapshot = await db.collection('weeklyPrograms')
+                                .where('studentId', '==', student.id)
+                                .limit(1)
+                                .get();
+
+                            if (!programSnapshot.empty) {
+                                const weeklyProgramData = programSnapshot.docs[0].data();
+                                if (weeklyProgramData && weeklyProgramData.days) {
+                                    weeklyProgramData.days.forEach((day: any) => {
+                                        const dayName = day.day;
+                                        const tasks = day.tasks || [];
+                                        tasks.forEach((task: any) => {
+                                            if (task.type === 'Ödev') {
+                                                const subject = task.subject || 'Genel';
+                                                const taskText = task.description || task.title;
+                                                if (!homeworkMap[subject]) homeworkMap[subject] = {};
+                                                if (taskText && taskText.trim()) {
+                                                    if (homeworkMap[subject][dayName]) {
+                                                        if (!homeworkMap[subject][dayName].includes(taskText.trim())) {
+                                                            homeworkMap[subject][dayName] += ` | ${taskText.trim()}`;
+                                                        }
+                                                    } else {
+                                                        homeworkMap[subject][dayName] = taskText.trim();
+                                                    }
+                                                }
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                        } catch (err) {
+                            console.error('Error fetching weekly program:', err);
+                        }
+
+                        // Format homework
+                        const allHomeworks: string[] = [];
+                        const subjectEmojis: Record<string, string> = {
+                            'Matematik': '🔢',
+                            'Fizik': '⚛️',
+                            'Kimya': '🧪',
+                            'Biyoloji': '🧬',
+                            'Türkçe': '📖',
+                            'İngilizce': '🇬🇧',
+                            'Tarih': '📜',
+                            'Coğrafya': '🌍',
+                            'Geometri': '📐',
+                            'Edebiyat': '✍️',
+                        };
+
+                        Object.keys(homeworkMap).sort().forEach(subject => {
+                            const daysObj = homeworkMap[subject];
+                            const days = Object.keys(daysObj);
+                            if (days.length > 0) {
+                                const emoji = subjectEmojis[subject] || '📝';
+                                allHomeworks.push(`${emoji} *${subject}*`);
+                                const TR_DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+                                days.sort((a, b) => TR_DAYS.indexOf(a) - TR_DAYS.indexOf(b));
+                                days.forEach(day => {
+                                    allHomeworks.push(`  • ${day}: ${daysObj[day]}`);
+                                });
+                                allHomeworks.push('');
+                            }
+                        });
+
+                        if (allHomeworks.length > 0) {
+                            personalizedHomework = allHomeworks.join('\n').trim();
+                        }
+                    } catch (err) {
+                        console.error('Error fetching homework for student:', student.id, err);
+                    }
+                }
+
+                // Generate personalized message
+                const personalizedMessage = TEMPLATES[templateType].body(
+                    student,
+                    targetPhone,
+                    honorific,
+                    personalizedHomework || homeworkInfo,
+                    testResultInfo
+                );
+
+                // Get phone number
+                let rawPhone = '';
+                if (targetPhone === 'parent') {
+                    rawPhone = student.parentPhone || student.contact || '';
+                } else {
+                    const studentContact = student.contact?.replace(/\D/g, '') || '';
+                    if (studentContact.length < 10) {
+                        rawPhone = student.parentPhone || '';
+                    } else {
+                        rawPhone = student.contact || '';
+                    }
+                }
+
+                let phone = rawPhone.replace(/\D/g, '');
+                if (phone.startsWith('00')) phone = phone.substring(2);
+                if (phone.length === 10 && phone.startsWith('5')) {
+                    phone = '90' + phone;
+                } else if (phone.length === 11 && phone.startsWith('0')) {
+                    phone = '9' + phone;
+                }
+
+                if (phone) {
+                    const encodedMessage = encodeURIComponent(personalizedMessage);
+                    const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+                    window.open(whatsappUrl, '_blank');
+
+                    // Wait a bit before opening next window to prevent browser blocking
+                    if (i < validStudents.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+
+            setBulkSendProgress(null);
+            alert('Toplu mesaj gönderimi tamamlandı!');
+            onClose();
+        } else {
+            // Single send
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return;
+
+            let rawPhone = '';
+            if (targetPhone === 'parent') {
+                rawPhone = student.parentPhone || student.contact || '';
+            } else {
+                const studentContact = student.contact?.replace(/\D/g, '') || '';
+                if (studentContact.length < 10) {
+                    rawPhone = student.parentPhone || '';
+                } else {
+                    rawPhone = student.contact || '';
+                }
+            }
+
+            let phone = rawPhone.replace(/\D/g, '');
+            if (phone.startsWith('00')) phone = phone.substring(2);
+            if (phone.length === 10 && phone.startsWith('5')) {
+                phone = '90' + phone;
+            } else if (phone.length === 11 && phone.startsWith('0')) {
+                phone = '9' + phone;
+            }
+
+            if (!phone) {
+                alert('Seçilen kişi için geçerli bir telefon numarası bulunamadı.');
+                return;
+            }
+
+            const encodedMessage = encodeURIComponent(messageBody);
+            const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+            window.open(whatsappUrl, '_blank');
+            onClose();
         }
-
-        // Clean phone number
-        let phone = rawPhone.replace(/\D/g, '');
-
-        // Remove leading '00' if present (e.g., 0090...)
-        if (phone.startsWith('00')) {
-            phone = phone.substring(2);
-        }
-
-        // Basic formatting for TR numbers if missing country code
-        if (phone.length === 10 && phone.startsWith('5')) {
-            phone = '90' + phone;
-        } else if (phone.length === 11 && phone.startsWith('0')) {
-            phone = '9' + phone; // Converts 0532... to 90532...
-        }
-
-        if (!phone) {
-            alert('Seçilen kişi için geçerli bir telefon numarası bulunamadı.');
-            return;
-        }
-
-        const encodedMessage = encodeURIComponent(messageBody);
-        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -638,20 +886,50 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 </div>
 
                 <div className="p-4 space-y-4 overflow-y-auto">
-                    {/* Student Selector */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Seç</label>
-                        <select
-                            value={selectedStudentId}
-                            onChange={handleStudentChange}
-                            className="w-full border border-gray-300 rounded-xl py-2 px-3 focus:ring-2 focus:ring-primary focus:border-transparent"
-                        >
-                            <option value="">Öğrenci Seçiniz...</option>
-                            {students.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                        </select>
+                    {/* Bulk Send Option */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-3">
+                        <label className="flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={isBulkSend}
+                                onChange={(e) => {
+                                    setIsBulkSend(e.target.checked);
+                                    if (e.target.checked) {
+                                        setSelectedStudentId('');
+                                    }
+                                }}
+                                className="h-5 w-5 text-primary focus:ring-primary rounded border-gray-300"
+                            />
+                            <div className="ml-3 flex-1">
+                                <span className="text-sm font-semibold text-gray-800">
+                                    📢 Tüm Öğrencilere Toplu Mesaj Gönder
+                                </span>
+                                <p className="text-xs text-gray-600 mt-1">
+                                    {isBulkSend
+                                        ? `${students.length} öğrenciye kişiselleştirilmiş mesaj gönderilecek`
+                                        : 'Tüm öğrencilere aynı anda mesaj göndermek için işaretleyin'
+                                    }
+                                </p>
+                            </div>
+                        </label>
                     </div>
+
+                    {/* Student Selector */}
+                    {!isBulkSend && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Seç</label>
+                            <select
+                                value={selectedStudentId}
+                                onChange={handleStudentChange}
+                                className="w-full border border-gray-300 rounded-xl py-2 px-3 focus:ring-2 focus:ring-primary focus:border-transparent"
+                            >
+                                <option value="">Öğrenci Seçiniz...</option>
+                                {students.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Template Selector */}
                     <div>
@@ -732,36 +1010,71 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                     {/* Message Body */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mesaj İçeriği</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            {isBulkSend ? 'Mesaj Şablonu Önizleme' : 'Mesaj İçeriği'}
+                        </label>
+                        {isBulkSend && (
+                            <p className="text-xs text-blue-600 mb-2 bg-blue-50 p-2 rounded-lg">
+                                ℹ️ Toplu gönderimde her öğrenci için mesaj kişiselleştirilecektir.
+                                {templateType === 'homework' && ' Her öğrencinin kendi ödevleri eklenecektir.'}
+                            </p>
+                        )}
                         <textarea
                             value={messageBody}
                             onChange={(e) => setMessageBody(e.target.value)}
                             rows={6}
                             className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                            placeholder="Mesajınızı buraya yazınız..."
+                            placeholder={isBulkSend ? "Şablon önizlemesi..." : "Mesajınızı buraya yazınız..."}
+                            disabled={isBulkSend && !selectedStudentId}
                         />
                         <p className="text-xs text-gray-500 mt-1 text-right">
                             * WhatsApp Web açılacak ve mesaj otomatik doldurulacaktır.
                         </p>
                     </div>
+
+                    {/* Bulk Send Progress */}
+                    {bulkSendProgress && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-green-800">
+                                    Mesajlar Gönderiliyor...
+                                </span>
+                                <span className="text-sm font-semibold text-green-600">
+                                    {bulkSendProgress.current} / {bulkSendProgress.total}
+                                </span>
+                            </div>
+                            <div className="w-full bg-green-200 rounded-full h-2">
+                                <div
+                                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: `${(bulkSendProgress.current / bulkSendProgress.total) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end space-x-3">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 font-medium text-sm"
+                        disabled={!!bulkSendProgress}
                     >
                         İptal
                     </button>
                     <button
                         onClick={handleSend}
-                        disabled={!selectedStudentId || !messageBody}
+                        disabled={(!isBulkSend && (!selectedStudentId || !messageBody)) || !!bulkSendProgress}
                         className="px-6 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 font-medium text-sm shadow-lg shadow-green-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
                         <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                         </svg>
-                        WhatsApp ile Gönder
+                        {bulkSendProgress
+                            ? 'Gönderiliyor...'
+                            : isBulkSend
+                                ? `Toplu Gönder (${students.length} Öğrenci)`
+                                : 'WhatsApp ile Gönder'
+                        }
                     </button>
                 </div>
             </div>

@@ -191,8 +191,8 @@ const HomeworkWidget: React.FC<HomeworkWidgetProps> = ({ assignments, onOpenAssi
   }
 
   return (
-    <div className="bg-card-background p-6 rounded-2xl shadow-lg border-l-4 border-accent">
-      <h2 className="text-xl font-bold font-poppins text-accent mb-4">Tedris Ödev</h2>
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <h2 className="text-sm font-semibold text-gray-900 mb-3">Ödevler</h2>
       <div className="space-y-3">
         {displayAssignments.map(assignment => {
           const isNew = !assignment.viewedByStudent;
@@ -201,33 +201,26 @@ const HomeworkWidget: React.FC<HomeworkWidgetProps> = ({ assignments, onOpenAssi
             <div
               key={assignment.id}
               onClick={() => onOpenAssignment(assignment)}
-              className="border border-border p-4 rounded-xl bg-background hover:shadow-md transition-all cursor-pointer group"
+              className="p-2.5 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h4 className="font-semibold text-text-primary group-hover:text-primary transition-colors">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <h4 className="text-sm font-medium text-gray-900 truncate">
                       {assignment.title}
                     </h4>
                     {isNew && (
-                      <span className="bg-accent text-white text-xs px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-medium">
                         YENİ
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-text-secondary">
-                    {assignment.subject} · Son: {new Date(assignment.dueDate).toLocaleDateString('tr-TR')}
+                  <p className="text-xs text-gray-500">
+                    {assignment.subject} · {new Date(assignment.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                  className="w-5 h-5 text-gray-400 group-hover:text-accent group-hover:translate-x-1 transition-all"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
             </div>
@@ -235,8 +228,8 @@ const HomeworkWidget: React.FC<HomeworkWidgetProps> = ({ assignments, onOpenAssi
         })}
       </div>
       {unviewedOrIncomplete.length > 3 && (
-        <p className="text-xs text-text-secondary text-center mt-3">
-          +{unviewedOrIncomplete.length - 3} ödev daha
+        <p className="text-xs text-gray-400 text-center mt-2">
+          +{unviewedOrIncomplete.length - 3} daha
         </p>
       )}
     </div>

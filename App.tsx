@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react';
 import { User, UserRole } from './types';
 import LoginPage from './pages/LoginPage';
 import LandingPage from './pages/LandingPage';
+import NotificationTestPage from './pages/NotificationTestPage';
 // Lazy load heavy dashboard components
 const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
@@ -12,7 +13,7 @@ import { supabase } from './services/dbAdapter';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
 
-type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer';
+type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer' | 'notification-test';
 
 
 const App: React.FC = () => {
@@ -37,6 +38,13 @@ const App: React.FC = () => {
 
     const checkForContentView = () => {
       const path = window.location.pathname;
+
+      // Check for notification test page
+      if (path === '/notification-test') {
+        setView('notification-test');
+        return 'test';
+      }
+
       const contentMatch = path.match(/^\/content\/([a-zA-Z0-9]+)$/);
       if (contentMatch) {
         console.log('[App] Content view detected, id:', contentMatch[1]);
@@ -245,6 +253,8 @@ const App: React.FC = () => {
     }
 
     switch (view) {
+      case 'notification-test':
+        return <NotificationTestPage />;
       case 'public-share':
         return shareToken ? <PublicSharePage shareToken={shareToken} /> : <div className="flex items-center justify-center min-h-screen">Geçersiz paylaşım linki</div>;
       case 'content-viewer':

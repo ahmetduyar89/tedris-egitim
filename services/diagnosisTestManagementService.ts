@@ -13,6 +13,7 @@ import {
     DiagnosisTestStatus
 } from '../types/diagnosisTestTypes';
 import mistakeService from './mistakesService';
+import { notifyTestAssigned } from './multiChannelNotificationService';
 
 export const diagnosisTestManagementService = {
     // ==================== ÖĞRETMEN: TEST OLUŞTURMA ====================
@@ -148,6 +149,30 @@ export const diagnosisTestManagementService = {
             .select();
 
         if (error) throw error;
+
+        // Get test details for notification
+        const { data: testData } = await supabase
+            .from('diagnosis_tests')
+            .select('title')
+            .eq('id', config.testId)
+            .single();
+
+        // Send notifications to all assigned students
+        if (testData) {
+            const notificationPromises = config.studentIds.map(studentId =>
+                notifyTestAssigned(
+                    studentId,
+                    testData.title,
+                    config.testId,
+                    'diagnosis'
+                ).catch(err => {
+                    console.error('Failed to send notification to student:', studentId, err);
+                })
+            );
+
+            // Don't wait for notifications to complete
+            Promise.allSettled(notificationPromises);
+        }
 
         return data.map(d => ({
             id: d.id,

@@ -95,41 +95,41 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
   }
 
   return (
-    <div className="bg-card-background p-6 rounded-2xl shadow-lg border-l-4 border-secondary">
-      <h2 className="text-2xl font-bold font-poppins text-secondary mb-4">Tedris Test</h2>
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <h2 className="text-sm font-semibold text-gray-900 mb-3">Testler</h2>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {hasPendingTests && (
           <div>
-            <h3 className="font-semibold text-lg mb-3 text-text-secondary">Atanan Testler</h3>
-            <ul className="space-y-3">
+            <h3 className="text-xs font-medium text-gray-500 mb-2">Atanan</h3>
+            <ul className="space-y-2">
               {pendingTests.map(test => (
-                <li key={test.id} className="border border-border p-4 rounded-xl bg-background hover:shadow-md transition-shadow">
-                  <h4 className="font-semibold text-text-primary">{test.title}</h4>
-                  <p className="text-sm text-text-secondary">{test.questions.length} Soru &middot; {test.duration} dakika</p>
+                <li key={test.id} className="p-2.5 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">{test.title}</h4>
+                  <p className="text-xs text-gray-500 mb-2">{test.questions.length} soru · {test.duration} dk</p>
                   <button
                     onClick={() => onStartTest(test)}
-                    className="mt-3 w-full bg-secondary text-white py-2 rounded-xl hover:bg-red-600 transition-colors font-semibold shadow-secondary"
+                    className="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
                   >
-                    Teste Başla
+                    Başla
                   </button>
                 </li>
               ))}
               {pendingPDFTests.map(test => (
-                <li key={test.id} className="border-2 border-blue-300 p-4 rounded-xl bg-blue-50 hover:shadow-md transition-shadow">
-                  <div className="flex items-center mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 mr-2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                <li key={test.id} className="p-2.5 rounded-md bg-blue-50 border border-blue-200">
+                  <div className="flex items-center gap-1 mb-1">
+                    <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-xs font-bold text-blue-600 bg-blue-200 px-2 py-0.5 rounded-full">PDF TEST</span>
+                    <span className="text-[10px] font-medium text-blue-600">PDF</span>
                   </div>
-                  <h4 className="font-semibold text-text-primary">{test.title}</h4>
-                  <p className="text-sm text-text-secondary">{test.totalQuestions} Soru &middot; {test.durationMinutes} dakika</p>
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">{test.title}</h4>
+                  <p className="text-xs text-gray-500 mb-2">{test.totalQuestions} soru · {test.durationMinutes} dk</p>
                   <button
                     onClick={() => onStartPDFTest(test)}
-                    className="mt-3 w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-2 rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-colors font-semibold shadow-lg"
+                    className="w-full bg-blue-600 text-white py-1.5 rounded text-xs font-medium hover:bg-blue-700 transition-colors"
                   >
-                    PDF Teste Başla
+                    Başla
                   </button>
                 </li>
               ))}
@@ -139,33 +139,34 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
 
         {hasCompletedTests && (
           <div>
-            <h3 className="font-semibold text-lg mb-3 text-text-secondary">Tamamlanan Testler</h3>
-            <ul className="space-y-3">
+            <h3 className="text-xs font-medium text-gray-500 mb-2">Tamamlanan</h3>
+            <ul className="space-y-2">
               {completedTests.map(test => (
-                <li key={test.id} className="border border-border p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => test.analysis && onViewReport(test)}>
-                  <h4 className="font-semibold text-gray-700">{test.title}</h4>
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center mt-2 text-sm gap-2">
-                    <span className="font-bold text-primary">Puan: {test.score ?? 0}%</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${test.analysis ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {test.analysis ? 'Raporu Görüntüle' : 'Rapor Bekleniyor'}
+                <li key={test.id} className="p-2.5 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => test.analysis && onViewReport(test)}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 truncate">{test.title}</h4>
+                      <p className="text-xs text-gray-500">Puan: {test.score ?? 0}%</p>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded ${test.analysis ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      {test.analysis ? 'Rapor' : 'Bekliyor'}
                     </span>
                   </div>
                 </li>
               ))}
               {completedPDFTests.map(submission => (
-                <li key={submission.id} className="border-2 border-blue-200 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors">
-                  <div className="flex items-center mb-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 mr-2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                    </svg>
-                    <span className="text-xs font-bold text-blue-600">PDF TEST</span>
-                  </div>
-                  <h4 className="font-semibold text-gray-700">{submission.pdfTest?.title || 'PDF Testi'}</h4>
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center mt-2 text-sm gap-2">
-                    <span className="font-bold text-blue-600">Puan: {submission.scorePercentage?.toFixed(1)}%</span>
-                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 w-max">
-                      Tamamlandı
-                    </span>
+                <li key={submission.id} className="p-2.5 rounded-md bg-blue-50 border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1 mb-0.5">
+                        <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <h4 className="text-sm font-medium text-gray-900 truncate">{submission.pdfTest?.title || 'PDF Testi'}</h4>
+                      </div>
+                      <p className="text-xs text-gray-500">Puan: {submission.scorePercentage?.toFixed(1)}%</p>
+                    </div>
+                    <span className="text-xs px-2 py-0.5 rounded bg-green-100 text-green-700">✓</span>
                   </div>
                 </li>
               ))}

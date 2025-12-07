@@ -47,9 +47,9 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
 
     const avgAssignmentScore = completedAssignments.length > 0
       ? Math.round(completedAssignments.reduce((sum, a) => {
-          const score = a.submission?.teacherScore ?? a.submission?.aiScore ?? 0;
-          return sum + score;
-        }, 0) / completedAssignments.length)
+        const score = a.submission?.teacherScore ?? a.submission?.aiScore ?? 0;
+        return sum + score;
+      }, 0) / completedAssignments.length)
       : 0;
 
     const avgQBTestScore = totalQBTests > 0
@@ -289,37 +289,37 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
-          <div className="text-sm text-gray-600 mb-1">Testler</div>
-          <div className="text-3xl font-bold text-blue-600">{overallStats.totalTests}</div>
-          <div className="text-sm text-gray-500 mt-1">Ort: {overallStats.avgTestScore}%</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">Testler</div>
+          <div className="text-2xl font-bold text-blue-600">{overallStats.totalTests}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgTestScore}%</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-cyan-500">
-          <div className="text-sm text-gray-600 mb-1">Ödevler</div>
-          <div className="text-3xl font-bold text-cyan-600">{overallStats.totalAssignments}</div>
-          <div className="text-sm text-gray-500 mt-1">Ort: {overallStats.avgAssignmentScore}%</div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">Ödevler</div>
+          <div className="text-2xl font-bold text-cyan-600">{overallStats.totalAssignments}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgAssignmentScore}%</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
-          <div className="text-sm text-gray-600 mb-1">Soru Bankası</div>
-          <div className="text-3xl font-bold text-purple-600">{overallStats.totalQBTests}</div>
-          <div className="text-sm text-gray-500 mt-1">Ort: {overallStats.avgQBTestScore}/100</div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">Soru Bankası</div>
+          <div className="text-2xl font-bold text-purple-600">{overallStats.totalQBTests}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgQBTestScore}/100</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-pink-500">
-          <div className="text-sm text-gray-600 mb-1">Flashcardlar</div>
-          <div className="text-3xl font-bold text-pink-600">{overallStats.totalFlashcards}</div>
-          <div className="text-sm text-gray-500 mt-1">Hakimiyet: {overallStats.flashcardMasteryRate}%</div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">Flashcardlar</div>
+          <div className="text-2xl font-bold text-pink-600">{overallStats.totalFlashcards}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Hakimiyet: {overallStats.flashcardMasteryRate}%</div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
-          <div className="text-sm text-gray-600 mb-1">Genel Ortalama</div>
-          <div className="text-3xl font-bold text-green-600">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">Genel Ortalama</div>
+          <div className="text-2xl font-bold text-green-600">
             {Math.round((overallStats.avgTestScore + overallStats.avgAssignmentScore) / 2)}%
           </div>
-          <div className="text-sm text-gray-500 mt-1">Test + Ödev</div>
+          <div className="text-xs text-gray-400 mt-0.5">Test + Ödev</div>
         </div>
       </div>
 

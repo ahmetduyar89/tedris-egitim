@@ -56,7 +56,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       ? Math.round(completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0) / totalQBTests)
       : 0;
 
-    const masteredFlashcards = spacedRepetitionSchedules.filter(s => s.interval >= 30).length;
+    const masteredFlashcards = spacedRepetitionSchedules.filter(s => s.intervalDays >= 30).length;
     const flashcardMasteryRate = totalFlashcards > 0
       ? Math.round((masteredFlashcards / totalFlashcards) * 100)
       : 0;

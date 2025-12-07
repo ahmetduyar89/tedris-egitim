@@ -18,6 +18,9 @@ import ContentCard from '../components/ContentCard';
 import NewItemPopup from '../components/NewItemPopup';
 import SpacedRepetitionDashboard from '../components/SpacedRepetitionDashboard';
 import FlashcardWidget from '../components/FlashcardWidget';
+import StreakWidget from '../components/StreakWidget';
+import DailyGoalsCard from '../components/DailyGoalsCard';
+import AchievementNotification from '../components/AchievementNotification';
 import { getNotificationsForUser, markNotificationsAsRead } from '../services/notificationService';
 import { db, supabase } from '../services/dbAdapter';
 import MasteryMapVisualization from '../components/MasteryMapVisualization';
@@ -1014,12 +1017,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   const renderDashboard = () => {
     return (
       <div className="p-4 md:p-8 space-y-8 animate-fade-in">
+        {/* Achievement Notifications */}
+        <AchievementNotification studentId={user.id} />
+
         {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} />}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content (Left/Center) */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Daily Goals Card */}
+            <DailyGoalsCard studentId={user.id} />
+
             {mergedWeeklyProgram ? (
-              <div className="mb-8">
+              <div>
                 <WeeklySchedule
                   program={mergedWeeklyProgram}
                   onTaskClick={handleTaskClick}
@@ -1032,10 +1042,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           </div>
 
           {/* Sidebar (Right) */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             {studentData && <ProfileCard student={studentData} />}
 
-
+            {/* Streak Widget */}
+            <StreakWidget studentId={user.id} />
 
             <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
             <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />

@@ -65,6 +65,116 @@ export interface Student {
   isAiAssistantEnabled?: boolean;
 }
 
+// --- Streak System & Motivation ---
+export interface StudentStreak {
+  id: string;
+  studentId: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastActivityDate: string; // ISO date string
+  streakFreezeCount: number; // Number of available streak protections
+  totalActivities: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyGoal {
+  id: string;
+  type: 'solve_questions' | 'watch_video' | 'study_time' | 'review_flashcards' | 'complete_test' | 'practice_topic';
+  description: string;
+  target: number;
+  current: number;
+  unit?: string; // 'minutes', 'questions', 'videos', etc.
+  subject?: string;
+  completed: boolean;
+  icon: string; // Emoji
+}
+
+export interface StudentDailyGoals {
+  id: string;
+  studentId: string;
+  goalDate: string; // ISO date string
+  goals: DailyGoal[];
+  totalGoals: number;
+  completedGoals: number;
+  completionPercentage: number;
+  isFullyCompleted: boolean;
+  completedAt?: string;
+  xpReward: number;
+  xpClaimed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AchievementType =
+  | 'streak_milestone'
+  | 'daily_goals_streak'
+  | 'total_xp'
+  | 'tests_completed'
+  | 'perfect_score'
+  | 'subject_master'
+  | 'early_bird'
+  | 'night_owl'
+  | 'speed_demon'
+  | 'consistency_king'
+  | 'quiz_master';
+
+export interface StudentAchievement {
+  id: string;
+  studentId: string;
+  achievementType: AchievementType;
+  achievementName: string;
+  description: string;
+  iconEmoji: string;
+  milestoneValue?: number; // e.g., 7 for "7-day streak"
+  xpReward: number;
+  badgeUnlocked?: string;
+  specialReward?: {
+    type: 'avatar_item' | 'theme' | 'pet' | 'title';
+    itemId: string;
+    itemName: string;
+  };
+  unlockedAt: string;
+  isViewed: boolean;
+  viewedAt?: string;
+  createdAt: string;
+}
+
+export type ActivityType =
+  | 'test_completed'
+  | 'video_watched'
+  | 'flashcard_reviewed'
+  | 'question_solved'
+  | 'login'
+  | 'study_session'
+  | 'assignment_submitted'
+  | 'goal_completed';
+
+export interface StudentActivity {
+  id: string;
+  studentId: string;
+  activityDate: string; // ISO date string
+  activityType: ActivityType;
+  activityDetails?: {
+    testId?: string;
+    subject?: string;
+    duration?: number;
+    score?: number;
+    [key: string]: any;
+  };
+  xpEarned: number;
+  createdAt: string;
+}
+
+export interface StreakUpdateResult {
+  currentStreak: number;
+  longestStreak: number;
+  streakBroken: boolean;
+  milestoneReached: boolean;
+  milestoneValue?: number;
+}
+
+
 export enum Subject {
   Mathematics = 'Matematik',
   Science = 'Fen Bilimleri',

@@ -158,30 +158,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-primary/10 via-slate-50 to-accent/10 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-
-      <div className="p-10 bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl max-w-md w-full relative border border-white/50 mx-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 relative">
+      <div className="p-8 bg-white rounded-xl shadow-lg max-w-md w-full border border-gray-200 mx-4">
         <button
           onClick={onNavigateToWebsite}
-          className="absolute top-6 left-6 text-gray-500 hover:text-primary transition-all duration-300 hover:scale-110"
+          className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 transition-colors"
           title="Ana Sayfaya Dön"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
         </button>
 
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <TedrisLogo />
         </div>
 
-        <h1 className="text-3xl font-bold font-poppins text-text-primary mb-2 text-center bg-gradient-to-r from-primary to-accent text-transparent bg-clip-text">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1 text-center">
           {isRegisterView ? 'Aramıza Katılın' : 'Tekrar Hoş Geldiniz'}
         </h1>
-        <p className="text-text-secondary mb-8 text-center">
+        <p className="text-gray-600 mb-6 text-center text-sm">
           {isRegisterView ? 'Eğitimde yeni bir deneyim başlıyor' : 'Hesabınıza giriş yapın'}
         </p>
 

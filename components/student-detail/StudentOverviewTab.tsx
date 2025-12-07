@@ -5,6 +5,8 @@ import { DiagnosisTestAssignment } from '../../types/diagnosisTestTypes';
 import OverallAnalytics from '../OverallAnalytics';
 import EditableWeeklySchedule from '../EditableWeeklySchedule';
 import StudentPaymentSettings from '../StudentPaymentSettings';
+import StreakWidget from '../StreakWidget';
+import DailyGoalsCard from '../DailyGoalsCard';
 
 interface StudentOverviewTabProps {
     student: Student;
@@ -42,6 +44,7 @@ interface StudentOverviewTabProps {
     onDeletePDFTest: (testId: string) => void;
     diagnosisTestAssignments: DiagnosisTestAssignment[];
     onDeleteDiagnosisTestAssignment: (assignmentId: string) => void;
+    studentId: string;
 }
 
 const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
@@ -77,7 +80,8 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
     onDeleteQBAssignment,
     onDeletePDFTest,
     diagnosisTestAssignments,
-    onDeleteDiagnosisTestAssignment
+    onDeleteDiagnosisTestAssignment,
+    studentId
 }) => {
     return (
         <div className="space-y-6 md:space-y-8">
@@ -405,6 +409,12 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                             </button>
                         </div>
                     )}
+
+                    {/* Motivasyon Bilgileri */}
+                    <div className="space-y-6">
+                        <StreakWidget studentId={studentId} />
+                        <DailyGoalsCard studentId={studentId} />
+                    </div>
                 </div>
             </div>
 

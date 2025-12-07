@@ -27,6 +27,8 @@ import StudentPaymentSettings from '../components/StudentPaymentSettings';
 import { diagnosisTestManagementService } from '../services/diagnosisTestManagementService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import * as privateLessonService from '../services/privateLessonService';
+import StreakWidget from '../components/StreakWidget';
+import DailyGoalsCard from '../components/DailyGoalsCard';
 
 
 import StudentOverviewTab from '../components/student-detail/StudentOverviewTab';
@@ -1424,6 +1426,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             onDeletePDFTest={handleDeletePDFTest}
             diagnosisTestAssignments={diagnosisTestAssignments}
             onDeleteDiagnosisTestAssignment={handleDeleteDiagnosisTestAssignment}
+            studentId={student.id}
         />
     );
 

@@ -1,0 +1,196 @@
+/* Minimal Design System - Tedris Platform */
+
+/* Card Styles */
+.minimal-card {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4;
+}
+
+.minimal-card-sm {
+  @apply bg-white rounded-md shadow-sm border border-gray-200 p-2.5;
+}
+
+.minimal-card-lg {
+  @apply bg-white rounded-xl shadow-md border border-gray-200 p-6;
+}
+
+/* Button Styles */
+.minimal-btn {
+  @apply px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+}
+
+.minimal-btn-primary {
+  @apply minimal-btn bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.minimal-btn-secondary {
+  @apply minimal-btn bg-gray-100 text-gray-700 hover:bg-gray-200;
+}
+
+.minimal-btn-danger {
+  @apply minimal-btn bg-red-600 text-white hover:bg-red-700;
+}
+
+.minimal-btn-sm {
+  @apply px-3 py-1.5 rounded text-xs font-medium transition-colors;
+}
+
+/* Text Styles */
+.minimal-heading {
+  @apply text-sm font-semibold text-gray-900;
+}
+
+.minimal-heading-lg {
+  @apply text-base font-semibold text-gray-900;
+}
+
+.minimal-text {
+  @apply text-sm text-gray-600;
+}
+
+.minimal-text-sm {
+  @apply text-xs text-gray-500;
+}
+
+/* Input Styles */
+.minimal-input {
+  @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none;
+}
+
+.minimal-select {
+  @apply w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white;
+}
+
+/* Badge Styles */
+.minimal-badge {
+  @apply px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.minimal-badge-blue {
+  @apply minimal-badge bg-blue-100 text-blue-700;
+}
+
+.minimal-badge-green {
+  @apply minimal-badge bg-green-100 text-green-700;
+}
+
+.minimal-badge-red {
+  @apply minimal-badge bg-red-100 text-red-700;
+}
+
+.minimal-badge-yellow {
+  @apply minimal-badge bg-yellow-100 text-yellow-700;
+}
+
+.minimal-badge-gray {
+  @apply minimal-badge bg-gray-100 text-gray-600;
+}
+
+/* Layout Styles */
+.minimal-container {
+  @apply max-w-7xl mx-auto px-4 py-6;
+}
+
+.minimal-grid {
+  @apply grid gap-4;
+}
+
+.minimal-grid-2 {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.minimal-grid-3 {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.minimal-grid-4 {
+  @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3;
+}
+
+/* Stat Card */
+.minimal-stat {
+  @apply bg-gray-50 rounded p-2;
+}
+
+.minimal-stat-label {
+  @apply text-xs text-gray-500;
+}
+
+.minimal-stat-value {
+  @apply text-sm font-semibold text-gray-900;
+}
+
+/* List Styles */
+.minimal-list-item {
+  @apply p-2.5 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors;
+}
+
+.minimal-list-item-white {
+  @apply p-3 rounded-lg bg-white border border-gray-200 hover:shadow-sm transition-shadow;
+}
+
+/* Modal Styles */
+.minimal-modal-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4;
+}
+
+.minimal-modal {
+  @apply bg-white rounded-xl shadow-xl max-w-md w-full p-6;
+}
+
+.minimal-modal-lg {
+  @apply bg-white rounded-xl shadow-xl max-w-2xl w-full p-8;
+}
+
+/* Divider */
+.minimal-divider {
+  @apply border-t border-gray-200 my-4;
+}
+
+/* Icon Button */
+.minimal-icon-btn {
+  @apply p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors;
+}
+
+.minimal-icon-btn-sm {
+  @apply p-1 text-gray-400 hover:text-gray-600 rounded transition-colors;
+}
+
+/* Alert Styles */
+.minimal-alert {
+  @apply p-3 rounded-lg text-sm;
+}
+
+.minimal-alert-info {
+  @apply minimal-alert bg-blue-50 text-blue-700 border border-blue-200;
+}
+
+.minimal-alert-success {
+  @apply minimal-alert bg-green-50 text-green-700 border border-green-200;
+}
+
+.minimal-alert-warning {
+  @apply minimal-alert bg-yellow-50 text-yellow-700 border border-yellow-200;
+}
+
+.minimal-alert-error {
+  @apply minimal-alert bg-red-50 text-red-700 border border-red-200;
+}
+
+/* Loading Spinner */
+.minimal-spinner {
+  @apply animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600;
+}
+
+/* Empty State */
+.minimal-empty {
+  @apply text-center py-12 text-gray-500;
+}
+
+/* Hover Effects */
+.minimal-hover-lift {
+  @apply transition-transform hover:-translate-y-0.5;
+}
+
+.minimal-hover-shadow {
+  @apply transition-shadow hover:shadow-md;
+}

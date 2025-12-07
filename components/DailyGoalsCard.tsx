@@ -9,6 +9,7 @@ interface DailyGoalsCardProps {
 const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
     const [dailyGoals, setDailyGoals] = useState<StudentDailyGoals | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadDailyGoals();
@@ -16,16 +17,23 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
 
     const loadDailyGoals = async () => {
         try {
+            setError(null);
+            console.log('🎯 Loading daily goals for student:', studentId);
+
             let goals = await getTodaysDailyGoals(studentId);
+            console.log('📊 Existing goals:', goals);
 
             // If no goals exist for today, generate them
             if (!goals) {
+                console.log('🔨 Generating new daily goals...');
                 goals = await generateDailyGoals(studentId);
+                console.log('✅ Generated goals:', goals);
             }
 
             setDailyGoals(goals);
         } catch (error) {
-            console.error('Error loading daily goals:', error);
+            console.error('❌ Error loading daily goals:', error);
+            setError(error instanceof Error ? error.message : 'Hedefler yüklenemedi');
         } finally {
             setLoading(false);
         }
@@ -33,16 +41,37 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
 
     const handleGoalUpdate = async (goalId: string, progress: number) => {
         try {
+            console.log('🔄 Updating goal:', goalId, 'progress:', progress);
             const updated = await updateDailyGoalProgress(studentId, goalId, progress);
+            console.log('✅ Goal updated:', updated);
             setDailyGoals(updated);
         } catch (error) {
-            console.error('Error updating goal:', error);
+            console.error('❌ Error updating goal:', error);
+            setError(error instanceof Error ? error.message : 'Hedef güncellenemedi');
         }
     };
 
     if (loading) {
         return (
             <div className="animate-pulse bg-gray-200 rounded-xl h-64"></div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-2">
+                    <span className="text-2xl">⚠️</span>
+                    <h3 className="font-bold text-red-900">Hata</h3>
+                </div>
+                <p className="text-sm text-red-700">{error}</p>
+                <button
+                    onClick={loadDailyGoals}
+                    className="mt-3 text-sm text-red-600 hover:text-red-800 underline"
+                >
+                    Tekrar Dene
+                </button>
+            </div>
         );
     }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, WeeklyTurkishGoals, BookAssignment } from '../types';
 import { getCurrentWeekGoals } from '../services/turkishLearningService';
 import { getStudentBookAssignments } from '../services/bookReadingService';
+import BookQuestionAnsweringPage from './BookQuestionAnsweringPage';
 
 interface StudentTurkishLearningPageProps {
     user: User;
@@ -11,6 +12,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
     const [weeklyGoals, setWeeklyGoals] = useState<WeeklyTurkishGoals | null>(null);
     const [bookAssignments, setBookAssignments] = useState<BookAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedAssignment, setSelectedAssignment] = useState<BookAssignment | null>(null);
 
     useEffect(() => {
         loadData();
@@ -44,9 +46,13 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
         }
     };
 
-    const handleAnswerQuestions = (assignmentId: string) => {
-        // TODO: Navigate to book question answering page
-        alert('Kitap soru cevaplama sayfası yakında eklenecek!');
+    const handleAnswerQuestions = (assignment: BookAssignment) => {
+        setSelectedAssignment(assignment);
+    };
+
+    const handleBackFromQuestions = () => {
+        setSelectedAssignment(null);
+        loadData(); // Reload data to get updated status
     };
 
     const getProgressPercentage = (learned: number, target: number) => {
@@ -59,6 +65,18 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
             <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
+        );
+    }
+
+    // Show question answering page if an assignment is selected
+    if (selectedAssignment) {
+        return (
+            <BookQuestionAnsweringPage
+                user={user}
+                assignment={selectedAssignment}
+                onBack={handleBackFromQuestions}
+                onComplete={handleBackFromQuestions}
+            />
         );
     }
 
@@ -211,7 +229,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                             )}
                                             {assignment.status === 'reading' && (
                                                 <button
-                                                    onClick={() => handleAnswerQuestions(assignment.id)}
+                                                    onClick={() => handleAnswerQuestions(assignment)}
                                                     className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
                                                 >
                                                     Soruları Cevapla

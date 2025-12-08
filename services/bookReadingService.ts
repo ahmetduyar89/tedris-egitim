@@ -55,51 +55,7 @@ export const getTeacherBooks = async (teacherId: string): Promise<Book[]> => {
 
     if (error) throw error;
 
-    return data.map(mapBook);
-};
-
-export const getBook = async (bookId: string): Promise<Book | null> => {
-    const { data, error } = await supabase
-        .from('books')
-        .select('*')
-        .eq('id', bookId)
-        .single();
-
-    if (error) {
-        if (error.code === 'PGRST116') return null;
-        throw error;
-    }
-
-    return mapBook(data);
-};
-
-export const updateBook = async (
-    bookId: string,
-    updates: {
-        title?: string;
-        author?: string;
-        pageCount?: number;
-        estimatedReadingDays?: number;
-        difficultyLevel?: number;
-        summary?: string;
-        coverImageUrl?: string;
-    }
-): Promise<void> => {
-    const updateData: any = {};
-    if (updates.title !== undefined) updateData.title = updates.title;
-    if (updates.author !== undefined) updateData.author = updates.author;
-    if (updates.pageCount !== undefined) updateData.page_count = updates.pageCount;
-    if (updates.estimatedReadingDays !== undefined) updateData.estimated_reading_days = updates.estimatedReadingDays;
-    if (updates.difficultyLevel !== undefined) updateData.difficulty_level = updates.difficultyLevel;
-    if (updates.summary !== undefined) updateData.summary = updates.summary;
-    if (updates.coverImageUrl !== undefined) updateData.cover_image_url = updates.coverImageUrl;
-
-    const { error } = await supabase
-        .from('books')
-        .update(updateData)
-        .eq('id', bookId);
-
-    if (error) throw error;
+    return (data || []).map(mapBook);
 };
 
 export const deleteBook = async (bookId: string): Promise<void> => {
@@ -112,15 +68,15 @@ export const deleteBook = async (bookId: string): Promise<void> => {
 };
 
 // ============================================================================
-// BOOK QUESTIONS MANAGEMENT
+// BOOK QUESTIONS
 // ============================================================================
 
 export const createBookQuestion = async (
     bookId: string,
     questionText: string,
-    questionType: 'text' | 'multiple_choice' | 'yes_no' | 'rating',
+    questionType: 'open_ended' | 'multiple_choice' = 'open_ended',
     options?: string[],
-    orderIndex: number = 0,
+    orderIndex?: number,
     isRequired: boolean = true
 ): Promise<BookQuestion> => {
     const { data, error } = await supabase
@@ -129,7 +85,7 @@ export const createBookQuestion = async (
             book_id: bookId,
             question_text: questionText,
             question_type: questionType,
-            options: options || [],
+            options,
             order_index: orderIndex,
             is_required: isRequired
         })
@@ -141,34 +97,6 @@ export const createBookQuestion = async (
     return mapBookQuestion(data);
 };
 
-export const bulkCreateBookQuestions = async (
-    bookId: string,
-    questions: Array<{
-        questionText: string;
-        questionType: 'text' | 'multiple_choice' | 'yes_no' | 'rating';
-        options?: string[];
-        isRequired?: boolean;
-    }>
-): Promise<BookQuestion[]> => {
-    const insertData = questions.map((q, index) => ({
-        book_id: bookId,
-        question_text: q.questionText,
-        question_type: q.questionType,
-        options: q.options || [],
-        order_index: index,
-        is_required: q.isRequired !== undefined ? q.isRequired : true
-    }));
-
-    const { data, error } = await supabase
-        .from('book_questions')
-        .insert(insertData)
-        .select();
-
-    if (error) throw error;
-
-    return data.map(mapBookQuestion);
-};
-
 export const getBookQuestions = async (bookId: string): Promise<BookQuestion[]> => {
     const { data, error } = await supabase
         .from('book_questions')
@@ -178,14 +106,14 @@ export const getBookQuestions = async (bookId: string): Promise<BookQuestion[]> 
 
     if (error) throw error;
 
-    return data.map(mapBookQuestion);
+    return (data || []).map(mapBookQuestion);
 };
 
 export const updateBookQuestion = async (
     questionId: string,
     updates: {
         questionText?: string;
-        questionType?: 'text' | 'multiple_choice' | 'yes_no' | 'rating';
+        questionType?: 'open_ended' | 'multiple_choice';
         options?: string[];
         orderIndex?: number;
         isRequired?: boolean;
@@ -219,7 +147,7 @@ export const deleteBookQuestion = async (questionId: string): Promise<void> => {
 // BOOK ASSIGNMENTS
 // ============================================================================
 
-export const assignBook = async (
+export const assignBookToStudent = async (
     bookId: string,
     studentId: string,
     teacherId: string,
@@ -234,7 +162,10 @@ export const assignBook = async (
             due_date: dueDate,
             status: 'assigned'
         })
-        .select()
+        .select(`
+            *,
+            books (*)
+        `)
         .single();
 
     if (error) throw error;
@@ -242,95 +173,34 @@ export const assignBook = async (
     return mapBookAssignment(data);
 };
 
-export const getStudentBookAssignments = async (
-    studentId: string,
-    status?: 'assigned' | 'reading' | 'completed' | 'reviewed'
-): Promise<BookAssignment[]> => {
-    let query = supabase
+export const getStudentBookAssignments = async (studentId: string): Promise<BookAssignment[]> => {
+    const { data, error } = await supabase
         .from('book_assignments')
-        .select('*, books(*)')
+        .select(`
+            *,
+            books (*)
+        `)
         .eq('student_id', studentId)
         .order('assigned_at', { ascending: false });
 
-    if (status) {
-        query = query.eq('status', status);
-    }
-
-    const { data, error } = await query;
-
     if (error) throw error;
 
-    // Fetch questions for each book separately
-    const assignmentsWithQuestions = await Promise.all(
-        data.map(async (assignment) => {
-            if (assignment.books) {
-                const questions = await getBookQuestions(assignment.books.id);
-                return {
-                    ...assignment,
-                    book_questions: questions
-                };
-            }
-            return assignment;
-        })
-    );
-
-    return assignmentsWithQuestions.map(mapBookAssignment);
+    return (data || []).map(mapBookAssignment);
 };
 
-export const getTeacherBookAssignments = async (
-    teacherId: string,
-    status?: 'assigned' | 'reading' | 'completed' | 'reviewed'
-): Promise<BookAssignment[]> => {
-    let query = supabase
+export const getTeacherBookAssignments = async (teacherId: string): Promise<BookAssignment[]> => {
+    const { data, error } = await supabase
         .from('book_assignments')
-        .select('*, books(*)')
+        .select(`
+            *,
+            books (*)
+        `)
         .eq('teacher_id', teacherId)
         .order('assigned_at', { ascending: false });
 
-    if (status) {
-        query = query.eq('status', status);
-    }
-
-    const { data, error } = await query;
-
     if (error) throw error;
 
-    // Fetch questions for each book separately
-    const assignmentsWithQuestions = await Promise.all(
-        data.map(async (assignment) => {
-            if (assignment.books) {
-                const questions = await getBookQuestions(assignment.books.id);
-                return {
-                    ...assignment,
-                    book_questions: questions
-                };
-            }
-            return assignment;
-        })
-    );
-
-    return assignmentsWithQuestions.map(mapBookAssignment);
-};
-
-export const getBookAssignment = async (assignmentId: string): Promise<BookAssignment | null> => {
-    const { data, error } = await supabase
-        .from('book_assignments')
-        .select('*, books(*)')
-        .eq('id', assignmentId)
-        .single();
-
-    if (error) {
-        if (error.code === 'PGRST116') return null;
-        throw error;
-    }
-
-    // Fetch questions for the book
-    if (data.books) {
-        const questions = await getBookQuestions(data.books.id);
-        data.book_questions = questions;
-    }
-
-    return mapBookAssignment(data);
+    return (data || []).map(mapBookAssignment);
 };
 
 export const updateBookAssignmentStatus = async (
@@ -341,40 +211,15 @@ export const updateBookAssignmentStatus = async (
 
     if (status === 'reading' && !updateData.started_at) {
         updateData.started_at = new Date().toISOString();
-    } else if (status === 'completed' && !updateData.completed_at) {
+    }
+
+    if (status === 'completed' && !updateData.completed_at) {
         updateData.completed_at = new Date().toISOString();
     }
 
     const { error } = await supabase
         .from('book_assignments')
         .update(updateData)
-        .eq('id', assignmentId);
-
-    if (error) throw error;
-};
-
-export const submitTeacherReview = async (
-    assignmentId: string,
-    feedback: string,
-    score: number
-): Promise<void> => {
-    const { error } = await supabase
-        .from('book_assignments')
-        .update({
-            teacher_feedback: feedback,
-            teacher_score: score,
-            status: 'reviewed',
-            reviewed_at: new Date().toISOString()
-        })
-        .eq('id', assignmentId);
-
-    if (error) throw error;
-};
-
-export const deleteBookAssignment = async (assignmentId: string): Promise<void> => {
-    const { error } = await supabase
-        .from('book_assignments')
-        .delete()
         .eq('id', assignmentId);
 
     if (error) throw error;
@@ -399,43 +244,82 @@ export const updateBookAssignment = async (
     if (error) throw error;
 };
 
+export const deleteBookAssignment = async (assignmentId: string): Promise<void> => {
+    const { error } = await supabase
+        .from('book_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
+export const submitTeacherReview = async (
+    assignmentId: string,
+    feedback: string,
+    score: number
+): Promise<void> => {
+    const { error } = await supabase
+        .from('book_assignments')
+        .update({
+            teacher_feedback: feedback,
+            teacher_score: score,
+            status: 'reviewed',
+            reviewed_at: new Date().toISOString()
+        })
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
 // ============================================================================
 // STUDENT ANSWERS
 // ============================================================================
 
-export const submitBookAnswer = async (
+export const submitBookAnswers = async (
     assignmentId: string,
-    questionId: string,
-    answerText: string
-): Promise<BookQuestionAnswer> => {
-    // Upsert (insert or update)
-    const { data, error } = await supabase
+    answers: { [questionId: string]: string }
+): Promise<void> => {
+    // First, delete any existing answers for this assignment
+    await supabase
         .from('book_question_answers')
-        .upsert({
+        .delete()
+        .eq('assignment_id', assignmentId);
+
+    // Insert new answers
+    const answersToInsert = Object.entries(answers)
+        .filter(([_, answer]) => answer.trim() !== '')
+        .map(([questionId, answerText]) => ({
             assignment_id: assignmentId,
             question_id: questionId,
             answer_text: answerText,
             submitted_at: new Date().toISOString()
-        }, {
-            onConflict: 'assignment_id,question_id'
-        })
-        .select()
-        .single();
+        }));
 
-    if (error) throw error;
+    if (answersToInsert.length > 0) {
+        const { error } = await supabase
+            .from('book_question_answers')
+            .insert(answersToInsert);
 
-    return mapBookQuestionAnswer(data);
+        if (error) throw error;
+    }
+
+    // Update assignment status to completed
+    await updateBookAssignmentStatus(assignmentId, 'completed');
 };
 
-export const getAssignmentAnswers = async (assignmentId: string): Promise<BookQuestionAnswer[]> => {
+export const getStudentAnswers = async (assignmentId: string): Promise<BookQuestionAnswer[]> => {
     const { data, error } = await supabase
         .from('book_question_answers')
-        .select('*, book_questions(*)')
-        .eq('assignment_id', assignmentId);
+        .select(`
+            *,
+            book_questions (*)
+        `)
+        .eq('assignment_id', assignmentId)
+        .order('submitted_at', { ascending: true });
 
     if (error) throw error;
 
-    return data.map(mapBookQuestionAnswer);
+    return (data || []).map(mapBookQuestionAnswer);
 };
 
 // ============================================================================

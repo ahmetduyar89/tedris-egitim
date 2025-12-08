@@ -36,13 +36,14 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
   const completedQBTests = useMemo(() => questionBankAssignments.filter(qb => qb.status === 'Tamamlandı'), [questionBankAssignments]);
 
   const overallStats = useMemo(() => {
-    const totalTests = completedTests.length;
-    const totalAssignments = completedAssignments.length;
+    // Total counts should reflect ALL assigned items, not just completed ones
+    const totalTests = tests.length;
+    const totalAssignments = assignments.length;
     const totalFlashcards = flashcards.length;
-    const totalQBTests = completedQBTests.length;
+    const totalQBTests = questionBankAssignments.length;
 
-    const avgTestScore = totalTests > 0
-      ? Math.round(completedTests.reduce((sum, t) => sum + (t.score || 0), 0) / totalTests)
+    const avgTestScore = completedTests.length > 0
+      ? Math.round(completedTests.reduce((sum, t) => sum + (t.score || 0), 0) / completedTests.length)
       : 0;
 
     const avgAssignmentScore = completedAssignments.length > 0
@@ -52,8 +53,8 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       }, 0) / completedAssignments.length)
       : 0;
 
-    const avgQBTestScore = totalQBTests > 0
-      ? Math.round(completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0) / totalQBTests)
+    const avgQBTestScore = completedQBTests.length > 0
+      ? Math.round(completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0) / completedQBTests.length)
       : 0;
 
     const masteredFlashcards = spacedRepetitionSchedules.filter(s => s.intervalDays >= 30).length;
@@ -70,9 +71,13 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       avgAssignmentScore,
       avgQBTestScore,
       flashcardMasteryRate,
-      totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests
+      totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests,
+      // Add completion counts for UI display if needed
+      completedTestsCount: completedTests.length,
+      completedAssignmentsCount: completedAssignments.length,
+      completedQBTestsCount: completedQBTests.length
     };
-  }, [completedTests, completedAssignments, flashcards, spacedRepetitionSchedules, completedQBTests]);
+  }, [tests, assignments, flashcards, spacedRepetitionSchedules, questionBankAssignments, completedTests, completedAssignments, completedQBTests]);
 
   const progressOverTime = useMemo(() => {
     const allActivities = [

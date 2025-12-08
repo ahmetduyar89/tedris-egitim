@@ -96,7 +96,7 @@ const AssignLibraryContentModal: React.FC<AssignLibraryContentModalProps> = ({
                         </label>
                         <div className="space-y-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3">
                             {students && students.length > 0 ? (
-                                students.map(student => (
+                                students.filter(s => s && s.id).map(student => (
                                     <div
                                         key={student.id}
                                         onClick={() => toggleStudent(student.id)}

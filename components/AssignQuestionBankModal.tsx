@@ -38,7 +38,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
     setIsAssigning(true);
 
     try {
-      const assignmentId = await db.collection('question_bank_assignments').add({
+      const assignmentResult = await db.collection('question_bank_assignments').add({
         question_bank_id: questionBank.id,
         student_id: selectedStudentId,
         teacher_id: user.id,
@@ -55,6 +55,10 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
         ai_feedback: null,
         notes: notes || null
       });
+
+      // Extract the actual ID string from the result
+      const assignmentId = typeof assignmentResult === 'string' ? assignmentResult : assignmentResult.id;
+      console.log('✅ Assignment created with ID:', assignmentId);
 
       const selectedStudent = students.find(s => s.id === selectedStudentId);
 
@@ -78,7 +82,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
               dueTime: '23:59',
               subject: questionBank.subject,
               metadata: {
-                questionBankAssignmentId: assignmentId,
+                questionBankAssignmentId: assignmentId,  // ✅ Now it's a string!
                 questionBankId: questionBank.id,
                 totalQuestions: questionBank.totalQuestions,
                 timeLimit: hasTimeLimit ? timeLimitMinutes : null

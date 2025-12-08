@@ -320,27 +320,67 @@ const PDFTestTakingPage: React.FC<PDFTestTakingPageProps> = ({ user, testId, onB
       </header>
 
       <main className="flex-1 flex overflow-hidden">
-        <div className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full p-4 gap-4 h-full">
-          <div className="flex-1 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col min-h-0">
-            <div className="bg-gray-50 border-b border-gray-200 p-3 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-700">Test Dokümanı</h3>
-              <span className="text-sm text-gray-500">{test.totalQuestions} Soru</span>
+        <div className="flex-1 flex flex-col lg:flex-row max-w-[2000px] mx-auto w-full p-2 md:p-4 gap-2 md:gap-4 h-full">
+          {/* PDF Viewer - Takes more space on desktop */}
+          <div className="flex-1 lg:flex-[2] bg-white rounded-xl shadow-lg overflow-hidden flex flex-col min-h-0">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-red-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <h3 className="font-bold text-gray-800">Test Dokümanı</h3>
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">{test.totalQuestions} Soru</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    const iframe = iframeRef.current;
+                    if (iframe) {
+                      if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                      } else {
+                        iframe.requestFullscreen();
+                      }
+                    }
+                  }}
+                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Tam Ekran"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                  </svg>
+                </button>
+                {test.pdfUrl && (
+                  <a
+                    href={test.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                    title="Yeni Sekmede Aç"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </a>
+                )}
+              </div>
             </div>
-            <div className="flex-1 overflow-auto relative">
+            <div className="flex-1 overflow-auto relative bg-gray-50">
               {test.pdfUrl && !pdfLoadError ? (
                 <>
                   {pdfLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
                       <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-3"></div>
-                        <p className="text-gray-600 font-semibold">PDF yükleniyor...</p>
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600 font-semibold text-lg">PDF yükleniyor...</p>
+                        <p className="text-gray-500 text-sm mt-2">Bu birkaç saniye sürebilir</p>
                       </div>
                     </div>
                   )}
                   <iframe
                     ref={iframeRef}
-                    src={test.pdfUrl}
-                    className="w-full h-full border-0"
+                    src={`${test.pdfUrl}#view=FitH&toolbar=1&navpanes=0`}
+                    className="w-full h-full border-0 min-h-[600px]"
                     title="Test PDF"
                     onLoad={() => {
                       console.log('[PDFTestTakingPage] PDF loaded successfully');
@@ -357,10 +397,10 @@ const PDFTestTakingPage: React.FC<PDFTestTakingPageProps> = ({ user, testId, onB
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500 p-6">
                   <div className="text-center max-w-md">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto mb-4 text-red-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-20 h-20 mx-auto mb-4 text-red-400">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                     </svg>
-                    <p className="font-bold text-gray-800 mb-2">PDF Yüklenemedi</p>
+                    <p className="font-bold text-gray-800 mb-2 text-lg">PDF Yüklenemedi</p>
                     <p className="text-sm text-gray-600 mb-4">
                       Test PDF dosyası şu anda görüntülenemiyor. Lütfen öğretmeninizle iletişime geçin.
                     </p>
@@ -369,9 +409,9 @@ const PDFTestTakingPage: React.FC<PDFTestTakingPageProps> = ({ user, testId, onB
                         href={test.pdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold shadow-md"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 mr-2">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                         </svg>
                         PDF'i İndir
@@ -383,7 +423,8 @@ const PDFTestTakingPage: React.FC<PDFTestTakingPageProps> = ({ user, testId, onB
             </div>
           </div>
 
-          <div className="w-full md:w-96 bg-white rounded-xl shadow-lg overflow-hidden flex flex-col min-h-[400px] md:min-h-0">
+          {/* Answer Sheet - Compact on desktop */}
+          <div className="w-full lg:w-[400px] xl:w-[450px] bg-white rounded-xl shadow-lg overflow-hidden flex flex-col min-h-[400px] lg:min-h-0">
             {test.totalQuestions > 0 ? (
               <OpticalFormAnswer
                 totalQuestions={test.totalQuestions}

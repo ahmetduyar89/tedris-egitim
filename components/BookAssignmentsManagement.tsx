@@ -15,10 +15,35 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
     const [feedback, setFeedback] = useState('');
     const [score, setScore] = useState('');
     const [editDueDate, setEditDueDate] = useState('');
+    const [studentAnswers, setStudentAnswers] = useState<any[]>([]);
+    const [loadingAnswers, setLoadingAnswers] = useState(false);
 
     useEffect(() => {
         loadAssignments();
     }, [user.id]);
+
+    useEffect(() => {
+        if (reviewingAssignment) {
+            loadStudentAnswers(reviewingAssignment.id);
+        } else {
+            setStudentAnswers([]);
+        }
+    }, [reviewingAssignment]);
+
+    const loadStudentAnswers = async (assignmentId: string) => {
+        setLoadingAnswers(true);
+        try {
+            const { getStudentAnswers } = await import('../services/bookReadingService');
+            const answers = await getStudentAnswers(assignmentId);
+            console.log('[Review] Loaded student answers:', answers);
+            setStudentAnswers(answers);
+        } catch (error) {
+            console.error('[Review] Error loading student answers:', error);
+            setStudentAnswers([]);
+        } finally {
+            setLoadingAnswers(false);
+        }
+    };
 
     const loadAssignments = async () => {
         setIsLoading(true);
@@ -278,7 +303,52 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
                                 </p>
                             </div>
 
-                            <div>
+                            {/* Student Answers Section */}
+                            <div className="border-t pt-4">
+                                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                    <span className="text-lg">📝</span>
+                                    Öğrencinin Cevapları
+                                </h3>
+
+                                {loadingAnswers ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                                    </div>
+                                ) : studentAnswers.length === 0 ? (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                                        <p className="text-sm text-yellow-700">
+                                            ⚠️ Öğrenci henüz soruları cevaplamamış
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4 max-h-96 overflow-y-auto bg-gray-50 rounded-lg p-4">
+                                        {studentAnswers.map((answer, index) => (
+                                            <div key={answer.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <span className="flex-shrink-0 w-7 h-7 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center font-bold text-sm">
+                                                        {index + 1}
+                                                    </span>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-semibold text-gray-900 mb-2">
+                                                            {answer.question?.questionText || 'Soru metni bulunamadı'}
+                                                        </h4>
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                            <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                                                                {answer.answerText}
+                                                            </p>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-2">
+                                                            Cevaplandı: {new Date(answer.submittedAt).toLocaleString('tr-TR')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="border-t pt-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Puan (0-100) <span className="text-red-500">*</span>
                                 </label>

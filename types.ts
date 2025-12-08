@@ -749,3 +749,117 @@ export interface PaymentSummary {
   unpaidLessons: number;
   currency: string;
 }
+
+// ============================================================================
+// TURKISH LEARNING SYSTEM
+// ============================================================================
+
+export enum FlashcardCategory {
+  General = 'general',
+  Vocabulary = 'vocabulary',
+  Idiom = 'idiom',
+  Proverb = 'proverb',
+  BookRelated = 'book_related'
+}
+
+export interface TurkishContentLibraryItem {
+  id: string;
+  teacherId: string;
+  category: 'vocabulary' | 'idiom' | 'proverb';
+  frontContent: string; // Word/Idiom/Proverb
+  backContent: string; // Meaning/Explanation
+  exampleSentence?: string;
+  difficultyLevel: number; // 1-5
+  isAiGenerated: boolean;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export interface Book {
+  id: string;
+  title: string;
+  author: string;
+  pageCount: number;
+  difficultyLevel: number; // 1-5
+  estimatedReadingDays: number; // 7 or 15
+  coverImageUrl?: string;
+  summary?: string;
+  createdAt: string;
+  createdBy: string;
+  isActive: boolean;
+}
+
+export interface BookQuestion {
+  id: string;
+  bookId: string;
+  questionText: string;
+  questionType: 'text' | 'multiple_choice' | 'yes_no' | 'rating';
+  options?: string[]; // For multiple choice
+  orderIndex: number;
+  isRequired: boolean;
+  createdAt: string;
+}
+
+export interface BookAssignment {
+  id: string;
+  bookId: string;
+  studentId: string;
+  teacherId: string;
+  assignedAt: string;
+  dueDate?: string;
+  status: 'assigned' | 'reading' | 'completed' | 'reviewed';
+  startedAt?: string;
+  completedAt?: string;
+  teacherFeedback?: string;
+  teacherScore?: number; // 0-100
+  reviewedAt?: string;
+  // Populated fields
+  book?: Book;
+  questions?: BookQuestion[];
+  answers?: BookQuestionAnswer[];
+}
+
+export interface BookQuestionAnswer {
+  id: string;
+  assignmentId: string;
+  questionId: string;
+  answerText: string;
+  submittedAt: string;
+  // Populated field
+  question?: BookQuestion;
+}
+
+export interface WeeklyTurkishGoals {
+  id: string;
+  studentId: string;
+  weekStartDate: string; // ISO date
+
+  // Vocabulary
+  vocabularyTarget: number;
+  vocabularyLearned: number;
+
+  // Idioms
+  idiomsTarget: number;
+  idiomsLearned: number;
+
+  // Proverbs
+  proverbsTarget: number;
+  proverbsLearned: number;
+
+  // Book reading
+  bookAssignmentId?: string;
+  bookCompleted: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+
+  // Populated field
+  bookAssignment?: BookAssignment;
+}
+
+export interface TurkishLearningProgress {
+  weeklyGoals: WeeklyTurkishGoals;
+  dueFlashcards: number;
+  totalMastered: number;
+  currentStreak: number;
+}

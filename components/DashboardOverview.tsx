@@ -62,66 +62,143 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             const now = new Date();
 
             // Get today's date in YYYY-MM-DD format (local timezone)
-            const todayDateStr = now.toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD format
+            const todayDateStr = now.toLocaleDateString('en-CA');
 
-            // For database query, use start of today in ISO format
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            // Calculate week boundaries (Monday to Sunday)
+            const weekStart = new Date(now);
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+            weekStart.setDate(diff);
+            weekStart.setHours(0, 0, 0, 0);
 
             console.log('[DashboardOverview] Today date string:', todayDateStr);
-            console.log('[DashboardOverview] Fetching lessons from:', todayStart.toISOString());
+            console.log('[DashboardOverview] Week start:', weekStart.toISOString());
+            console.log('[DashboardOverview] User/Tutor ID:', user.id);
 
-            // Fetch all upcoming lessons (from today onwards)
-            const { data: allLessons, error } = await supabase
+            // Fetch ALL lessons for this tutor (same as PrivateLessonSchedule)
+            const { data: allLessonsData, error } = await supabase
                 .from('private_lessons')
                 .select('*')
-                .eq('tutor_id', user.id)
-                .gte('start_time', todayStart.toISOString())
-                .neq('status', 'cancelled')
-                .order('start_time', { ascending: true })
-                .limit(20);
+                .eq('tutor_id', user.id);
 
-            if (error) throw error;
+            if (error) {
+                console.error('[DashboardOverview] Error fetching lessons:', error);
+                throw error;
+            }
 
-            console.log('[DashboardOverview] Fetched lessons:', allLessons?.length || 0);
+            console.log('[DashboardOverview] Fetched all lessons from DB:', allLessonsData?.length || 0);
 
-            if (allLessons) {
-                const lessons = allLessons.map(l => ({
-                    id: l.id,
-                    tutorId: l.tutor_id,
-                    studentId: l.student_id,
-                    studentName: l.student_name,
-                    startTime: l.start_time,
-                    endTime: l.end_time,
-                    subject: l.subject,
-                    status: l.status,
-                    color: l.color,
-                    grade: l.grade
-                } as PrivateLesson));
+            if (!allLessonsData || allLessonsData.length === 0) {
+                console.log('[DashboardOverview] No lessons found in database');
+                setTodayLessons([]);
+                setUpcomingLessons([]);
+                return;
+            }
 
-                // Filter today's lessons by comparing date strings (handles timezone correctly)
-                const today = lessons.filter(l => {
-                    const lessonDate = new Date(l.startTime);
-                    const lessonDateStr = lessonDate.toLocaleDateString('en-CA');
-                    const isToday = lessonDateStr === todayDateStr;
+            const allLessons = allLessonsData.map(row => ({
+                id: row.id,
+                tutorId: row.tutor_id,
+                studentId: row.student_id,
+                studentName: row.student_name,
+                startTime: row.start_time,
+                endTime: row.end_time,
+                subject: row.subject,
+                topic: row.topic,
+                status: row.status,
+                notes: row.notes,
+                duration: row.duration,
+                color: row.color,
+                contact: row.contact,
+                grade: row.grade,
+                lessonNotes: row.lesson_notes,
+                homework: row.homework
+            } as PrivateLesson));
 
-                    if (allLessons.length <= 5) { // Only log if there are few lessons
-                        console.log('[DashboardOverview] Lesson:', l.studentName,
-                            'Date:', lessonDateStr,
-                            'Time:', lessonDate.toLocaleTimeString('tr-TR'),
-                            'isToday:', isToday);
-                    }
+            // Create lesson templates (same logic as PrivateLessonSchedule)
+            const lessonTemplates = new Map<string, PrivateLesson>();
 
-                    return isToday;
+            allLessons.forEach(lesson => {
+                const lessonDate = new Date(lesson.startTime);
+                const dayOfWeek = lessonDate.getDay();
+                const hours = lessonDate.getHours();
+                const minutes = lessonDate.getMinutes();
+                const key = `${dayOfWeek}-${hours}-${minutes}-${lesson.studentId}`;
+
+                // Keep the most recent lesson for this slot
+                if (!lessonTemplates.has(key) || new Date(lesson.startTime) > new Date(lessonTemplates.get(key)!.startTime)) {
+                    lessonTemplates.set(key, lesson);
+                }
+            });
+
+            console.log('[DashboardOverview] Created templates:', lessonTemplates.size);
+
+            // Project lessons onto current week
+            const currentWeekLessons: PrivateLesson[] = [];
+
+            lessonTemplates.forEach(template => {
+                const templateDate = new Date(template.startTime);
+                const dayOfWeek = templateDate.getDay();
+                const hours = templateDate.getHours();
+                const minutes = templateDate.getMinutes();
+
+                // Calculate the date for this day in the current week
+                const currentWeekDate = new Date(weekStart);
+                const daysToAdd = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust for Monday start
+                currentWeekDate.setDate(currentWeekDate.getDate() + daysToAdd);
+                currentWeekDate.setHours(hours, minutes, 0, 0);
+
+                const endDate = new Date(currentWeekDate);
+                endDate.setMinutes(endDate.getMinutes() + (template.duration || 60));
+
+                // Check if there's already a lesson in the database for this exact slot
+                const existingLesson = allLessons.find(l => {
+                    const lDate = new Date(l.startTime);
+                    return lDate.getTime() === currentWeekDate.getTime() && l.studentId === template.studentId;
                 });
 
-                const upcoming = lessons.slice(0, 5);
+                if (existingLesson) {
+                    // Use the existing lesson from database
+                    if (existingLesson.status !== 'cancelled') {
+                        currentWeekLessons.push(existingLesson);
+                    }
+                } else {
+                    // Create a virtual lesson based on template (only for current week and future)
+                    if (currentWeekDate >= weekStart) {
+                        currentWeekLessons.push({
+                            ...template,
+                            id: `virtual-${template.id}-${currentWeekDate.getTime()}`,
+                            startTime: currentWeekDate.toISOString(),
+                            endTime: endDate.toISOString(),
+                            status: 'scheduled',
+                            lessonNotes: '',
+                            homework: '',
+                            topic: '',
+                            notes: ''
+                        });
+                    }
+                }
+            });
 
-                console.log('[DashboardOverview] Today lessons:', today.length);
-                console.log('[DashboardOverview] Upcoming lessons:', upcoming.length);
+            console.log('[DashboardOverview] Projected lessons for current week:', currentWeekLessons.length);
 
-                setTodayLessons(today);
-                setUpcomingLessons(upcoming);
-            }
+            // Filter today's lessons and upcoming lessons
+            const today = currentWeekLessons.filter(l => {
+                const lessonDate = new Date(l.startTime);
+                const lessonDateStr = lessonDate.toLocaleDateString('en-CA');
+                return lessonDateStr === todayDateStr;
+            });
+
+            // Get upcoming lessons (from now onwards, sorted by time)
+            const upcoming = currentWeekLessons
+                .filter(l => new Date(l.startTime) >= now)
+                .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+                .slice(0, 5);
+
+            console.log('[DashboardOverview] Today lessons:', today.length);
+            console.log('[DashboardOverview] Upcoming lessons:', upcoming.length);
+
+            setTodayLessons(today);
+            setUpcomingLessons(upcoming);
         } catch (error) {
             console.error('Error fetching upcoming lessons:', error);
         } finally {

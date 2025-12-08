@@ -94,246 +94,29 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
     const loadData = useCallback(async () => {
         if (!student?.id) return;
+
         try {
-            // Tests
-            const testsSnapshot = await db.collection('tests').where('studentId', '==', student.id).get();
-            const tests = testsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }) as Test);
-            // Sort client-side to avoid index requirement
-            tests.sort((a, b) => {
-                if (a.submissionDate && !b.submissionDate) return -1;
-                if (!a.submissionDate && b.submissionDate) return 1;
-                if (!a.submissionDate && !b.submissionDate) return 0;
-                return new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime();
-            });
+            // Import the optimized data loading service
+            const { loadStudentDetailData } = await import('../services/studentDetailDataService');
 
-            setAssignedTests(tests);
+            // Load all data in parallel - much faster!
+            const data = await loadStudentDetailData(student.id, user.id);
 
-            // Diagnosis Tests
-            try {
-                const diagnosisAssignments = await diagnosisTestManagementService.getStudentAssignments(student.id);
-                setDiagnosisTestAssignments(diagnosisAssignments);
-            } catch (error) {
-                console.error('Error fetching diagnosis test assignments:', error);
-            }
-
-            // Program
-            const programSnapshot = await db.collection('weeklyPrograms').where('studentId', '==', student.id).limit(1).get();
-            if (!programSnapshot.empty) {
-                const doc = programSnapshot.docs[0];
-                setWeeklyProgram({ id: doc.id, ...doc.data() } as WeeklyProgram);
-            } else {
-                setWeeklyProgram(null);
-            }
-
-            // Assignments with Submissions
-            const assignmentsSnapshot = await db.collection('assignments').where('studentId', '==', student.id).get();
-            console.log('[StudentDetailPage] Found assignments:', assignmentsSnapshot.docs.length);
-
-            const assignmentsList = await Promise.all(
-                assignmentsSnapshot.docs.map(async (doc: any) => {
-                    const assignment = { id: doc.id, ...doc.data() } as Assignment;
-                    console.log('[StudentDetailPage] Checking submissions for assignment:', doc.id);
-
-                    try {
-                        // Use direct Supabase query instead of dbAdapter to avoid conversion issues
-                        const { data: submissionsData, error: submissionsError } = await supabase
-                            .from('submissions')
-                            .select('*')
-                            .eq('assignment_id', doc.id)
-                            .order('submitted_at', { ascending: false })
-                            .limit(1);
-
-                        if (submissionsError) {
-                            console.error('[StudentDetailPage] Error fetching submissions:', submissionsError);
-                            throw submissionsError;
-                        }
-
-                        console.log('[StudentDetailPage] Submissions found:', submissionsData?.length || 0);
-
-                        if (submissionsData && submissionsData.length > 0) {
-                            const submissionData = submissionsData[0];
-                            console.log('[StudentDetailPage] Submission data:', submissionData);
-
-                            // Map the data correctly from snake_case
-                            assignment.submission = {
-                                id: submissionData.id,
-                                assignmentId: doc.id,
-                                studentId: submissionData.student_id,
-                                submissionText: submissionData.submission_text,
-                                fileUrl: submissionData.file_url,
-                                submittedAt: submissionData.submitted_at,
-                                status: submissionData.status,
-                                aiScore: submissionData.ai_score ? Number(submissionData.ai_score) : undefined,
-                                aiAnalysis: submissionData.ai_analysis,
-                                teacherScore: submissionData.teacher_score ? Number(submissionData.teacher_score) : undefined,
-                                teacherFeedback: submissionData.teacher_feedback
-                            };
-                        }
-                    } catch (error) {
-                        console.error('[StudentDetailPage] Error fetching submissions for assignment', doc.id, error);
-                    }
-
-                    return assignment;
-                })
-            );
-            assignmentsList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setAssignments(assignmentsList);
-
-            // Content Library for Recommendations
-            const librarySnapshot = await db.collection('contentLibrary').where('teacherId', '==', user.id).get();
-            setLibraryContent(librarySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }) as ContentLibraryItem));
-
-            // Flashcards and Spaced Repetition Schedules
-            const schedulesSnapshot = await db.collection('spaced_repetition_schedule').where('student_id', '==', student.id).get();
-            const schedules = schedulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SpacedRepetitionSchedule[];
-            setSpacedRepetitionSchedules(schedules);
-
-            const flashcardsWithSchedule = await Promise.all(
-                schedules.map(async (schedule) => {
-                    const flashcardDoc = await db.collection('flashcards').doc(schedule.flashcardId).get();
-                    if (flashcardDoc.exists) {
-                        const flashcardData = flashcardDoc.data();
-                        return {
-                            id: flashcardDoc.id,
-                            teacherId: flashcardData.teacherId,
-                            subject: flashcardData.subject,
-                            grade: flashcardData.grade,
-                            topic: flashcardData.topic,
-                            front_content: flashcardData.frontContent,
-                            back_content: flashcardData.backContent,
-                            difficulty_level: flashcardData.difficultyLevel,
-                            createdAt: flashcardData.createdAt,
-                            isAiGenerated: flashcardData.isAiGenerated,
-                            scheduleId: schedule.id
-                        };
-                    }
-                    return null;
-                })
-            );
-            setFlashcards(flashcardsWithSchedule.filter(Boolean) as any[]);
-
-            // Question Bank Assignments
-            const qbAssignmentsSnapshot = await db.collection('question_bank_assignments').where('student_id', '==', student.id).get();
-            const qbAssignments = await Promise.all(
-                qbAssignmentsSnapshot.docs.map(async (doc: any) => {
-                    const data = doc.data();
-                    const assignment: QuestionBankAssignment & { questionBank?: QuestionBank } = {
-                        id: doc.id,
-                        questionBankId: data.question_bank_id || data.questionBankId,
-                        studentId: data.student_id || data.studentId,
-                        teacherId: data.teacher_id || data.teacherId,
-                        assignedAt: data.assigned_at || data.assignedAt,
-                        applicationDate: data.application_date || data.applicationDate,
-                        timeLimitMinutes: data.time_limit_minutes || data.timeLimitMinutes,
-                        startedAt: data.started_at || data.startedAt,
-                        completedAt: data.completed_at || data.completedAt,
-                        answers: data.answers || {},
-                        score: data.score,
-                        totalCorrect: data.total_correct || data.totalCorrect || 0,
-                        totalQuestions: data.total_questions || data.totalQuestions || 0,
-                        status: data.status,
-                        aiFeedback: data.ai_feedback || data.aiFeedback
-                    };
-
-                    // Fetch question bank details
-                    const qbDoc = await db.collection('question_banks').doc(assignment.questionBankId).get();
-                    if (qbDoc.exists) {
-                        const qbData = qbDoc.data();
-                        assignment.questionBank = {
-                            id: qbDoc.id,
-                            teacherId: qbData.teacher_id || qbData.teacherId,
-                            title: qbData.title,
-                            subject: qbData.subject,
-                            grade: qbData.grade,
-                            unit: qbData.unit,
-                            questions: qbData.questions || [],
-                            totalQuestions: qbData.total_questions || qbData.totalQuestions,
-                            difficultyLevel: qbData.difficulty_level || qbData.difficultyLevel || 1,
-                            source: qbData.source || 'manual',
-                            createdAt: qbData.created_at || qbData.createdAt,
-                            updatedAt: qbData.updated_at || qbData.updatedAt || qbData.created_at || qbData.createdAt
-                        };
-                    }
-
-                    return assignment;
-                })
-            );
-            setQuestionBankAssignments(qbAssignments);
-
-            // PDF Tests and Submissions
-            const studentPDFTests = await getPDFTestsForStudent(student.id);
-            setPdfTests(studentPDFTests);
-
-            const studentPDFSubmissions = await getSubmissionsForStudent(student.id);
-            setPdfTestSubmissions(studentPDFSubmissions);
-
-
-
-            // Private Lessons
-            const { data: lessonsData, error: lessonsError } = await supabase
-                .from('private_lessons')
-                .select('*')
-                .eq('student_id', student.id)
-                .lt('start_time', new Date().toISOString()) // Only past lessons
-                .order('start_time', { ascending: false });
-
-            if (lessonsError) {
-                console.error('Error fetching private lessons:', lessonsError);
-            } else {
-                const mappedLessons = await Promise.all((lessonsData || []).map(async row => {
-                    const lesson: PrivateLesson = {
-                        id: row.id,
-                        tutorId: row.tutor_id,
-                        studentId: row.student_id,
-                        studentName: row.student_name,
-                        startTime: row.start_time,
-                        endTime: row.end_time,
-                        subject: row.subject,
-                        topic: row.topic,
-                        status: row.status,
-                        notes: row.notes,
-                        duration: row.duration,
-                        color: row.color,
-                        contact: row.contact,
-                        grade: row.grade,
-                        lessonNotes: row.lesson_notes,
-                        homework: row.homework
-                    };
-
-                    // Fetch attendance data for this lesson
-                    try {
-                        const attendance = await privateLessonService.getLessonAttendance(row.id);
-                        if (attendance) {
-                            lesson.attendance = attendance;
-                        }
-                    } catch (error) {
-                        console.error(`Error fetching attendance for lesson ${row.id}:`, error);
-                    }
-
-                    return lesson;
-                }));
-
-                // Filter for lessons that have topic or homework
-                setCompletedLessons(mappedLessons.filter(l => l.topic || l.homework));
-            }
-
-
-            // Lesson Stats and Payment Data
-            try {
-                const stats = await privateLessonService.getStudentLessonStats(student.id, user.id);
-                setLessonStats(stats);
-
-                const summary = await privateLessonService.getPaymentSummary(student.id, user.id);
-                setPaymentSummary(summary);
-
-                const config = await privateLessonService.getStudentPaymentConfig(student.id, user.id);
-                setPaymentConfig(config);
-                if (config) {
-
-                }
-            } catch (error) {
-                console.error('Error loading lesson stats/payment data:', error);
-            }
+            // Update all state at once
+            setAssignedTests(data.tests);
+            setDiagnosisTestAssignments(data.diagnosisTestAssignments);
+            setWeeklyProgram(data.weeklyProgram);
+            setAssignments(data.assignments);
+            setFlashcards(data.flashcards);
+            setSpacedRepetitionSchedules(data.spacedRepetitionSchedules);
+            setQuestionBankAssignments(data.questionBankAssignments);
+            setPdfTests(data.pdfTests);
+            setPdfTestSubmissions(data.pdfTestSubmissions);
+            setCompletedLessons(data.completedLessons);
+            setLessonStats(data.lessonStats);
+            setPaymentSummary(data.paymentSummary);
+            setPaymentConfig(data.paymentConfig);
+            setLibraryContent(data.libraryContent);
 
         } catch (error) {
             console.error("Error loading student details:", error);

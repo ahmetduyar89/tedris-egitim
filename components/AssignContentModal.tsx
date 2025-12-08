@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Student, TurkishContentLibraryItem, Book } from '../types';
 import { getTeacherTurkishContent } from '../services/turkishLearningService';
-import { getTeacherBooks, assignBook } from '../services/bookReadingService';
+import { getTeacherBooks, assignBookToStudent } from '../services/bookReadingService';
 import { assignWeeklyContent } from '../services/turkishLearningService';
 
 interface AssignContentModalProps {
@@ -102,7 +102,7 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
 
             // Assign book
             if (selectedBook && bookDueDate) {
-                await assignBook(selectedBook, selectedStudent, user.id, bookDueDate);
+                await assignBookToStudent(selectedBook, selectedStudent, user.id, bookDueDate);
             }
 
             alert('İçerik başarıyla atandı!');
@@ -218,8 +218,8 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                 type="button"
                                 onClick={() => setActiveTab('vocabulary')}
                                 className={`flex-1 px-4 py-3 font-semibold transition-colors ${activeTab === 'vocabulary'
-                                        ? 'border-b-2 border-purple-500 text-purple-700'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                    ? 'border-b-2 border-purple-500 text-purple-700'
+                                    : 'text-gray-600 hover:text-gray-900'
                                     }`}
                             >
                                 📖 Kelime ({selectedVocabulary.length}/{vocabularyItems.length})
@@ -228,8 +228,8 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                 type="button"
                                 onClick={() => setActiveTab('idiom')}
                                 className={`flex-1 px-4 py-3 font-semibold transition-colors ${activeTab === 'idiom'
-                                        ? 'border-b-2 border-blue-500 text-blue-700'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                    ? 'border-b-2 border-blue-500 text-blue-700'
+                                    : 'text-gray-600 hover:text-gray-900'
                                     }`}
                             >
                                 💬 Deyim ({selectedIdioms.length}/{idiomItems.length})
@@ -238,8 +238,8 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                 type="button"
                                 onClick={() => setActiveTab('proverb')}
                                 className={`flex-1 px-4 py-3 font-semibold transition-colors ${activeTab === 'proverb'
-                                        ? 'border-b-2 border-green-500 text-green-700'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                    ? 'border-b-2 border-green-500 text-green-700'
+                                    : 'text-gray-600 hover:text-gray-900'
                                     }`}
                             >
                                 🎯 Atasözü ({selectedProverbs.length}/{proverbItems.length})
@@ -248,8 +248,8 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                 type="button"
                                 onClick={() => setActiveTab('book')}
                                 className={`flex-1 px-4 py-3 font-semibold transition-colors ${activeTab === 'book'
-                                        ? 'border-b-2 border-orange-500 text-orange-700'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                    ? 'border-b-2 border-orange-500 text-orange-700'
+                                    : 'text-gray-600 hover:text-gray-900'
                                     }`}
                             >
                                 📚 Kitap ({selectedBook ? '1' : '0'}/{books.length})
@@ -271,8 +271,8 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                                     key={book.id}
                                                     onClick={() => setSelectedBook(book.id === selectedBook ? '' : book.id)}
                                                     className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${selectedBook === book.id
-                                                            ? 'border-orange-500 bg-orange-50'
-                                                            : 'border-gray-200 hover:border-orange-300'
+                                                        ? 'border-orange-500 bg-orange-50'
+                                                        : 'border-gray-200 hover:border-orange-300'
                                                         }`}
                                                 >
                                                     <div className="flex items-start justify-between">
@@ -317,8 +317,8 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                             key={item.id}
                                             onClick={() => toggleSelection(item.id, activeTab)}
                                             className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${isSelected(item.id)
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-blue-300'
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-gray-200 hover:border-blue-300'
                                                 }`}
                                         >
                                             <div className="flex items-start justify-between">

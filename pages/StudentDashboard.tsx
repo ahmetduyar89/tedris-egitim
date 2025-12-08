@@ -37,6 +37,7 @@ import { diagnosisTestManagementService } from '../services/diagnosisTestManagem
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import StudentDiagnosisTestPage from './StudentDiagnosisTestPage';
 import * as privateLessonService from '../services/privateLessonService';
+import StudentTurkishLearningPage from './StudentTurkishLearningPage';
 const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
 
 // ... (inside StudentDashboard component)
@@ -44,7 +45,7 @@ const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom
 
 
 type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest';
-type Tab = 'dashboard' | 'report' | 'homework' | 'library' | 'map' | 'flashcards';
+type Tab = 'dashboard' | 'report' | 'homework' | 'library' | 'map' | 'flashcards' | 'turkish';
 
 interface ToastProps {
   message: string;
@@ -1441,6 +1442,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
               >
                 Aralıklı Tekrar
               </button>
+              <button
+                onClick={() => setActiveTab('turkish')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === 'turkish' ? 'bg-primary text-white shadow-md transform scale-105' : 'text-text-secondary hover:bg-gray-100'}`}
+              >
+                📚 Türkçe
+              </button>
               {weeklyProgram && (
                 <button
                   onClick={() => setActiveTab('report')}
@@ -1460,6 +1467,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             {activeTab === 'library' && renderLibrary()}
             {activeTab === 'map' && renderMap()}
             {activeTab === 'flashcards' && <div className="p-4 md:p-8"><SpacedRepetitionDashboard studentId={user.id} /></div>}
+            {activeTab === 'turkish' && <div className="p-4 md:p-8"><StudentTurkishLearningPage user={user} /></div>}
             {activeTab === 'report' && weeklyProgram && <div className="p-4 md:p-8"><WeeklyReport student={studentData!} weeklyProgram={weeklyProgram} completedTests={completedTests} onExport={handleExportReport} /></div>}
           </div>
         </main>

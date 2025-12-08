@@ -154,6 +154,56 @@ export const deleteBookQuestion = async (questionId: string): Promise<void> => {
     if (error) throw error;
 };
 
+export const bulkCreateBookQuestions = async (
+    bookId: string,
+    questions: Array<{
+        questionText: string;
+        questionType: 'text' | 'multiple_choice' | 'yes_no' | 'rating';
+        options?: string[];
+        isRequired: boolean;
+    }>
+): Promise<void> => {
+    console.log('[bulkCreateBookQuestions] Creating questions for book:', bookId);
+    console.log('[bulkCreateBookQuestions] Number of questions:', questions.length);
+
+    // First, delete existing questions for this book
+    const { error: deleteError } = await supabase
+        .from('book_questions')
+        .delete()
+        .eq('book_id', bookId);
+
+    if (deleteError) {
+        console.error('[bulkCreateBookQuestions] Error deleting existing questions:', deleteError);
+        throw deleteError;
+    }
+
+    // Then insert new questions
+    const questionsToInsert = questions.map((q, index) => ({
+        book_id: bookId,
+        question_text: q.questionText,
+        question_type: q.questionType,
+        options: q.options,
+        order_index: index,
+        is_required: q.isRequired
+    }));
+
+    console.log('[bulkCreateBookQuestions] Inserting questions:', questionsToInsert);
+
+    const { data, error } = await supabase
+        .from('book_questions')
+        .insert(questionsToInsert)
+        .select();
+
+    console.log('[bulkCreateBookQuestions] Insert result:', { data, error });
+
+    if (error) {
+        console.error('[bulkCreateBookQuestions] Error inserting questions:', error);
+        throw error;
+    }
+
+    console.log('[bulkCreateBookQuestions] Successfully created', data?.length || 0, 'questions');
+};
+
 // ============================================================================
 // BOOK ASSIGNMENTS
 // ============================================================================

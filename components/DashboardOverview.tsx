@@ -208,7 +208,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
     const fetchDashboardStats = async () => {
         try {
-            const studentIds = students.map(s => s.id);
+            const studentIds = students.filter(s => s && s.id).map(s => s.id);
             if (studentIds.length === 0) {
                 setLoadingStats(false);
                 return;
@@ -311,7 +311,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
     const fetchRecentActivities = async () => {
         try {
-            const studentIds = students.map(s => s.id);
+            const studentIds = students.filter(s => s && s.id).map(s => s.id);
             if (studentIds.length === 0) return;
 
             const activities: RecentActivity[] = [];

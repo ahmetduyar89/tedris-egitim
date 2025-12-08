@@ -42,12 +42,12 @@ const RevenueOverview: React.FC<RevenueOverviewProps> = ({ tutorId, students }) 
     const loadRevenueData = async () => {
         setLoading(true);
         try {
-            const studentIds = students.map(s => s.id);
+            const studentIds = students.filter(s => s && s.id).map(s => s.id);
 
             // 1. Bulk fetch overall summaries
             const bulkSummaries = await privateLessonService.getBulkPaymentSummaries(studentIds, tutorId);
 
-            const revenues: StudentRevenue[] = students.map(student => {
+            const revenues: StudentRevenue[] = students.filter(s => s && s.id).map(student => {
                 const summary = bulkSummaries[student.id] || {
                     totalEarned: 0,
                     totalPending: 0,

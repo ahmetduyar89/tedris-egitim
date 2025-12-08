@@ -924,7 +924,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                 className="w-full border border-gray-300 rounded-xl py-2 px-3 focus:ring-2 focus:ring-primary focus:border-transparent"
                             >
                                 <option value="">Öğrenci Seçiniz...</option>
-                                {students.map(s => (
+                                {students && students.filter(s => s && s.id).map(s => (
                                     <option key={s.id} value={s.id}>{s.name}</option>
                                 ))}
                             </select>

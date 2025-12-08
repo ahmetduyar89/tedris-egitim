@@ -31,7 +31,7 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
   const loadComprehensiveRiskAnalysis = async () => {
     setIsLoading(true);
     try {
-      const studentIds = students.map(s => s.id);
+      const studentIds = students.filter(s => s && s.id).map(s => s.id);
 
       // 1. Fetch Diagnosis Assignments (AI Tests)
       const { data: aiTests, error: aiError } = await supabase

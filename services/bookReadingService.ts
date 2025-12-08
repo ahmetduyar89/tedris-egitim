@@ -371,6 +371,34 @@ export const submitTeacherReview = async (
     if (error) throw error;
 };
 
+export const deleteBookAssignment = async (assignmentId: string): Promise<void> => {
+    const { error } = await supabase
+        .from('book_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
+export const updateBookAssignment = async (
+    assignmentId: string,
+    updates: {
+        dueDate?: string;
+        status?: 'assigned' | 'reading' | 'completed' | 'reviewed';
+    }
+): Promise<void> => {
+    const updateData: any = {};
+    if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
+    if (updates.status !== undefined) updateData.status = updates.status;
+
+    const { error } = await supabase
+        .from('book_assignments')
+        .update(updateData)
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
 // ============================================================================
 // STUDENT ANSWERS
 // ============================================================================

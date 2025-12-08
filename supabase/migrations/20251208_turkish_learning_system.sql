@@ -241,6 +241,12 @@ CREATE POLICY "Students can update their assignment status"
     USING (student_id = auth.uid())
     WITH CHECK (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can delete their assignments" ON book_assignments;
+CREATE POLICY "Teachers can delete their assignments"
+    ON book_assignments FOR DELETE
+    TO authenticated
+    USING (teacher_id = auth.uid());
+
 -- Book question answers policies
 ALTER TABLE book_question_answers ENABLE ROW LEVEL SECURITY;
 

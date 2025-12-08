@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Student, BookAssignment } from '../types';
-import { getTeacherBookAssignments, submitTeacherReview } from '../services/bookReadingService';
+import { getTeacherBookAssignments, submitTeacherReview, deleteBookAssignment, updateBookAssignment } from '../services/bookReadingService';
 
 interface BookAssignmentsManagementProps {
     user: User;
@@ -11,8 +11,10 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
     const [assignments, setAssignments] = useState<BookAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [reviewingAssignment, setReviewingAssignment] = useState<BookAssignment | null>(null);
+    const [editingAssignment, setEditingAssignment] = useState<BookAssignment | null>(null);
     const [feedback, setFeedback] = useState('');
     const [score, setScore] = useState('');
+    const [editDueDate, setEditDueDate] = useState('');
 
     useEffect(() => {
         loadAssignments();
@@ -54,6 +56,39 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
         }
     };
 
+    const handleDeleteAssignment = async (assignmentId: string) => {
+        if (!confirm('Bu kitap atamasını silmek istediğinizden emin misiniz?')) return;
+
+        try {
+            await deleteBookAssignment(assignmentId);
+            await loadAssignments();
+        } catch (error) {
+            console.error('Error deleting assignment:', error);
+            alert('Silme işlemi başarısız oldu.');
+        }
+    };
+
+    const handleEditAssignment = (assignment: BookAssignment) => {
+        setEditingAssignment(assignment);
+        setEditDueDate(assignment.dueDate ? assignment.dueDate.split('T')[0] : '');
+    };
+
+    const handleUpdateAssignment = async () => {
+        if (!editingAssignment) return;
+
+        try {
+            await updateBookAssignment(editingAssignment.id, {
+                dueDate: editDueDate || undefined
+            });
+            setEditingAssignment(null);
+            setEditDueDate('');
+            await loadAssignments();
+        } catch (error) {
+            console.error('Error updating assignment:', error);
+            alert('Güncelleme işlemi başarısız oldu.');
+        }
+    };
+
     const getStudentName = (studentId: string) => {
         const student = students.find(s => s.id === studentId);
         return student?.name || 'Bilinmeyen Öğrenci';
@@ -86,7 +121,7 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
         <div className="space-y-6">
             <div>
                 <h2 className="text-2xl font-bold text-gray-900">Kitap Atamaları</h2>
-                <p className="text-gray-600 mt-1">Öğrencilerinize atadığınız kitapları takip edin</p>
+                <p className="text-gray-600 mt-1">Öğrencilerinize atadığınız kitapları takip edin ve yönetin</p>
             </div>
 
             {assignments.length === 0 ? (
@@ -113,6 +148,28 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
                                             <span>⏰ Bitiş: {new Date(assignment.dueDate).toLocaleDateString('tr-TR')}</span>
                                         )}
                                     </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleEditAssignment(assignment)}
+                                        className="text-blue-600 hover:text-blue-800 transition-colors p-2"
+                                        title="Düzenle"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteAssignment(assignment.id)}
+                                        className="text-red-600 hover:text-red-800 transition-colors p-2"
+                                        title="Sil"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
@@ -141,6 +198,60 @@ const BookAssignmentsManagement: React.FC<BookAssignmentsManagementProps> = ({ u
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingAssignment && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
+                        <div className="border-b p-6 flex justify-between items-center">
+                            <h2 className="text-2xl font-bold text-gray-800">Atamayı Düzenle</h2>
+                            <button onClick={() => setEditingAssignment(null)} className="text-gray-500 hover:text-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <p className="text-sm text-gray-600 mb-2">
+                                    <strong>Kitap:</strong> {editingAssignment.book?.title}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    <strong>Öğrenci:</strong> {getStudentName(editingAssignment.studentId)}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Bitiş Tarihi
+                                </label>
+                                <input
+                                    type="date"
+                                    value={editDueDate}
+                                    onChange={(e) => setEditDueDate(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg p-3"
+                                />
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => setEditingAssignment(null)}
+                                    className="flex-1 px-6 py-3 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    onClick={handleUpdateAssignment}
+                                    className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                                >
+                                    Güncelle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

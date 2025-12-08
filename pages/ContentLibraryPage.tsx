@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ContentLibraryItem, User, Subject, Student, ContentType, InteractiveContent } from '../types';
 import ContentCard from '../components/ContentCard';
 import UploadContentModal from '../components/UploadContentModal';
-import AssignContentModal from '../components/AssignContentModal';
+import AssignLibraryContentModal from '../components/AssignLibraryContentModal';
 import ShareContentModal from '../components/ShareContentModal';
 import { CURRICULUM } from '../constants';
 import { db } from '../services/dbAdapter';
@@ -31,7 +31,7 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
     const loadLibrary = useCallback(async () => {
         try {
             const snapshot = await db.collection('contentLibrary').where('teacherId', '==', user.id).get();
-            const items = snapshot.docs.map((doc: any) => ({id: doc.id, ...doc.data()}) as ContentLibraryItem);
+            const items = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }) as ContentLibraryItem);
             setLibraryItems(items);
         } catch (error) {
             console.error("Error loading content library:", error);
@@ -56,19 +56,19 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
             setIsUploadModalOpen(true);
         }
     };
-    
+
     const handleDelete = async (item: ContentLibraryItem) => {
-        if(window.confirm(`'${item.title}' içeriğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
+        if (window.confirm(`'${item.title}' içeriğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
             try {
                 const batch = db.batch();
                 const libraryItemRef = db.collection('contentLibrary').doc(item.id);
                 batch.delete(libraryItemRef);
 
-                if(item.fileType === ContentType.Interactive && item.interactiveContentId) {
+                if (item.fileType === ContentType.Interactive && item.interactiveContentId) {
                     const interactiveContentRef = db.collection('interactiveContent').doc(item.interactiveContentId);
                     batch.delete(interactiveContentRef);
                 }
-                
+
                 await batch.commit();
                 loadLibrary(); // Reload from firestore
             } catch (error) {
@@ -87,7 +87,7 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
             const matchesGrade = !filters.grade || item.grade === filters.grade;
             const matchesUnit = !filters.unit || item.unit === filters.unit;
             return matchesSearch && matchesSubject && matchesGrade && matchesUnit;
-        }).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }, [libraryItems, searchTerm, filters]);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -159,7 +159,7 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
                 </div>
             </div>
             {(isUploadModalOpen || editingItem) && <UploadContentModal user={user} onClose={() => { setIsUploadModalOpen(false); setEditingItem(null); }} onUpload={handleUploadComplete} itemToEdit={editingItem} />}
-            {assigningItem && <AssignContentModal isOpen={!!assigningItem} onClose={() => setAssigningItem(null)} contentItem={assigningItem} students={students} />}
+            {assigningItem && <AssignLibraryContentModal isOpen={!!assigningItem} onClose={() => setAssigningItem(null)} contentItem={assigningItem} students={students} />}
             {sharingItem && <ShareContentModal isOpen={!!sharingItem} onClose={() => setSharingItem(null)} contentItem={sharingItem} user={user} />}
         </>
     );

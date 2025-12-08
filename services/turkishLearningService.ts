@@ -171,22 +171,48 @@ export const assignWeeklyContent = async (
     idiomIds: string[],
     proverbIds: string[]
 ): Promise<void> => {
-    // Create flashcards from selected content
     const allContentIds = [...vocabularyIds, ...idiomIds, ...proverbIds];
 
     if (allContentIds.length === 0) {
         throw new Error('No content selected');
     }
 
-    // Fetch content details
+    // Verify all content exists and belongs to teacher
     const { data: contentItems, error: fetchError } = await supabase
         .from('turkish_content_library')
         .select('*')
-        .in('id', allContentIds);
+        .in('id', allContentIds)
+        .eq('teacher_id', teacherId)
+        .eq('is_active', true);
 
     if (fetchError) throw fetchError;
 
-    // Create flashcards
+    if (!contentItems || contentItems.length !== allContentIds.length) {
+        throw new Error('Some content items not found or not accessible');
+    }
+
+    // Create assignments for each content item
+    const assignmentData = contentItems.map(item => ({
+        teacher_id: teacherId,
+        student_id: studentId,
+        content_id: item.id,
+        week_start_date: weekStartDate,
+        is_learned: false,
+        review_count: 0
+    }));
+
+    const { error: assignmentError } = await supabase
+        .from('turkish_content_assignments')
+        .insert(assignmentData);
+
+    if (assignmentError) {
+        // If error is due to duplicate, ignore it (content already assigned)
+        if (!assignmentError.message?.includes('duplicate')) {
+            throw assignmentError;
+        }
+    }
+
+    // Also create flashcards for spaced repetition system
     const flashcardData = contentItems.map(item => ({
         teacher_id: teacherId,
         subject: 'Türkçe',
@@ -340,6 +366,118 @@ export const updateGoalProgress = async (
         .from('weekly_turkish_goals')
         .update(updateData)
         .eq('id', goals.id);
+
+    if (error) throw error;
+};
+
+// ============================================================================
+// STUDENT CONTENT ASSIGNMENTS
+// ============================================================================
+
+/**
+ * Get assigned Turkish content for a student for a specific week
+ */
+export const getStudentWeeklyContent = async (
+    studentId: string,
+    weekStartDate: string,
+    category?: 'vocabulary' | 'idiom' | 'proverb'
+): Promise<TurkishContentLibraryItem[]> => {
+    let query = supabase
+        .from('turkish_content_assignments')
+        .select(`
+            *,
+            content:turkish_content_library(*)
+        `)
+        .eq('student_id', studentId)
+        .eq('week_start_date', weekStartDate);
+
+    if (category) {
+        query = query.eq('turkish_content_library.category', category);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return data.map((assignment: any) => ({
+        id: assignment.content.id,
+        teacherId: assignment.content.teacher_id,
+        category: assignment.content.category,
+        frontContent: assignment.content.front_content,
+        backContent: assignment.content.back_content,
+        exampleSentence: assignment.content.example_sentence,
+        difficultyLevel: assignment.content.difficulty_level,
+        isAiGenerated: assignment.content.is_ai_generated,
+        createdAt: assignment.content.created_at,
+        isActive: assignment.content.is_active,
+        assignmentId: assignment.id,
+        isLearned: assignment.is_learned,
+        learnedAt: assignment.learned_at,
+        reviewCount: assignment.review_count
+    }));
+};
+
+/**
+ * Get current week's assigned content for a student
+ */
+export const getCurrentWeekStudentContent = async (
+    studentId: string,
+    category?: 'vocabulary' | 'idiom' | 'proverb'
+): Promise<TurkishContentLibraryItem[]> => {
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    const weekStartDate = weekStart.toISOString().split('T')[0];
+
+    return getStudentWeeklyContent(studentId, weekStartDate, category);
+};
+
+/**
+ * Mark a content item as learned
+ */
+export const markContentAsLearned = async (
+    assignmentId: string,
+    isLearned: boolean = true
+): Promise<void> => {
+    const updateData: any = {
+        is_learned: isLearned
+    };
+
+    if (isLearned) {
+        updateData.learned_at = new Date().toISOString();
+    } else {
+        updateData.learned_at = null;
+    }
+
+    const { error } = await supabase
+        .from('turkish_content_assignments')
+        .update(updateData)
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
+/**
+ * Increment review count for a content item
+ */
+export const incrementReviewCount = async (
+    assignmentId: string
+): Promise<void> => {
+    const { data: assignment, error: fetchError } = await supabase
+        .from('turkish_content_assignments')
+        .select('review_count')
+        .eq('id', assignmentId)
+        .single();
+
+    if (fetchError) throw fetchError;
+
+    const { error } = await supabase
+        .from('turkish_content_assignments')
+        .update({
+            review_count: (assignment.review_count || 0) + 1,
+            last_reviewed_at: new Date().toISOString()
+        })
+        .eq('id', assignmentId);
 
     if (error) throw error;
 };

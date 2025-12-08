@@ -773,6 +773,11 @@ export interface TurkishContentLibraryItem {
   isAiGenerated: boolean;
   createdAt: string;
   isActive: boolean;
+  // Assignment-related fields (populated when fetching student assignments)
+  assignmentId?: string;
+  isLearned?: boolean;
+  learnedAt?: string;
+  reviewCount?: number;
 }
 
 export interface Book {

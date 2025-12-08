@@ -38,24 +38,25 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                     .filter(t => t.analysis?.topicBreakdown)
                     .sort((a, b) => new Date(a.submissionDate!).getTime() - new Date(b.submissionDate!).getTime());
 
-                const qbAssignmentsSnapshot = await db.collection('question_bank_assignments')
-                    .where('student_id', '==', student.id)
+
+                const qbAssignmentsSnapshot = await db.collection('questionBankAssignments')
+                    .where('studentId', '==', student.id)
                     .where('status', '==', 'Tamamlandı')
                     .get();
 
                 const qbTests = await Promise.all(
                     qbAssignmentsSnapshot.docs.map(async (doc: any) => {
                         const assignment = doc.data();
-                        const qbDoc = await db.collection('question_banks').doc(assignment.question_bank_id).get();
+                        const qbDoc = await db.collection('questionBanks').doc(assignment.questionBankId).get();
 
                         if (!qbDoc.exists) {
-                            console.warn(`⚠️ Soru bankası bulunamadı: ${assignment.question_bank_id}`);
+                            console.warn(`⚠️ Soru bankası bulunamadı: ${assignment.questionBankId}`);
                             return null;
                         }
 
                         const qb = qbDoc.data();
-                        const performanceBreakdown = assignment.performance_breakdown || {};
-                        const answers = assignment.answers || [];
+                        const performanceBreakdown = assignment.performanceBreakdown || {};
+                        const answers = assignment.answers || {};
 
                         let topicBreakdown = [];
 
@@ -65,16 +66,24 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                                 correct: perf.correct || 0,
                                 wrong: (perf.questions || 0) - (perf.correct || 0),
                             }));
-                        } else if (Array.isArray(answers) && answers.length > 0) {
+                        } else if (typeof answers === 'object' && Object.keys(answers).length > 0) {
+                            // answers is an object with question IDs as keys
                             const topicStats = new Map<string, { correct: number; wrong: number }>();
+                            const qbQuestions = qb.questions || [];
 
-                            answers.forEach((ans: any) => {
-                                const topic = ans.topic || qb.topic || qb.unit || 'Genel';
+                            Object.entries(answers).forEach(([questionId, answer]: [string, any]) => {
+                                // Find the question in the question bank
+                                const question = qbQuestions.find((q: any) => q.id === questionId);
+                                const topic = question?.topic || qb.topic || qb.unit || 'Genel';
+
                                 if (!topicStats.has(topic)) {
                                     topicStats.set(topic, { correct: 0, wrong: 0 });
                                 }
                                 const stats = topicStats.get(topic)!;
-                                if (ans.isCorrect) {
+
+                                // Check if answer is correct
+                                const isCorrect = answer?.isCorrect || answer?.is_correct || false;
+                                if (isCorrect) {
                                     stats.correct++;
                                 } else {
                                     stats.wrong++;
@@ -88,8 +97,8 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             }));
                         } else {
                             const defaultTopic = qb.topic || qb.unit || 'Genel';
-                            const correct = assignment.total_correct || 0;
-                            const total = assignment.total_questions || 0;
+                            const correct = assignment.totalCorrect || 0;
+                            const total = assignment.totalQuestions || 0;
                             topicBreakdown = [{
                                 topic: defaultTopic,
                                 correct: correct,
@@ -102,15 +111,24 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             return null;
                         }
 
-                        const questionsList: Question[] = Array.isArray(answers) ? answers.map((ans: any, idx: number) => ({
-                            id: ans.questionId || `q${idx}`,
-                            text: ans.questionText || ans.question || 'Soru metni yok',
-                            type: QuestionType.MultipleChoice, // Default to MultipleChoice for QB questions
-                            studentAnswer: ans.selectedAnswer || '',
-                            correctAnswer: ans.correctAnswer || '',
-                            isCorrect: ans.isCorrect || false,
-                            topic: ans.topic || topicBreakdown[0]?.topic || qb.topic || qb.unit || 'Genel'
-                        })) : [];
+                        // Build questions list from answers
+                        const questionsList: Question[] = [];
+                        const qbQuestions = qb.questions || [];
+
+                        if (typeof answers === 'object') {
+                            Object.entries(answers).forEach(([questionId, answer]: [string, any], idx: number) => {
+                                const question = qbQuestions.find((q: any) => q.id === questionId);
+                                questionsList.push({
+                                    id: questionId,
+                                    text: question?.question || answer?.questionText || 'Soru metni yok',
+                                    type: QuestionType.MultipleChoice,
+                                    studentAnswer: answer?.selectedAnswer || answer?.answer || '',
+                                    correctAnswer: answer?.correctAnswer || question?.correct_answer || '',
+                                    isCorrect: answer?.isCorrect || answer?.is_correct || false,
+                                    topic: question?.topic || topicBreakdown[0]?.topic || qb.topic || qb.unit || 'Genel'
+                                });
+                            });
+                        }
 
                         const test: Test = {
                             id: doc.id,
@@ -121,11 +139,15 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             duration: 0,
                             dueDate: '',
                             completed: true,
-                            submissionDate: assignment.completed_at || new Date().toISOString(),
+                            submissionDate: assignment.completedAt || new Date().toISOString(),
                             score: assignment.score || 0,
                             questions: questionsList,
                             analysis: {
-                                summary: { correct: assignment.total_correct || 0, wrong: (assignment.total_questions || 0) - (assignment.total_correct || 0), scorePercent: assignment.score || 0 },
+                                summary: {
+                                    correct: assignment.totalCorrect || 0,
+                                    wrong: (assignment.totalQuestions || 0) - (assignment.totalCorrect || 0),
+                                    scorePercent: assignment.score || 0
+                                },
                                 analysis: { weakTopics: [], strongTopics: [], recommendations: [], overallComment: '' },
                                 questionEvaluations: questionsList,
                                 topicBreakdown: topicBreakdown

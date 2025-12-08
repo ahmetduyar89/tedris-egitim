@@ -1352,11 +1352,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
 
   const renderContent = () => {
     if (activeView === 'takingTest') {
-      const qbAssignmentId = activeTask?.metadata?.questionBankAssignmentId ||
-        activeTask?.metadata?.question_bank_assignment_id ||
-        activeTest?.questionBankAssignmentId;
+      // Extract the actual ID string from metadata
+      const qbAssignmentId =
+        (typeof activeTask?.metadata?.questionBankAssignmentId === 'string'
+          ? activeTask.metadata.questionBankAssignmentId
+          : (activeTask?.metadata?.questionBankAssignmentId && typeof activeTask.metadata.questionBankAssignmentId === 'object' && 'id' in activeTask.metadata.questionBankAssignmentId)
+            ? (activeTask.metadata.questionBankAssignmentId as any).id
+            : undefined) ||
+        (typeof activeTask?.metadata?.question_bank_assignment_id === 'string'
+          ? activeTask.metadata.question_bank_assignment_id
+          : (activeTask?.metadata?.question_bank_assignment_id && typeof activeTask.metadata.question_bank_assignment_id === 'object' && 'id' in activeTask.metadata.question_bank_assignment_id)
+            ? (activeTask.metadata.question_bank_assignment_id as any).id
+            : undefined) ||
+        (typeof activeTest?.questionBankAssignmentId === 'string'
+          ? activeTest.questionBankAssignmentId
+          : (activeTest?.questionBankAssignmentId && typeof activeTest.questionBankAssignmentId === 'object' && 'id' in activeTest.questionBankAssignmentId)
+            ? (activeTest.questionBankAssignmentId as any).id
+            : undefined);
 
       if (qbAssignmentId) {
+        console.log('🎯 QB Assignment ID:', qbAssignmentId);
         return <QuestionBankTestPage user={user} assignmentId={qbAssignmentId} onBack={() => setActiveView('dashboard')} onComplete={handleTestComplete} />;
       } else if (activeTest) {
         return <TestTakingPage test={activeTest} onComplete={handleTestComplete} />;

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, TurkishContentLibraryItem } from '../types';
+import { User, TurkishContentLibraryItem, Book, BookQuestion } from '../types';
 import { getTeacherTurkishContent, deleteTurkishContent } from '../services/turkishLearningService';
+import { getTeacherBooks, deleteBook, getBookQuestions } from '../services/bookReadingService';
 import AddTurkishContentModal from '../components/AddTurkishContentModal';
 import BulkImportTurkishContentModal from '../components/BulkImportTurkishContentModal';
+import AddBookModal from '../components/AddBookModal';
+import ManageBookQuestionsModal from '../components/ManageBookQuestionsModal';
+import BookManagementSection from '../components/BookManagementSection';
 
 interface TurkishLearningPageProps {
     user: User;
@@ -145,8 +149,8 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
                         <button
                             onClick={() => setActiveTab('vocabulary')}
                             className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'vocabulary'
-                                    ? 'border-b-2 border-purple-500 text-purple-700'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                ? 'border-b-2 border-purple-500 text-purple-700'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             📖 Kelimeler ({vocabularyItems.length})
@@ -154,8 +158,8 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
                         <button
                             onClick={() => setActiveTab('idiom')}
                             className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'idiom'
-                                    ? 'border-b-2 border-blue-500 text-blue-700'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                ? 'border-b-2 border-blue-500 text-blue-700'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             💬 Deyimler ({idiomItems.length})
@@ -163,8 +167,8 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
                         <button
                             onClick={() => setActiveTab('proverb')}
                             className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'proverb'
-                                    ? 'border-b-2 border-green-500 text-green-700'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                ? 'border-b-2 border-green-500 text-green-700'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             🎯 Atasözleri ({proverbItems.length})
@@ -221,6 +225,9 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
                     )}
                 </div>
             </div>
+
+            {/* Book Management Section */}
+            <BookManagementSection user={user} />
 
             {/* Modals */}
             {showAddModal && (

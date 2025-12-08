@@ -31,11 +31,13 @@ const CreateFlashcardModal: React.FC<CreateFlashcardModalProps> = ({ teacherId, 
 
     setIsGenerating(true);
     try {
-      const flashcards = await generateFlashcards(topic, grade, subject, count);
+      const response = await generateFlashcards(topic, grade, subject, count);
+      // Edge function returns { flashcards: [...] }
+      const flashcards = response.flashcards || response;
       setGeneratedFlashcards(flashcards);
     } catch (error) {
       console.error('Error generating flashcards:', error);
-      alert('Flashcard oluşturulurken bir hata oluştu.');
+      alert('Flashcard oluşturulurken bir hata oluştu: ' + (error.message || 'Bilinmeyen hata'));
     } finally {
       setIsGenerating(false);
     }

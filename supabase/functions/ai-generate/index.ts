@@ -252,8 +252,8 @@ function buildHomeworkAnalysisPrompt(payload: any): string {
 }
 
 function buildFlashcardsPrompt(payload: any): string {
-    const { topic, grade, count } = payload
-    return `Generate ${count} flashcards for "${topic}" (Grade ${grade}). Return JSON: { flashcards: [{ front_content: "", back_content: "", difficulty_level: 1-5 }] }`
+    const { topic, grade, subject, count } = payload
+    return `Generate ${count} flashcards for "${topic}" (${subject}, Grade ${grade}). Return JSON: { flashcards: [{ frontContent: "", backContent: "", difficultyLevel: 1-5 }] }`
 }
 
 function buildCompletionTasksPrompt(payload: any): string {

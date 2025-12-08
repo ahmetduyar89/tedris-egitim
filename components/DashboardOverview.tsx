@@ -63,12 +63,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
             const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-            // Fetch all upcoming lessons
+            // Fetch all upcoming lessons (from today onwards, not just from now)
             const { data: allLessons, error } = await supabase
                 .from('private_lessons')
                 .select('*')
                 .eq('tutor_id', user.id)
-                .gte('start_time', now.toISOString())
+                .gte('start_time', todayStart) // Changed from now.toISOString() to todayStart
                 .neq('status', 'cancelled')
                 .order('start_time', { ascending: true })
                 .limit(10);

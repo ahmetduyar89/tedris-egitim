@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safari Minimal Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .status {
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #f0f0f0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 Safari Minimal Test</h1>
+    <div id="status"></div>
+    <div id="errors"></div>
+
+    <script type="module">
+        const statusDiv = document.getElementById('status');
+        const errorsDiv = document.getElementById('errors');
+
+        try {
+            statusDiv.innerHTML = '<div class="status success">✓ ES6 Modules çalışıyor!</div>';
+
+            // Test React import
+            import('react').then(() => {
+                statusDiv.innerHTML += '<div class="status success">✓ React yüklendi!</div>';
+            }).catch(err => {
+                errorsDiv.innerHTML += `<div class="status error">✗ React yüklenemedi:<pre>${err.message}\n${err.stack}</pre></div>`;
+            });
+
+            // Test Supabase import
+            import('@supabase/supabase-js').then(() => {
+                statusDiv.innerHTML += '<div class="status success">✓ Supabase yüklendi!</div>';
+            }).catch(err => {
+                errorsDiv.innerHTML += `<div class="status error">✗ Supabase yüklenemedi:<pre>${err.message}\n${err.stack}</pre></div>`;
+            });
+
+            // Test App import
+            import('./App.tsx').then(() => {
+                statusDiv.innerHTML += '<div class="status success">✓ App.tsx yüklendi!</div>';
+            }).catch(err => {
+                errorsDiv.innerHTML += `<div class="status error">✗ App.tsx yüklenemedi:<pre>${err.message}\n${err.stack}</pre></div>`;
+            });
+
+        } catch (err) {
+            errorsDiv.innerHTML = `<div class="status error">✗ Kritik hata:<pre>${err.message}\n${err.stack}</pre></div>`;
+        }
+
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            errorsDiv.innerHTML += `<div class="status error">✗ Global Error:<pre>${e.message}\nFile: ${e.filename}\nLine: ${e.lineno}</pre></div>`;
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            errorsDiv.innerHTML += `<div class="status error">✗ Unhandled Promise:<pre>${e.reason}</pre></div>`;
+        });
+    </script>
+</body>
+
+</html>

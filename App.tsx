@@ -55,13 +55,49 @@ const App: React.FC = () => {
     };
 
     const initializeAuth = async () => {
-      if (checkForPublicShare()) {
-        return;
-      }
+      try {
+        if (checkForPublicShare()) {
+          return;
+        }
 
-      const contentIdFromUrl = checkForContentView();
-      if (contentIdFromUrl) {
+        const contentIdFromUrl = checkForContentView();
+        if (contentIdFromUrl) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            try {
+              const { data: userData, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+              if (error) {
+                console.error('Error fetching user data:', error);
+                await supabase.auth.signOut();
+                setView('auth');
+                return;
+              }
+
+              if (userData && (userData.role === 'student' || userData.role === 'tutor')) {
+                if (userData.role === 'tutor' && userData.status !== 'approved') {
+                  await supabase.auth.signOut();
+                  setView('auth');
+                  return;
+                }
+                setCurrentUser(userData as User);
+                setView('content-viewer');
+                return;
+              }
+            } catch (error) {
+              console.error('Error loading user for content view:', error);
+            }
+          }
+          setView('auth');
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
+
         if (session?.user) {
           try {
             const { data: userData, error } = await supabase
@@ -73,64 +109,33 @@ const App: React.FC = () => {
             if (error) {
               console.error('Error fetching user data:', error);
               await supabase.auth.signOut();
-              setView('auth');
-              return;
-            }
-
-            if (userData && (userData.role === 'student' || userData.role === 'tutor')) {
-              if (userData.role === 'tutor' && userData.status !== 'approved') {
-                await supabase.auth.signOut();
-                setView('auth');
-                return;
-              }
-              setCurrentUser(userData as User);
-              setView('content-viewer');
-              return;
-            }
-          } catch (error) {
-            console.error('Error loading user for content view:', error);
-          }
-        }
-        setView('auth');
-        return;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        try {
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (error) {
-            console.error('Error fetching user data:', error);
-            await supabase.auth.signOut();
-            setView('website');
-            return;
-          }
-
-          if (userData) {
-            if (userData.role === 'tutor' && userData.status !== 'approved') {
-              await supabase.auth.signOut();
               setView('website');
               return;
             }
-            setCurrentUser(userData as User);
-            setView('dashboard');
-          } else {
-            console.error('User data not found in database!');
+
+            if (userData) {
+              if (userData.role === 'tutor' && userData.status !== 'approved') {
+                await supabase.auth.signOut();
+                setView('website');
+                return;
+              }
+              setCurrentUser(userData as User);
+              setView('dashboard');
+            } else {
+              console.error('User data not found in database!');
+              await supabase.auth.signOut();
+              setView('website');
+            }
+          } catch (error) {
+            console.error('Error fetching user data:', error);
             await supabase.auth.signOut();
             setView('website');
           }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          await supabase.auth.signOut();
+        } else {
           setView('website');
         }
-      } else {
+      } catch (error) {
+        console.error('Error in initializeAuth:', error);
         setView('website');
       }
     };
@@ -164,44 +169,48 @@ const App: React.FC = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       (async () => {
-        if (event === 'SIGNED_OUT') {
-          setCurrentUser(null);
-          setView('website');
-          return;
-        }
+        try {
+          if (event === 'SIGNED_OUT') {
+            setCurrentUser(null);
+            setView('website');
+            return;
+          }
 
-        if (session?.user) {
-          try {
-            const { data: userData, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
+          if (session?.user) {
+            try {
+              const { data: userData, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
 
-            if (error) {
-              console.error('Error fetching user data:', error);
-              await supabase.auth.signOut();
-              return;
-            }
-
-            if (userData) {
-              if (userData.role === 'tutor' && userData.status !== 'approved') {
+              if (error) {
+                console.error('Error fetching user data:', error);
                 await supabase.auth.signOut();
                 return;
               }
-              setCurrentUser(userData as User);
-              setView('dashboard');
-            } else {
-              console.error('User data not found in database!');
+
+              if (userData) {
+                if (userData.role === 'tutor' && userData.status !== 'approved') {
+                  await supabase.auth.signOut();
+                  return;
+                }
+                setCurrentUser(userData as User);
+                setView('dashboard');
+              } else {
+                console.error('User data not found in database!');
+                await supabase.auth.signOut();
+              }
+            } catch (error) {
+              console.error('Error fetching user data:', error);
               await supabase.auth.signOut();
             }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-            await supabase.auth.signOut();
+          } else {
+            setCurrentUser(null);
+            setView('website');
           }
-        } else {
-          setCurrentUser(null);
-          setView('website');
+        } catch (error) {
+          console.error('Error in auth state change:', error);
         }
       })();
     });
@@ -210,7 +219,7 @@ const App: React.FC = () => {
       window.removeEventListener('popstate', handlePopState);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [currentUser]);
 
   const handleLogin = useCallback((user: User) => {
     setCurrentUser(user);

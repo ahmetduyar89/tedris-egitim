@@ -21,6 +21,8 @@ import SpacedRepetitionDashboard from '../components/SpacedRepetitionDashboard';
 import FlashcardWidget from '../components/FlashcardWidget';
 import StreakWidget from '../components/StreakWidget';
 import DailyGoalsCard from '../components/DailyGoalsCard';
+import CompactAchievementCard from '../components/CompactAchievementCard';
+import CompactDailyGoalsCard from '../components/CompactDailyGoalsCard';
 import AchievementNotification from '../components/AchievementNotification';
 import { logActivity } from '../services/streakService';
 import { getNotificationsForUser, markNotificationsAsRead } from '../services/notificationService';
@@ -1047,6 +1049,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   };
 
   const renderDashboard = () => {
+    const hasWeeklyProgram = mergedWeeklyProgram !== null;
+
     return (
       <div className="p-4 md:p-8 space-y-8 animate-fade-in">
         {/* Achievement Notifications */}
@@ -1054,44 +1058,84 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
 
         {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} />}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content (Left/Center) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Combined Student Profile Section: Tedris Başarı + Daily Goals */}
-            {studentData && <StudentProfileSection student={studentData} studentId={user.id} />}
+        <div className={`grid grid-cols-1 ${hasWeeklyProgram ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
+          {/* Main Content - Weekly Program (Focus Area) */}
+          {hasWeeklyProgram && (
+            <div className="lg:col-span-2 space-y-6">
+              <WeeklySchedule
+                program={mergedWeeklyProgram}
+                onTaskClick={handleTaskClick}
+                isInteractive={true}
+              />
+            </div>
+          )}
 
-            {/* Weekly Program */}
-            {mergedWeeklyProgram ? (
-              <div>
-                <WeeklySchedule
-                  program={mergedWeeklyProgram}
-                  onTaskClick={handleTaskClick}
-                  isInteractive={true}
-                />
+          {/* Compact Sidebar (Right) - Only show if weekly program exists */}
+          {hasWeeklyProgram && studentData && (
+            <div className="space-y-4">
+              {/* Compact Tedris Başarı */}
+              <CompactAchievementCard student={studentData} />
+
+              {/* Compact Daily Goals */}
+              <CompactDailyGoalsCard studentId={user.id} />
+
+              {/* Streak Widget */}
+              <StreakWidget studentId={user.id} />
+
+              {/* Other widgets */}
+              <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
+              <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
+              <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
+              <TestArea
+                pendingTests={pendingTests}
+                completedTests={completedTests}
+                onStartTest={handleStartTest}
+                onViewReport={handleViewReport}
+                pendingPDFTests={pendingPDFTests}
+                completedPDFTests={completedPDFTests}
+                onStartPDFTest={handleStartPDFTest}
+              />
+            </div>
+          )}
+
+          {/* If no weekly program, show full-width widgets */}
+          {!hasWeeklyProgram && (
+            <div className="max-w-4xl mx-auto space-y-6">
+              <div className="bg-card-background p-8 rounded-2xl shadow-lg text-center">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-gray-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">Haftalık Programın Hazırlanıyor</h3>
+                <p className="text-gray-600">Öğretmenin yakında senin için bir haftalık program oluşturacak.</p>
               </div>
-            ) : (
-              <div className="bg-card-background p-6 rounded-2xl shadow-lg h-full flex items-center justify-center"><p>Henüz bir haftalık programın yok.</p></div>
-            )}
-          </div>
 
-          {/* Sidebar (Right) */}
-          <div className="space-y-6">
-            {/* Streak Widget */}
-            <StreakWidget studentId={user.id} />
+              {/* Show widgets in grid when no program */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {studentData && (
+                  <>
+                    <CompactAchievementCard student={studentData} />
+                    <CompactDailyGoalsCard studentId={user.id} />
+                  </>
+                )}
+                <StreakWidget studentId={user.id} />
+                <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
+                <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
+                <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
+              </div>
 
-            <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
-            <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
-            <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
-            <TestArea
-              pendingTests={pendingTests}
-              completedTests={completedTests}
-              onStartTest={handleStartTest}
-              onViewReport={handleViewReport}
-              pendingPDFTests={pendingPDFTests}
-              completedPDFTests={completedPDFTests}
-              onStartPDFTest={handleStartPDFTest}
-            />
-          </div>
+              <TestArea
+                pendingTests={pendingTests}
+                completedTests={completedTests}
+                onStartTest={handleStartTest}
+                onViewReport={handleViewReport}
+                pendingPDFTests={pendingPDFTests}
+                completedPDFTests={completedPDFTests}
+                onStartPDFTest={handleStartPDFTest}
+              />
+            </div>
+          )}
         </div>
       </div>
     );

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Safari Uyumluluk Testi</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .test-card {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .success {
+            color: #10B981;
+        }
+
+        .error {
+            color: #EF4444;
+        }
+
+        .info {
+            color: #3B82F6;
+        }
+
+        pre {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 Safari Uyumluluk Testi</h1>
+
+    <div class="test-card">
+        <h2>Tarayıcı Bilgisi</h2>
+        <div id="browser-info"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>JavaScript Özellikleri</h2>
+        <div id="js-features"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>LocalStorage & Cookies</h2>
+        <div id="storage-test"></div>
+    </div>
+
+    <div class="test-card">
+        <h2>Supabase Bağlantısı</h2>
+        <div id="supabase-test"></div>
+    </div>
+
+    <script type="module">
+        // Browser Info
+        const browserInfo = document.getElementById('browser-info');
+        browserInfo.innerHTML = `
+            <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+            <p><strong>Platform:</strong> ${navigator.platform}</p>
+            <p><strong>Vendor:</strong> ${navigator.vendor}</p>
+            <p><strong>Language:</strong> ${navigator.language}</p>
+        `;
+
+        // JavaScript Features Test
+        const jsFeatures = document.getElementById('js-features');
+        const features = [];
+
+        // Test Optional Chaining
+        try {
+            const obj = { a: { b: 1 } };
+            const test = obj?.a?.b;
+            features.push('<p class="success">✓ Optional Chaining (?.) destekleniyor</p>');
+        } catch (e) {
+            features.push('<p class="error">✗ Optional Chaining (?.) desteklenmiyor: ' + e.message + '</p>');
+        }
+
+        // Test Nullish Coalescing
+        try {
+            const test = null ?? 'default';
+            features.push('<p class="success">✓ Nullish Coalescing (??) destekleniyor</p>');
+        } catch (e) {
+            features.push('<p class="error">✗ Nullish Coalescing (??) desteklenmiyor: ' + e.message + '</p>');
+        }
+
+        // Test Async/Await
+        try {
+            const asyncTest = async () => { return 'test'; };
+            features.push('<p class="success">✓ Async/Await destekleniyor</p>');
+        } catch (e) {
+            features.push('<p class="error">✗ Async/Await desteklenmiyor: ' + e.message + '</p>');
+        }
+
+        // Test ES6 Modules
+        features.push('<p class="success">✓ ES6 Modules destekleniyor (bu sayfa yüklendi)</p>');
+
+        // Test Fetch API
+        if (typeof fetch !== 'undefined') {
+            features.push('<p class="success">✓ Fetch API destekleniyor</p>');
+        } else {
+            features.push('<p class="error">✗ Fetch API desteklenmiyor</p>');
+        }
+
+        // Test Promise
+        if (typeof Promise !== 'undefined') {
+            features.push('<p class="success">✓ Promise destekleniyor</p>');
+        } else {
+            features.push('<p class="error">✗ Promise desteklenmiyor</p>');
+        }
+
+        jsFeatures.innerHTML = features.join('');
+
+        // Storage Test
+        const storageTest = document.getElementById('storage-test');
+        const storageResults = [];
+
+        // Test localStorage
+        try {
+            localStorage.setItem('test', 'value');
+            const value = localStorage.getItem('test');
+            localStorage.removeItem('test');
+            if (value === 'value') {
+                storageResults.push('<p class="success">✓ localStorage çalışıyor</p>');
+            } else {
+                storageResults.push('<p class="error">✗ localStorage okuma hatası</p>');
+            }
+        } catch (e) {
+            storageResults.push('<p class="error">✗ localStorage çalışmıyor: ' + e.message + '</p>');
+            storageResults.push('<p class="info">💡 Safari\'de Gizli Mod veya "Çerezleri Engelle" ayarı aktif olabilir</p>');
+        }
+
+        // Test sessionStorage
+        try {
+            sessionStorage.setItem('test', 'value');
+            const value = sessionStorage.getItem('test');
+            sessionStorage.removeItem('test');
+            if (value === 'value') {
+                storageResults.push('<p class="success">✓ sessionStorage çalışıyor</p>');
+            } else {
+                storageResults.push('<p class="error">✗ sessionStorage okuma hatası</p>');
+            }
+        } catch (e) {
+            storageResults.push('<p class="error">✗ sessionStorage çalışmıyor: ' + e.message + '</p>');
+        }
+
+        // Test Cookies
+        try {
+            document.cookie = "test=value; path=/";
+            const hasCookie = document.cookie.includes('test=value');
+            document.cookie = "test=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            if (hasCookie) {
+                storageResults.push('<p class="success">✓ Cookies çalışıyor</p>');
+            } else {
+                storageResults.push('<p class="error">✗ Cookies engellenmiş olabilir</p>');
+            }
+        } catch (e) {
+            storageResults.push('<p class="error">✗ Cookies çalışmıyor: ' + e.message + '</p>');
+        }
+
+        storageTest.innerHTML = storageResults.join('');
+
+        // Supabase Test
+        const supabaseTest = document.getElementById('supabase-test');
+        supabaseTest.innerHTML = '<p class="info">⏳ Supabase bağlantısı test ediliyor...</p>';
+
+        try {
+            // Import Supabase
+            import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm').then(({ createClient }) => {
+                supabaseTest.innerHTML = '<p class="success">✓ Supabase kütüphanesi yüklendi</p>';
+                supabaseTest.innerHTML += '<p class="info">💡 Ana uygulamayı test edebilirsiniz</p>';
+            }).catch(err => {
+                supabaseTest.innerHTML = '<p class="error">✗ Supabase yüklenemedi: ' + err.message + '</p>';
+            });
+        } catch (e) {
+            supabaseTest.innerHTML = '<p class="error">✗ Supabase import hatası: ' + e.message + '</p>';
+        }
+
+        // Console log for debugging
+        console.log('Safari Uyumluluk Testi Tamamlandı');
+        console.log('User Agent:', navigator.userAgent);
+    </script>
+</body>
+
+</html>

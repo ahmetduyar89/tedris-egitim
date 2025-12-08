@@ -248,7 +248,7 @@ export const getStudentBookAssignments = async (
 ): Promise<BookAssignment[]> => {
     let query = supabase
         .from('book_assignments')
-        .select('*, books(*), book_questions(*)')
+        .select('*, books(*)')
         .eq('student_id', studentId)
         .order('assigned_at', { ascending: false });
 
@@ -260,7 +260,21 @@ export const getStudentBookAssignments = async (
 
     if (error) throw error;
 
-    return data.map(mapBookAssignment);
+    // Fetch questions for each book separately
+    const assignmentsWithQuestions = await Promise.all(
+        data.map(async (assignment) => {
+            if (assignment.books) {
+                const questions = await getBookQuestions(assignment.books.id);
+                return {
+                    ...assignment,
+                    book_questions: questions
+                };
+            }
+            return assignment;
+        })
+    );
+
+    return assignmentsWithQuestions.map(mapBookAssignment);
 };
 
 export const getTeacherBookAssignments = async (
@@ -269,7 +283,7 @@ export const getTeacherBookAssignments = async (
 ): Promise<BookAssignment[]> => {
     let query = supabase
         .from('book_assignments')
-        .select('*, books(*), book_questions(*)')
+        .select('*, books(*)')
         .eq('teacher_id', teacherId)
         .order('assigned_at', { ascending: false });
 
@@ -281,19 +295,39 @@ export const getTeacherBookAssignments = async (
 
     if (error) throw error;
 
-    return data.map(mapBookAssignment);
+    // Fetch questions for each book separately
+    const assignmentsWithQuestions = await Promise.all(
+        data.map(async (assignment) => {
+            if (assignment.books) {
+                const questions = await getBookQuestions(assignment.books.id);
+                return {
+                    ...assignment,
+                    book_questions: questions
+                };
+            }
+            return assignment;
+        })
+    );
+
+    return assignmentsWithQuestions.map(mapBookAssignment);
 };
 
 export const getBookAssignment = async (assignmentId: string): Promise<BookAssignment | null> => {
     const { data, error } = await supabase
         .from('book_assignments')
-        .select('*, books(*), book_questions(*)')
+        .select('*, books(*)')
         .eq('id', assignmentId)
         .single();
 
     if (error) {
         if (error.code === 'PGRST116') return null;
         throw error;
+    }
+
+    // Fetch questions for the book
+    if (data.books) {
+        const questions = await getBookQuestions(data.books.id);
+        data.book_questions = questions;
     }
 
     return mapBookAssignment(data);

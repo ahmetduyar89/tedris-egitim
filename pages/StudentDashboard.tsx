@@ -831,8 +831,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     };
   }, [user.id]);
 
+  const messageLoadedRef = React.useRef(false);
+
   useEffect(() => {
-    if (studentData) {
+    if (studentData && !messageLoadedRef.current) {
+      messageLoadedRef.current = true;
       setIsMessageLoading(true);
       getDailyMotivationMessage(studentData)
         .then(message => setDailyMessage({ message, timestamp: new Date().toISOString() }))

@@ -56,12 +56,13 @@ const AssignedTestsManager: React.FC<AssignedTestsManagerProps> = ({ teacherId }
           studentsMap[studentId] = {
             id: doc.id,
             name: data.name,
-            email: data.email,
             grade: data.grade,
-            subjects: data.subjects || [],
+            tutorId: data.tutorId || data.tutor_id, // Handle both cases just in case
             xp: data.xp || 0,
             level: data.level || 1,
-            learningLoopStatus: data.learningLoopStatus
+            learningLoopStatus: data.learningLoopStatus,
+            badges: [], // Initialize required property
+            progressReports: [] // Initialize required property
           };
         }
       }

@@ -709,7 +709,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
       }
     };
     fetchInitialData();
-  }, [user.id, loadStudentData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]); // Only depend on user.id, not loadStudentData
 
   useEffect(() => {
     if (!programId) return;

@@ -186,24 +186,33 @@ const App: React.FC = () => {
 
               if (error) {
                 console.error('Error fetching user data:', error);
-                await supabase.auth.signOut();
+                // Don't call signOut here - it can cause infinite loops
+                // Just clear local state
+                setCurrentUser(null);
+                setView('website');
                 return;
               }
 
               if (userData) {
                 if (userData.role === 'tutor' && userData.status !== 'approved') {
-                  await supabase.auth.signOut();
+                  // Clear session locally without calling signOut
+                  setCurrentUser(null);
+                  setView('website');
                   return;
                 }
                 setCurrentUser(userData as User);
                 setView('dashboard');
               } else {
                 console.error('User data not found in database!');
-                await supabase.auth.signOut();
+                // Clear session locally
+                setCurrentUser(null);
+                setView('website');
               }
             } catch (error) {
               console.error('Error fetching user data:', error);
-              await supabase.auth.signOut();
+              // Clear session locally without calling signOut
+              setCurrentUser(null);
+              setView('website');
             }
           } else {
             setCurrentUser(null);
@@ -219,7 +228,7 @@ const App: React.FC = () => {
       window.removeEventListener('popstate', handlePopState);
       subscription.unsubscribe();
     };
-  }, [currentUser]);
+  }, []); // Empty dependency - only run once on mount
 
   const handleLogin = useCallback((user: User) => {
     setCurrentUser(user);
@@ -228,12 +237,22 @@ const App: React.FC = () => {
 
   const handleLogout = useCallback(async () => {
     try {
+      // Try to sign out from Supabase
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Logout Error:', error);
+      // Even if Supabase signOut fails (403 in Safari private mode), 
+      // we still want to clear local state
+      console.warn('Supabase signOut failed (this is OK in private mode):', error);
     }
+
+    // Always clear local state and redirect
     setCurrentUser(null);
     setView('website');
+
+    // Force reload to clear any cached state
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   }, []);
 
   const handleNavigateToAuth = useCallback(() => {

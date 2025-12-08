@@ -179,6 +179,12 @@ export enum Subject {
   Mathematics = 'Matematik',
   Science = 'Fen Bilimleri',
   Turkish = 'Türkçe',
+  Physics = 'Fizik',
+  Chemistry = 'Kimya',
+  Biology = 'Biyoloji',
+  English = 'İngilizce',
+  History = 'Tarih',
+  Geography = 'Coğrafya',
 }
 
 export enum QuestionType {

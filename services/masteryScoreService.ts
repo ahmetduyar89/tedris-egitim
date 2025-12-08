@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { knowledgeGraphService } from './knowledgeGraphService';
 
 interface TopicScore {
+  moduleId?: string;
   topicName: string;
   correct: number;
   wrong: number;
@@ -14,38 +15,86 @@ export const masteryScoreService = {
     topicScores: TopicScore[]
   ): Promise<{ success: boolean; updatedModules: any[]; errors: any[] }> {
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const updatedModules = [];
+      const errors = [];
+      const timestamp = new Date().toISOString();
 
-      if (!token) {
-        throw new Error('No authentication token available');
-      }
+      for (const score of topicScores) {
+        try {
+          let moduleId = score.moduleId;
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-mastery-score`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            studentId,
-            testId,
-            topicScores,
-          }),
+          // If no moduleId provided, try to find it by name (fallback)
+          if (!moduleId) {
+            const module = await knowledgeGraphService.getModuleByTitle(score.topicName);
+            if (module) moduleId = module.id;
+          }
+
+          if (moduleId) {
+            const total = score.correct + score.wrong;
+            const masteryScore = total > 0 ? Math.round((score.correct / total) * 100) / 100 : 0;
+
+            // 1. Update Student Mastery
+            const { data: currentMastery } = await supabase
+              .from('student_mastery')
+              .select('*')
+              .eq('student_id', studentId)
+              .eq('module_id', moduleId)
+              .maybeSingle();
+
+            const attemptsCount = (currentMastery?.attempts_count || 0) + 1;
+            // Calculate new moving average or just take latest test score? 
+            // For now, let's weight the new score 70% and old score 30% if exists
+            const prevScore = currentMastery?.mastery_score || 0;
+            const newScoreWeighted = currentMastery
+              ? Math.round((prevScore * 0.3 + masteryScore * 0.7) * 100) / 100
+              : masteryScore;
+
+            const masteryData = {
+              student_id: studentId,
+              module_id: moduleId,
+              mastery_score: newScoreWeighted,
+              confidence_level: Math.round(newScoreWeighted * 10) / 10, // Simple mapping
+              attempts_count: attemptsCount,
+              last_practiced_at: timestamp,
+              streak_days: currentMastery?.streak_days || 0
+            };
+
+            const { error: upsertError } = await supabase
+              .from('student_mastery')
+              .upsert(masteryData);
+
+            if (upsertError) throw upsertError;
+
+            // 2. Log History
+            const { error: historyError } = await supabase
+              .from('mastery_history')
+              .insert({
+                student_id: studentId,
+                module_id: moduleId,
+                mastery_score: masteryScore, // Log the raw test score
+                change_reason: 'test_completed',
+                previous_score: prevScore,
+                test_id: testId,
+                recorded_at: timestamp
+              });
+
+            if (historyError) console.warn('Error logging mastery history:', historyError);
+
+            updatedModules.push({ moduleId, score: newScoreWeighted });
+          } else {
+            console.warn(`Module not found for topic: ${score.topicName}`);
+            errors.push({ topic: score.topicName, error: 'Module not found' });
+          }
+        } catch (err) {
+          console.error(`Error updating mastery for topic ${score.topicName}:`, err);
+          errors.push({ topic: score.topicName, error: err });
         }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update mastery scores');
       }
 
-      const result = await response.json();
       return {
-        success: result.success,
-        updatedModules: result.updatedModules || [],
-        errors: result.errors || [],
+        success: errors.length === 0,
+        updatedModules,
+        errors,
       };
     } catch (error) {
       console.error('Error updating mastery scores:', error);

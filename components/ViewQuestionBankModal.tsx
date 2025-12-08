@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuestionBank, Question } from '../types';
+import { QuestionBank, QuestionBankQuestion } from '../types';
 
 interface ViewQuestionBankModalProps {
   questionBank: QuestionBank;
@@ -12,7 +12,7 @@ const ViewQuestionBankModal: React.FC<ViewQuestionBankModalProps> = ({ questionB
   const currentQuestion = questionBank.questions[currentQuestionIndex];
   const difficultyLabels = ['Çok Kolay', 'Kolay', 'Orta', 'Zor', 'Çok Zor'];
 
-  const renderQuestion = (question: Question) => {
+  const renderQuestion = (question: QuestionBankQuestion) => {
     return (
       <div className="space-y-4">
         <div className="p-4 bg-blue-50 rounded-lg">
@@ -25,11 +25,10 @@ const ViewQuestionBankModal: React.FC<ViewQuestionBankModalProps> = ({ questionB
             {question.options?.map((option, idx) => (
               <div
                 key={idx}
-                className={`p-3 rounded-lg border-2 ${
-                  option === question.correct_answer
+                className={`p-3 rounded-lg border-2 ${option === question.correct_answer
                     ? 'bg-green-50 border-green-500'
                     : 'bg-gray-50 border-gray-300'
-                }`}
+                  }`}
               >
                 <span className="font-semibold">{String.fromCharCode(65 + idx)})</span> {option}
                 {option === question.correct_answer && (
@@ -44,11 +43,10 @@ const ViewQuestionBankModal: React.FC<ViewQuestionBankModalProps> = ({ questionB
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-700 mb-2">Cevap:</p>
             <div
-              className={`p-3 rounded-lg border-2 ${
-                question.correct_answer === 'Doğru'
+              className={`p-3 rounded-lg border-2 ${question.correct_answer === 'Doğru'
                   ? 'bg-green-50 border-green-500'
                   : 'bg-red-50 border-red-500'
-              }`}
+                }`}
             >
               <span className="font-bold">{question.correct_answer}</span>
             </div>
@@ -173,11 +171,10 @@ const ViewQuestionBankModal: React.FC<ViewQuestionBankModalProps> = ({ questionB
                 <button
                   key={q.id}
                   onClick={() => setCurrentQuestionIndex(idx)}
-                  className={`aspect-square rounded-lg font-semibold text-sm transition-all ${
-                    idx === currentQuestionIndex
+                  className={`aspect-square rounded-lg font-semibold text-sm transition-all ${idx === currentQuestionIndex
                       ? 'bg-primary text-white ring-2 ring-primary ring-offset-2'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                   title={getQuestionTypeLabel(q.type)}
                 >
                   {idx + 1}

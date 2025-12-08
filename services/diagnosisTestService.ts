@@ -125,6 +125,7 @@ export const diagnosisTestService = {
     });
 
     const topicScores = Array.from(moduleResults.entries()).map(([moduleId, result]) => ({
+      moduleId,
       topicName: result.moduleName,
       correct: result.correct,
       wrong: result.total - result.correct,

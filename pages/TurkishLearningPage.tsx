@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, TurkishContentLibraryItem, Book, BookQuestion } from '../types';
+import { User, TurkishContentLibraryItem, Book, BookQuestion, Student } from '../types';
 import { getTeacherTurkishContent, deleteTurkishContent } from '../services/turkishLearningService';
 import { getTeacherBooks, deleteBook, getBookQuestions } from '../services/bookReadingService';
 import AddTurkishContentModal from '../components/AddTurkishContentModal';
@@ -7,18 +7,21 @@ import BulkImportTurkishContentModal from '../components/BulkImportTurkishConten
 import AddBookModal from '../components/AddBookModal';
 import ManageBookQuestionsModal from '../components/ManageBookQuestionsModal';
 import BookManagementSection from '../components/BookManagementSection';
+import AssignContentModal from '../components/AssignContentModal';
 
 interface TurkishLearningPageProps {
     user: User;
+    students: Student[];
 }
 
-const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
+const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, students }) => {
     const [vocabularyItems, setVocabularyItems] = useState<TurkishContentLibraryItem[]>([]);
     const [idiomItems, setIdiomItems] = useState<TurkishContentLibraryItem[]>([]);
     const [proverbItems, setProverbItems] = useState<TurkishContentLibraryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'vocabulary' | 'idiom' | 'proverb'>('vocabulary');
 
     useEffect(() => {
@@ -140,6 +143,15 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
                     </svg>
                     Toplu Ekle
                 </button>
+                <button
+                    onClick={() => setShowAssignModal(true)}
+                    className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                    </svg>
+                    Öğrenciye Ata
+                </button>
             </div>
 
             {/* Content Tabs */}
@@ -242,6 +254,15 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user }) => {
                 <BulkImportTurkishContentModal
                     user={user}
                     onClose={() => setShowBulkImportModal(false)}
+                    onSuccess={loadContent}
+                />
+            )}
+
+            {showAssignModal && (
+                <AssignContentModal
+                    user={user}
+                    students={students}
+                    onClose={() => setShowAssignModal(false)}
                     onSuccess={loadContent}
                 />
             )}

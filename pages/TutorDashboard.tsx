@@ -830,7 +830,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
             case 'diagnosisTests':
                 return <TeacherDiagnosisTestsPage user={user} onBack={() => setCurrentView('students')} />;
             case 'turkishLearning':
-                return <TurkishLearningPage user={user} />;
+                return <TurkishLearningPage user={user} students={students} />;
             case 'privateLessons':
                 return <PrivateLessonSchedule user={user} students={students} />;
             case 'onlineLessons':

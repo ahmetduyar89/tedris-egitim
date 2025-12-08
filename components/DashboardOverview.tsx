@@ -60,20 +60,29 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
     const fetchUpcomingLessons = async () => {
         try {
             const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-            const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-            // Fetch all upcoming lessons (from today onwards, not just from now)
+            // Get today's date in YYYY-MM-DD format (local timezone)
+            const todayDateStr = now.toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD format
+
+            // For database query, use start of today in ISO format
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+            console.log('[DashboardOverview] Today date string:', todayDateStr);
+            console.log('[DashboardOverview] Fetching lessons from:', todayStart.toISOString());
+
+            // Fetch all upcoming lessons (from today onwards)
             const { data: allLessons, error } = await supabase
                 .from('private_lessons')
                 .select('*')
                 .eq('tutor_id', user.id)
-                .gte('start_time', todayStart) // Changed from now.toISOString() to todayStart
+                .gte('start_time', todayStart.toISOString())
                 .neq('status', 'cancelled')
                 .order('start_time', { ascending: true })
-                .limit(10);
+                .limit(20);
 
             if (error) throw error;
+
+            console.log('[DashboardOverview] Fetched lessons:', allLessons?.length || 0);
 
             if (allLessons) {
                 const lessons = allLessons.map(l => ({
@@ -89,9 +98,26 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                     grade: l.grade
                 } as PrivateLesson));
 
-                // Separate today's lessons
-                const today = lessons.filter(l => l.startTime >= todayStart && l.startTime <= todayEnd);
+                // Filter today's lessons by comparing date strings (handles timezone correctly)
+                const today = lessons.filter(l => {
+                    const lessonDate = new Date(l.startTime);
+                    const lessonDateStr = lessonDate.toLocaleDateString('en-CA');
+                    const isToday = lessonDateStr === todayDateStr;
+
+                    if (allLessons.length <= 5) { // Only log if there are few lessons
+                        console.log('[DashboardOverview] Lesson:', l.studentName,
+                            'Date:', lessonDateStr,
+                            'Time:', lessonDate.toLocaleTimeString('tr-TR'),
+                            'isToday:', isToday);
+                    }
+
+                    return isToday;
+                });
+
                 const upcoming = lessons.slice(0, 5);
+
+                console.log('[DashboardOverview] Today lessons:', today.length);
+                console.log('[DashboardOverview] Upcoming lessons:', upcoming.length);
 
                 setTodayLessons(today);
                 setUpcomingLessons(upcoming);

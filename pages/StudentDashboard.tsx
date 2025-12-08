@@ -7,6 +7,7 @@ import ReviewPackagePage from './ReviewPackagePage';
 import StudentTestReport from '../components/StudentTestReport';
 import QuestionBankTestPage from './QuestionBankTestPage';
 import ProfileCard from '../components/ProfileCard';
+import StudentProfileSection from '../components/StudentProfileSection';
 import { awardXpForTask, checkAndAwardBadges, getDailyMotivationMessage, calculateLevel } from '../services/motivationService';
 import WeeklyReport from '../components/WeeklyReport';
 import AIAssistantPage from './AIAssistantPage';
@@ -1056,9 +1057,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content (Left/Center) */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Daily Goals Card */}
-            <DailyGoalsCard studentId={user.id} />
+            {/* Combined Student Profile Section: Tedris Başarı + Daily Goals */}
+            {studentData && <StudentProfileSection student={studentData} studentId={user.id} />}
 
+            {/* Weekly Program */}
             {mergedWeeklyProgram ? (
               <div>
                 <WeeklySchedule
@@ -1074,8 +1076,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
 
           {/* Sidebar (Right) */}
           <div className="space-y-6">
-            {studentData && <ProfileCard student={studentData} />}
-
             {/* Streak Widget */}
             <StreakWidget studentId={user.id} />
 

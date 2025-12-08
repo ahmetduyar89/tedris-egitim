@@ -10,6 +10,8 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
     const [dailyGoals, setDailyGoals] = useState<StudentDailyGoals | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [justCompleted, setJustCompleted] = useState(false);
 
     useEffect(() => {
         loadDailyGoals();
@@ -42,8 +44,26 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
     const handleGoalUpdate = async (goalId: string, progress: number) => {
         try {
             console.log('🔄 Updating goal:', goalId, 'progress:', progress);
+
+            // Check if this was the last goal before update
+            const wasCompleted = dailyGoals?.isFullyCompleted || false;
+
             const updated = await updateDailyGoalProgress(studentId, goalId, progress);
             console.log('✅ Goal updated:', updated);
+
+            // Check if we just completed all goals
+            if (!wasCompleted && updated.isFullyCompleted) {
+                setJustCompleted(true);
+                setShowCelebration(true);
+
+                // Auto-hide celebration after 5 seconds
+                setTimeout(() => {
+                    setShowCelebration(false);
+                }, 5000);
+
+                console.log('🎉 ALL DAILY GOALS COMPLETED! Celebration triggered!');
+            }
+
             setDailyGoals(updated);
         } catch (error) {
             console.error('❌ Error updating goal:', error);
@@ -231,6 +251,130 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
                     </div>
                 </div>
             )}
+
+            {/* Celebration Modal */}
+            {showCelebration && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
+                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-scaleIn">
+                        {/* Confetti Animation */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            {[...Array(30)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="absolute animate-confetti"
+                                    style={{
+                                        left: `${Math.random() * 100}%`,
+                                        top: '-10px',
+                                        animationDelay: `${Math.random() * 2}s`,
+                                        animationDuration: `${2 + Math.random() * 2}s`
+                                    }}
+                                >
+                                    {['🎉', '🎊', '⭐', '✨', '🌟', '💫'][Math.floor(Math.random() * 6)]}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Content */}
+                        <div className="relative p-8 text-center">
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setShowCelebration(false)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+
+                            {/* Trophy Icon */}
+                            <div className="mb-6 animate-bounce">
+                                <div className="inline-block bg-gradient-to-br from-yellow-400 to-orange-500 p-6 rounded-full shadow-lg">
+                                    <span className="text-6xl">🏆</span>
+                                </div>
+                            </div>
+
+                            {/* Title */}
+                            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                                Harika İş! 🎉
+                            </h2>
+
+                            {/* Message */}
+                            <p className="text-lg text-gray-600 mb-6">
+                                Bugünün tüm hedeflerini başarıyla tamamladın!
+                            </p>
+
+                            {/* XP Reward */}
+                            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl p-6 mb-6 shadow-lg">
+                                <div className="flex items-center justify-center gap-3">
+                                    <span className="text-4xl">⭐</span>
+                                    <div className="text-left">
+                                        <p className="text-sm opacity-90">Kazandığın XP</p>
+                                        <p className="text-3xl font-bold">+{dailyGoals?.xpReward || 50} XP</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Motivational Message */}
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 mb-6">
+                                <p className="text-sm text-gray-700 font-medium">
+                                    💪 Harika bir ilerleme! Yarın da bu motivasyonla devam et!
+                                </p>
+                            </div>
+
+                            {/* Action Button */}
+                            <button
+                                onClick={() => setShowCelebration(false)}
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+                            >
+                                Harika! 🚀
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add required CSS animations */}
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                @keyframes scaleIn {
+                    from { 
+                        opacity: 0;
+                        transform: scale(0.8);
+                    }
+                    to { 
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                
+                @keyframes confetti {
+                    0% {
+                        transform: translateY(0) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) rotate(720deg);
+                        opacity: 0;
+                    }
+                }
+                
+                .animate-fadeIn {
+                    animation: fadeIn 0.3s ease-out;
+                }
+                
+                .animate-scaleIn {
+                    animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                }
+                
+                .animate-confetti {
+                    animation: confetti linear forwards;
+                    font-size: 1.5rem;
+                }
+            `}</style>
         </div>
     );
 };

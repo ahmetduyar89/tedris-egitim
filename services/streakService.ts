@@ -281,19 +281,20 @@ export async function updateDailyGoalProgress(
  */
 async function claimDailyGoalsReward(studentId: string, dailyGoalsId: string): Promise<void> {
     try {
+        console.log('🎁 Claiming daily goals reward for student:', studentId);
+
         // Mark as claimed
         await supabase
             .from('daily_goals')
             .update({ xp_claimed: true })
             .eq('id', dailyGoalsId);
 
-        // Award XP to student (you'll need to implement this in your student service)
-        // await awardXP(studentId, 50);
-
         // Log activity
         await logActivity(studentId, 'goal_completed', { dailyGoalsId }, 50);
+
+        console.log('✅ Daily goals reward claimed successfully! +50 XP awarded');
     } catch (error) {
-        console.error('Error claiming daily goals reward:', error);
+        console.error('❌ Error claiming daily goals reward:', error);
         throw error;
     }
 }

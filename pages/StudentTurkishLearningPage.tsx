@@ -33,6 +33,22 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
         }
     };
 
+    const handleStartReading = async (assignmentId: string) => {
+        try {
+            const { updateBookAssignmentStatus } = await import('../services/bookReadingService');
+            await updateBookAssignmentStatus(assignmentId, 'reading');
+            await loadData();
+        } catch (error) {
+            console.error('Error starting reading:', error);
+            alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+        }
+    };
+
+    const handleAnswerQuestions = (assignmentId: string) => {
+        // TODO: Navigate to book question answering page
+        alert('Kitap soru cevaplama sayfası yakında eklenecek!');
+    };
+
     const getProgressPercentage = (learned: number, target: number) => {
         if (target === 0) return 0;
         return Math.min(Math.round((learned / target) * 100), 100);
@@ -160,8 +176,8 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                                         {assignment.book?.title}
                                                     </h3>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                            assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-gray-100 text-gray-700'
+                                                        assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-700'
                                                         }`}>
                                                         {assignment.status === 'completed' ? 'Tamamlandı' :
                                                             assignment.status === 'reading' ? 'Okunuyor' :
@@ -186,12 +202,18 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                         </div>
                                         <div className="mt-4 flex gap-2">
                                             {assignment.status === 'assigned' && (
-                                                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                                                <button
+                                                    onClick={() => handleStartReading(assignment.id)}
+                                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                                                >
                                                     Okumaya Başla
                                                 </button>
                                             )}
                                             {assignment.status === 'reading' && (
-                                                <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors">
+                                                <button
+                                                    onClick={() => handleAnswerQuestions(assignment.id)}
+                                                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+                                                >
                                                     Soruları Cevapla
                                                 </button>
                                             )}

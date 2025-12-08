@@ -8,6 +8,7 @@ import AddBookModal from '../components/AddBookModal';
 import ManageBookQuestionsModal from '../components/ManageBookQuestionsModal';
 import BookManagementSection from '../components/BookManagementSection';
 import AssignContentModal from '../components/AssignContentModal';
+import BookAssignmentsManagement from '../components/BookAssignmentsManagement';
 
 interface TurkishLearningPageProps {
     user: User;
@@ -240,6 +241,11 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
 
             {/* Book Management Section */}
             <BookManagementSection user={user} />
+
+            {/* Book Assignments Management */}
+            <div className="mt-8">
+                <BookAssignmentsManagement user={user} students={students} />
+            </div>
 
             {/* Modals */}
             {showAddModal && (

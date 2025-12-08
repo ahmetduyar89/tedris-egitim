@@ -19,6 +19,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
     }, [user.id]);
 
     const loadData = async () => {
+        console.log('[Turkish] Loading data for student:', user.id);
         setIsLoading(true);
         try {
             const [goals, books] = await Promise.all([
@@ -26,31 +27,43 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                 getStudentBookAssignments(user.id)
             ]);
 
+            console.log('[Turkish] Loaded goals:', goals);
+            console.log('[Turkish] Loaded book assignments:', books);
+            console.log('[Turkish] Number of book assignments:', books.length);
+
             setWeeklyGoals(goals);
             setBookAssignments(books);
         } catch (error) {
-            console.error('Error loading Turkish learning data:', error);
+            console.error('[Turkish] Error loading Turkish learning data:', error);
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleStartReading = async (assignmentId: string) => {
+        console.log('[Turkish] Starting reading for assignment:', assignmentId);
         try {
             const { updateBookAssignmentStatus } = await import('../services/bookReadingService');
             await updateBookAssignmentStatus(assignmentId, 'reading');
             await loadData();
+            console.log('[Turkish] Successfully started reading');
         } catch (error) {
-            console.error('Error starting reading:', error);
+            console.error('[Turkish] Error starting reading:', error);
             alert('Bir hata oluştu. Lütfen tekrar deneyin.');
         }
     };
 
     const handleAnswerQuestions = (assignment: BookAssignment) => {
+        console.log('[Turkish] Opening questions for assignment:', assignment);
+        console.log('[Turkish] Assignment ID:', assignment.id);
+        console.log('[Turkish] Book ID:', assignment.bookId);
+        console.log('[Turkish] Book object:', assignment.book);
         setSelectedAssignment(assignment);
+        console.log('[Turkish] Selected assignment set, should navigate to questions page');
     };
 
     const handleBackFromQuestions = () => {
+        console.log('[Turkish] Returning from questions page');
         setSelectedAssignment(null);
         loadData(); // Reload data to get updated status
     };

@@ -152,11 +152,13 @@ CREATE INDEX IF NOT EXISTS idx_turkish_content_library_category ON turkish_conte
 -- Books policies
 ALTER TABLE books ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Everyone can view active books" ON books;
 CREATE POLICY "Everyone can view active books"
     ON books FOR SELECT
     TO authenticated
     USING (is_active = true);
 
+DROP POLICY IF EXISTS "Teachers can manage their own books" ON books;
 CREATE POLICY "Teachers can manage their own books"
     ON books FOR ALL
     TO authenticated
@@ -166,6 +168,7 @@ CREATE POLICY "Teachers can manage their own books"
 -- Book questions policies
 ALTER TABLE book_questions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view questions for accessible books" ON book_questions;
 CREATE POLICY "Users can view questions for accessible books"
     ON book_questions FOR SELECT
     TO authenticated
@@ -177,6 +180,7 @@ CREATE POLICY "Users can view questions for accessible books"
         )
     );
 
+DROP POLICY IF EXISTS "Teachers can manage questions for their books" ON book_questions;
 CREATE POLICY "Teachers can manage questions for their books"
     ON book_questions FOR ALL
     TO authenticated
@@ -198,16 +202,19 @@ CREATE POLICY "Teachers can manage questions for their books"
 -- Book assignments policies
 ALTER TABLE book_assignments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students can view their own assignments" ON book_assignments;
 CREATE POLICY "Students can view their own assignments"
     ON book_assignments FOR SELECT
     TO authenticated
     USING (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can view their students' assignments" ON book_assignments;
 CREATE POLICY "Teachers can view their students' assignments"
     ON book_assignments FOR SELECT
     TO authenticated
     USING (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can create assignments for their students" ON book_assignments;
 CREATE POLICY "Teachers can create assignments for their students"
     ON book_assignments FOR INSERT
     TO authenticated
@@ -220,12 +227,14 @@ CREATE POLICY "Teachers can create assignments for their students"
         )
     );
 
+DROP POLICY IF EXISTS "Teachers can update their assignments" ON book_assignments;
 CREATE POLICY "Teachers can update their assignments"
     ON book_assignments FOR UPDATE
     TO authenticated
     USING (teacher_id = auth.uid())
     WITH CHECK (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Students can update their assignment status" ON book_assignments;
 CREATE POLICY "Students can update their assignment status"
     ON book_assignments FOR UPDATE
     TO authenticated
@@ -235,6 +244,7 @@ CREATE POLICY "Students can update their assignment status"
 -- Book question answers policies
 ALTER TABLE book_question_answers ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students can view their own answers" ON book_question_answers;
 CREATE POLICY "Students can view their own answers"
     ON book_question_answers FOR SELECT
     TO authenticated
@@ -246,6 +256,7 @@ CREATE POLICY "Students can view their own answers"
         )
     );
 
+DROP POLICY IF EXISTS "Teachers can view their students' answers" ON book_question_answers;
 CREATE POLICY "Teachers can view their students' answers"
     ON book_question_answers FOR SELECT
     TO authenticated
@@ -257,6 +268,7 @@ CREATE POLICY "Teachers can view their students' answers"
         )
     );
 
+DROP POLICY IF EXISTS "Students can submit their own answers" ON book_question_answers;
 CREATE POLICY "Students can submit their own answers"
     ON book_question_answers FOR INSERT
     TO authenticated
@@ -268,6 +280,7 @@ CREATE POLICY "Students can submit their own answers"
         )
     );
 
+DROP POLICY IF EXISTS "Students can update their own answers" ON book_question_answers;
 CREATE POLICY "Students can update their own answers"
     ON book_question_answers FOR UPDATE
     TO authenticated
@@ -289,11 +302,13 @@ CREATE POLICY "Students can update their own answers"
 -- Weekly Turkish goals policies
 ALTER TABLE weekly_turkish_goals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Students can view their own goals" ON weekly_turkish_goals;
 CREATE POLICY "Students can view their own goals"
     ON weekly_turkish_goals FOR SELECT
     TO authenticated
     USING (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can view their students' goals" ON weekly_turkish_goals;
 CREATE POLICY "Teachers can view their students' goals"
     ON weekly_turkish_goals FOR SELECT
     TO authenticated
@@ -305,12 +320,14 @@ CREATE POLICY "Teachers can view their students' goals"
         )
     );
 
+DROP POLICY IF EXISTS "Students can update their own goals" ON weekly_turkish_goals;
 CREATE POLICY "Students can update their own goals"
     ON weekly_turkish_goals FOR UPDATE
     TO authenticated
     USING (student_id = auth.uid())
     WITH CHECK (student_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can manage their students' goals" ON weekly_turkish_goals;
 CREATE POLICY "Teachers can manage their students' goals"
     ON weekly_turkish_goals FOR ALL
     TO authenticated
@@ -332,11 +349,13 @@ CREATE POLICY "Teachers can manage their students' goals"
 -- Turkish content library policies
 ALTER TABLE turkish_content_library ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Teachers can view their own content" ON turkish_content_library;
 CREATE POLICY "Teachers can view their own content"
     ON turkish_content_library FOR SELECT
     TO authenticated
     USING (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can manage their own content" ON turkish_content_library;
 CREATE POLICY "Teachers can manage their own content"
     ON turkish_content_library FOR ALL
     TO authenticated
@@ -356,6 +375,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_weekly_turkish_goals_updated_at ON weekly_turkish_goals;
 CREATE TRIGGER trigger_update_weekly_turkish_goals_updated_at
     BEFORE UPDATE ON weekly_turkish_goals
     FOR EACH ROW

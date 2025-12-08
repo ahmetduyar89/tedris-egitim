@@ -172,7 +172,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
             >
               <option value="">Öğrenci seçiniz...</option>
-              {students.map(student => (
+              {students && students.filter(s => s && s.id).map(student => (
                 <option key={student.id} value={student.id}>
                   {student.name} ({student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`})
                 </option>

@@ -169,7 +169,7 @@ const AssignContentModal: React.FC<AssignContentModalProps> = ({ user, students,
                                 required
                             >
                                 <option value="">Öğrenci seçin...</option>
-                                {students.map(student => (
+                                {students && students.filter(s => s && s.id).map(student => (
                                     <option key={student.id} value={student.id}>{student.name}</option>
                                 ))}
                             </select>

@@ -63,7 +63,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
         if (selectedStudents.size === students.length) {
             setSelectedStudents(new Set());
         } else {
-            setSelectedStudents(new Set(students.map(s => s.id)));
+            setSelectedStudents(new Set(students.filter(s => s && s.id).map(s => s.id)));
         }
     };
 
@@ -155,7 +155,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                         <p className="text-gray-500 text-center py-8">Kayıtlı öğrenci bulunamadı.</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {students.map(student => (
+                            {students.filter(s => s && s.id).map(student => (
                                 <div
                                     key={student.id}
                                     onClick={() => toggleStudent(student.id)}

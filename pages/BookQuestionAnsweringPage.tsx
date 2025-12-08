@@ -26,13 +26,22 @@ const BookQuestionAnsweringPage: React.FC<BookQuestionAnsweringPageProps> = ({
 
     const loadQuestions = async () => {
         try {
+            console.log('[BookQuestions] Loading questions for assignment:', assignment);
+            console.log('[BookQuestions] Book ID:', assignment.bookId);
+            console.log('[BookQuestions] Book object:', assignment.book);
+
             if (!assignment.bookId) {
+                console.error('[BookQuestions] No bookId found in assignment!');
                 alert('Kitap bilgisi bulunamadı.');
                 onBack();
                 return;
             }
 
+            console.log('[BookQuestions] Fetching questions for book ID:', assignment.bookId);
             const bookQuestions = await getBookQuestions(assignment.bookId);
+            console.log('[BookQuestions] Fetched questions:', bookQuestions);
+            console.log('[BookQuestions] Number of questions:', bookQuestions.length);
+
             setQuestions(bookQuestions);
 
             // Initialize answers object
@@ -42,7 +51,7 @@ const BookQuestionAnsweringPage: React.FC<BookQuestionAnsweringPageProps> = ({
             });
             setAnswers(initialAnswers);
         } catch (error) {
-            console.error('Error loading questions:', error);
+            console.error('[BookQuestions] Error loading questions:', error);
             alert('Sorular yüklenirken bir hata oluştu.');
         } finally {
             setIsLoading(false);

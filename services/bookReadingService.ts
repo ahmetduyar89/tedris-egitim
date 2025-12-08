@@ -98,15 +98,26 @@ export const createBookQuestion = async (
 };
 
 export const getBookQuestions = async (bookId: string): Promise<BookQuestion[]> => {
+    console.log('[getBookQuestions] Fetching questions for book ID:', bookId);
+
     const { data, error } = await supabase
         .from('book_questions')
         .select('*')
         .eq('book_id', bookId)
         .order('order_index', { ascending: true });
 
-    if (error) throw error;
+    console.log('[getBookQuestions] Query result:', { data, error });
+    console.log('[getBookQuestions] Number of questions found:', data?.length || 0);
 
-    return (data || []).map(mapBookQuestion);
+    if (error) {
+        console.error('[getBookQuestions] Error fetching questions:', error);
+        throw error;
+    }
+
+    const mappedQuestions = (data || []).map(mapBookQuestion);
+    console.log('[getBookQuestions] Mapped questions:', mappedQuestions);
+
+    return mappedQuestions;
 };
 
 export const updateBookQuestion = async (

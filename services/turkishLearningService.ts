@@ -810,3 +810,104 @@ export const moveToSpacedRepetition = async (
 
     if (updateError) throw updateError;
 };
+
+// ============================================================================
+// ASSIGNMENT MANAGEMENT (Teacher Functions)
+// ============================================================================
+
+/**
+ * Get all Turkish content assignments created by a teacher
+ */
+export const getTeacherAssignments = async (
+    teacherId: string
+): Promise<(TurkishContentAssignment & { studentName: string })[]> => {
+    const { data, error } = await supabase
+        .from('turkish_content_assignments')
+        .select(`
+            *,
+            students (
+                id,
+                name
+            )
+        `)
+        .eq('teacher_id', teacherId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map((item: any) => ({
+        id: item.id,
+        studentId: item.student_id,
+        teacherId: item.teacher_id,
+        contentIds: item.content_ids,
+        category: item.category,
+        assignedAt: item.assigned_at,
+        dueDate: item.due_date,
+        learningStatus: item.learning_status,
+        learnedContentIds: item.learned_content_ids,
+        practiceAttempts: item.practice_attempts,
+        practiceScore: item.practice_score,
+        practiceCompletedAt: item.practice_completed_at,
+        masteredAt: item.mastered_at,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        studentName: item.students?.name || 'Unknown Student'
+    }));
+};
+
+/**
+ * Update a Turkish content assignment
+ */
+export const updateTurkishContentAssignment = async (
+    assignmentId: string,
+    updates: {
+        contentIds?: string[];
+        dueDate?: string;
+    }
+): Promise<void> => {
+    const updateData: any = {};
+
+    if (updates.contentIds !== undefined) {
+        updateData.content_ids = updates.contentIds;
+        // Reset learned content if content changes
+        updateData.learned_content_ids = [];
+        updateData.learning_status = 'not_started';
+    }
+
+    if (updates.dueDate !== undefined) {
+        updateData.due_date = updates.dueDate;
+    }
+
+    updateData.updated_at = new Date().toISOString();
+
+    const { error } = await supabase
+        .from('turkish_content_assignments')
+        .update(updateData)
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
+/**
+ * Delete a Turkish content assignment
+ */
+export const deleteTurkishContentAssignment = async (
+    assignmentId: string
+): Promise<void> => {
+    // First delete related progress records
+    const { error: progressError } = await supabase
+        .from('turkish_content_progress')
+        .delete()
+        .eq('assignment_id', assignmentId);
+
+    if (progressError) throw progressError;
+
+    // Then delete the assignment
+    const { error } = await supabase
+        .from('turkish_content_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+

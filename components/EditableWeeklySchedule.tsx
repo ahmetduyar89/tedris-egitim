@@ -48,13 +48,13 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     let completedTasks = 0;
 
     (program.days || []).forEach(day => {
-        const tasks = day.tasks || [];
-        tasks.forEach(task => {
-            totalTasks++;
-            if (task.status === TaskStatus.Completed) {
-                completedTasks++;
-            }
-        });
+      const tasks = day.tasks || [];
+      tasks.forEach(task => {
+        totalTasks++;
+        if (task.status === TaskStatus.Completed) {
+          completedTasks++;
+        }
+      });
     });
 
     const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -256,17 +256,17 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     <div className="bg-card-background p-6 rounded-2xl shadow-lg">
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h2 className="text-2xl font-bold font-poppins text-primary">Tedris Plan</h2>
+          <h2 className="text-2xl font-bold font-poppins text-primary">Haftalık Plan</h2>
           <p className="text-text-secondary">{completedCount} / {weeklyTotal} görev tamamlandı.</p>
         </div>
         <div className="text-center">
           <div className="relative w-28 h-28">
             <svg className="w-full h-full" viewBox="0 0 36 36">
               <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-              <path className="transition-all duration-500 ease-in-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={progressColor} strokeWidth="3" strokeDasharray={`${completionPercentage}, 100`} strokeLinecap="round"/>
+              <path className="transition-all duration-500 ease-in-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={progressColor} strokeWidth="3" strokeDasharray={`${completionPercentage}, 100`} strokeLinecap="round" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold font-poppins text-text-primary" style={{color: progressColor}}>{completionPercentage}%</span>
+              <span className="text-3xl font-bold font-poppins text-text-primary" style={{ color: progressColor }}>{completionPercentage}%</span>
               <span className="text-xs text-text-secondary">Tamamlandı</span>
             </div>
           </div>

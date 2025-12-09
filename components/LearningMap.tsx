@@ -326,7 +326,7 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
 
     return (
         <div className="bg-card-background p-4 md:p-6 rounded-2xl shadow-lg relative min-h-[400px] md:min-h-[500px]">
-            <h2 className="text-xl md:text-2xl font-bold font-poppins text-accent mb-3 md:mb-4">Tedris Harita 🗺️</h2>
+            <h2 className="text-xl md:text-2xl font-bold font-poppins text-accent mb-3 md:mb-4">Öğrenme Haritası 🗺️</h2>
             {isLoading && <div className="text-center p-10 text-sm md:text-base">Harita yükleniyor...</div>}
             {!isLoading && nodes.length === 0 && (
                 <div className="text-center p-8 md:p-10 text-text-secondary text-sm md:text-base">

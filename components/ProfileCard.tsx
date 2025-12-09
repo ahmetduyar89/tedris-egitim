@@ -13,7 +13,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ student }) => {
 
     return (
         <div className="bg-card-background p-6 rounded-2xl shadow-lg border-l-4 border-success-brand">
-            <h2 className="text-2xl font-bold text-text-primary mb-4 font-poppins text-amber-500">Tedris Başarı 🏆</h2>
+            <h2 className="text-2xl font-bold text-text-primary mb-4 font-poppins text-amber-500">Başarı Seviyesi 🏆</h2>
             <div className="space-y-4">
                 <div>
                     <div className="flex justify-between items-center mb-1">

@@ -9,26 +9,26 @@ interface WeeklyScheduleProps {
 
 // Config now uses Tailwind classes for better maintainability and theme consistency
 const subjectConfig: { [key in Subject]?: { borderColor: string; textColor: string; bgColor: string; icon: React.ReactNode } } = {
-  [Subject.Mathematics]: { 
+  [Subject.Mathematics]: {
     borderColor: 'border-secondary',
     textColor: 'text-secondary',
     bgColor: 'bg-red-50',
     icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 3h.008v.008H8.25v-.008Zm0 3h.008v.008H8.25v-.008Zm3-6h.008v.008H11.25v-.008Zm0 3h.008v.008H11.25v-.008Zm0 3h.008v.008H11.25v-.008Zm3-6h.008v.008H14.25v-.008Zm0 3h.008v.008H14.25v-.008Zm0 3h.008v.008H14.25v-.008ZM6 21a2.25 2.25 0 0 1-2.25-2.25V15a2.25 2.25 0 0 1 2.25-2.25h12A2.25 2.25 0 0 1 20.25 15v3.75a2.25 2.25 0 0 1-2.25 2.25H6Z" /></svg>
   },
-  [Subject.Science]: { 
+  [Subject.Science]: {
     borderColor: 'border-primary',
     textColor: 'text-primary',
     bgColor: 'bg-primary/10',
     icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 10.5a8.85 8.85 0 0 1 6.3 2.653M3.75 10.5a8.85 8.85 0 0 0 6.3 2.653M10.5 3.75a8.85 8.85 0 0 1 6.3 2.653M3.75 3.75a8.85 8.85 0 0 0 6.3 2.653M10.5 20.25a8.85 8.85 0 0 0-6.3-2.653M20.25 20.25a8.85 8.85 0 0 1-6.3-2.653M14.25 10.5l-3.75 3.75-3.75-3.75M10.5 3.75v16.5" /></svg>
   },
-  [Subject.Turkish]: { 
+  [Subject.Turkish]: {
     borderColor: 'border-accent',
     textColor: 'text-accent',
     bgColor: 'bg-amber-50',
     icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>
   },
 };
-const defaultConfig = { 
+const defaultConfig = {
   borderColor: 'border-gray-400',
   textColor: 'text-gray-500',
   bgColor: 'bg-gray-50',
@@ -101,24 +101,24 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
     let todayTotal = 0;
 
     (program.days || []).forEach(day => {
-        const tasks = day.tasks || [];
-        let dayTotal = 0;
-        let dayCompleted = 0;
-        tasks.forEach(task => {
-            dayTotal++;
-            if (task.status === TaskStatus.Completed) {
-                dayCompleted++;
-            }
-        });
-        daily[day.day] = { total: dayTotal, completed: dayCompleted };
-        totalTasks += dayTotal;
-        completedTasks += dayCompleted;
-
-        if (day.day.toLowerCase() === dayOfWeek.toLowerCase()) {
-          today = tasks;
-          todayCompleted = dayCompleted;
-          todayTotal = dayTotal;
+      const tasks = day.tasks || [];
+      let dayTotal = 0;
+      let dayCompleted = 0;
+      tasks.forEach(task => {
+        dayTotal++;
+        if (task.status === TaskStatus.Completed) {
+          dayCompleted++;
         }
+      });
+      daily[day.day] = { total: dayTotal, completed: dayCompleted };
+      totalTasks += dayTotal;
+      completedTasks += dayCompleted;
+
+      if (day.day.toLowerCase() === dayOfWeek.toLowerCase()) {
+        today = tasks;
+        todayCompleted = dayCompleted;
+        todayTotal = dayTotal;
+      }
     });
 
     const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -134,21 +134,21 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
       todayTotalCount: todayTotal
     };
   }, [program]);
-  
+
   const progressColor = completionPercentage > 80 ? 'var(--tw-color-success)' : completionPercentage > 40 ? 'var(--tw-color-accent)' : 'var(--tw-color-secondary)';
   const dailyProgressColor = dailyCompletionPercentage > 80 ? '#10b981' : dailyCompletionPercentage > 40 ? '#F5C542' : '#F05039';
 
   return (
     <div className="bg-card-background p-6 rounded-2xl shadow-lg">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold font-poppins text-primary mb-4">Tedris Plan</h2>
+        <h2 className="text-2xl font-bold font-poppins text-primary mb-4">Haftalık Plan</h2>
         <p className="text-text-secondary mb-4">{isInteractive ? `Bugün ${todaysTasks.length} görevin var.` : `${completedCount} / ${weeklyTotal} görev tamamlandı.`}</p>
 
         <div className="space-y-4">
           <div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold text-gray-700">Günlük İlerleme</span>
-              <span className="text-sm font-bold" style={{color: dailyProgressColor}}>{todayCompletedCount}/{todayTotalCount} ({dailyCompletionPercentage}%)</span>
+              <span className="text-sm font-bold" style={{ color: dailyProgressColor }}>{todayCompletedCount}/{todayTotalCount} ({dailyCompletionPercentage}%)</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
@@ -164,7 +164,7 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
           <div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-semibold text-gray-700">Haftalık İlerleme</span>
-              <span className="text-sm font-bold" style={{color: progressColor}}>{completedCount}/{weeklyTotal} ({completionPercentage}%)</span>
+              <span className="text-sm font-bold" style={{ color: progressColor }}>{completedCount}/{weeklyTotal} ({completionPercentage}%)</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
@@ -206,29 +206,29 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-bold font-poppins text-lg text-gray-800">{day.day}</h3>
                   {dailyTotals[day.day]?.total > 0 && (
-                      <span className="text-sm font-semibold text-text-secondary bg-gray-100 px-2 py-1 rounded-md">
-                          {dailyTotals[day.day].completed} / {dailyTotals[day.day].total} dk
-                      </span>
+                    <span className="text-sm font-semibold text-text-secondary bg-gray-100 px-2 py-1 rounded-md">
+                      {dailyTotals[day.day].completed} / {dailyTotals[day.day].total} dk
+                    </span>
                   )}
                 </div>
                 {tasks.length > 0 ? (
                   <div className="space-y-2">
                     {tasks.map(task => {
-                        const isCompleted = task.status === TaskStatus.Completed;
-                        const config = subjectConfig[task.subject as Subject] || defaultConfig;
-                        const displayTitle = task.title || task.description || 'Başlıksız Görev';
-                        const displayType = task.type || '';
-                        return (
-                          <div key={task.id} onClick={() => isInteractive && onTaskClick?.(task)} className={`flex items-center justify-between p-3 rounded-lg ${isCompleted ? 'bg-gray-100' : config.bgColor} ${isInteractive ? 'cursor-pointer' : ''}`}>
-                            <div className="flex items-center space-x-2">
-                                <span className={`font-medium text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-                                  {displayType && `${displayType}: `}'{displayTitle}' ({task.duration} dk)
-                                </span>
-                                {task.isCompletionTask && <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">AI Görevi</span>}
-                            </div>
-                            {isCompleted && <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                      const isCompleted = task.status === TaskStatus.Completed;
+                      const config = subjectConfig[task.subject as Subject] || defaultConfig;
+                      const displayTitle = task.title || task.description || 'Başlıksız Görev';
+                      const displayType = task.type || '';
+                      return (
+                        <div key={task.id} onClick={() => isInteractive && onTaskClick?.(task)} className={`flex items-center justify-between p-3 rounded-lg ${isCompleted ? 'bg-gray-100' : config.bgColor} ${isInteractive ? 'cursor-pointer' : ''}`}>
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-medium text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                              {displayType && `${displayType}: `}'{displayTitle}' ({task.duration} dk)
+                            </span>
+                            {task.isCompletionTask && <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">AI Görevi</span>}
                           </div>
-                        )
+                          {isCompleted && <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
+                        </div>
+                      )
                     })}
                   </div>
                 ) : (

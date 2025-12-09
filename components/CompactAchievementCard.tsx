@@ -7,7 +7,7 @@ interface CompactAchievementCardProps {
 }
 
 /**
- * Compact Tedris Başarı Card - Smaller version for sidebar
+ * Compact Achievement Card - Smaller version for sidebar
  */
 const CompactAchievementCard: React.FC<CompactAchievementCardProps> = ({ student }) => {
     const { level, xpForNextLevel, xpToNextLevel, totalXpForCurrentLevel } = calculateLevel(student.xp);
@@ -22,7 +22,7 @@ const CompactAchievementCard: React.FC<CompactAchievementCardProps> = ({ student
                         <span className="text-xl">🏆</span>
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-amber-600">Tedris Başarı</h3>
+                        <h3 className="text-lg font-bold text-amber-600">Başarı Seviyesi</h3>
                         <p className="text-xs text-gray-600">Seviye {level}</p>
                     </div>
                 </div>

@@ -11,7 +11,7 @@ interface StudentProfileSectionProps {
 
 /**
  * Combined Student Profile Section
- * Displays: Tedris Başarı (Level & XP) + Pomodoro Timer + Daily Goals
+ * Displays: Achievement Level (Level & XP) + Pomodoro Timer + Daily Goals
  */
 const StudentProfileSection: React.FC<StudentProfileSectionProps> = ({ student, studentId }) => {
     const { level, xpForNextLevel, xpToNextLevel, totalXpForCurrentLevel } = calculateLevel(student.xp);
@@ -19,7 +19,7 @@ const StudentProfileSection: React.FC<StudentProfileSectionProps> = ({ student, 
 
     return (
         <div className="space-y-6">
-            {/* Tedris Başarı Card */}
+            {/* Achievement Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
                 {/* Header with gradient */}
                 <div className="p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100">
@@ -28,7 +28,7 @@ const StudentProfileSection: React.FC<StudentProfileSectionProps> = ({ student, 
                             <span className="text-3xl">🏆</span>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-amber-600">Tedris Başarı</h2>
+                            <h2 className="text-2xl font-bold text-amber-600">Başarı Seviyesi</h2>
                             <p className="text-sm text-gray-600">Seviye ve İlerleme</p>
                         </div>
                     </div>

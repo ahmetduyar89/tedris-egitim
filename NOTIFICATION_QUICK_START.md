@@ -73,8 +73,8 @@ Supabase Dashboard → Settings → Edge Functions → Secrets'a da ekleyin:
 `public/manifest.json` oluşturun:
 ```json
 {
-  "name": "TEDRİS Platform",
-  "short_name": "TEDRİS",
+  "name": "TedrisEDU Platform",
+  "short_name": "TedrisEDU",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F7F8FC",

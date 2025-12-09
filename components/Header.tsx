@@ -11,14 +11,14 @@ interface HeaderProps {
 }
 
 const TedrisLogo = () => (
-    <svg width="140" height="35" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g style={{ mixBlendMode: 'multiply' }}>
-            <circle cx="15" cy="24" r="12" fill="#F05039" />
-            <circle cx="33" cy="24" r="12" fill="#F5C542" />
-            <circle cx="24" cy="12" r="12" fill="#2BB4A9" />
-        </g>
-        <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TEDRİS</text>
-    </svg>
+  <svg width="140" height="35" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g style={{ mixBlendMode: 'multiply' }}>
+      <circle cx="15" cy="24" r="12" fill="#F05039" />
+      <circle cx="33" cy="24" r="12" fill="#F5C542" />
+      <circle cx="24" cy="12" r="12" fill="#2BB4A9" />
+    </g>
+    <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TedrisEDU</text>
+  </svg>
 );
 
 const Header: React.FC<HeaderProps> = ({ user, userName, role, onLogout, onMenuButtonClick }) => {
@@ -56,12 +56,12 @@ const Header: React.FC<HeaderProps> = ({ user, userName, role, onLogout, onMenuB
   return (
     <header className="bg-card-background shadow-md p-4 flex justify-between items-center border-b border-border flex-shrink-0 z-20">
       <div className="flex items-center space-x-3">
-         {onMenuButtonClick && (
-            <button onClick={onMenuButtonClick} className="text-gray-600 hover:text-primary md:hidden">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            </button>
+        {onMenuButtonClick && (
+          <button onClick={onMenuButtonClick} className="text-gray-600 hover:text-primary md:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
         )}
         <TedrisLogo />
       </div>

@@ -11,7 +11,7 @@ const TedrisLogo = () => (
       <circle cx="33" cy="24" r="12" fill="#F5C542" />
       <circle cx="24" cy="12" r="12" fill="#2BB4A9" />
     </g>
-    <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TEDRİS</text>
+    <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TedrisEDU</text>
   </svg>
 );
 
@@ -142,7 +142,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
                 <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-white/50">
                   <img
                     src="/teacher-dashboard.png"
-                    alt="TEDRİS Platform"
+                    alt="TedrisEDU Platform"
                     className="w-full h-auto transform group-hover:scale-105 transition-transform duration-700"
                     onError={(e) => {
                       e.currentTarget.src = '/hero-dashboard.png';
@@ -198,7 +198,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
               <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-white/50">
                 <img
                   src="/teacher-dashboard.png"
-                  alt="TEDRİS Platform"
+                  alt="TedrisEDU Platform"
                   className="w-full h-auto"
                   onError={(e) => {
                     e.currentTarget.src = '/hero-dashboard.png';
@@ -294,7 +294,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
               <span className="text-primary font-bold text-sm">✨ Profesyonel Özellikler</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold font-poppins text-gray-900 mb-4">
-              Neden <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">Tedris</span>?
+              Neden <span className="bg-gradient-to-r from-primary via-accent to-secondary text-transparent bg-clip-text">TedrisEDU</span>?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Özel ders yönetiminde ihtiyacınız olan her şey, tek bir profesyonel panelde.
@@ -446,7 +446,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             Eğitimde Dönüşümü Başlatın
           </h2>
           <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
-            Hemen ücretsiz hesabınızı oluşturun ve Tedris'in ayrıcalıklı dünyasına katılın.
+            Hemen ücretsiz hesabınızı oluşturun ve TedrisEDU'nun ayrıcalıklı dünyasına katılın.
           </p>
           <button
             onClick={onNavigateToAuth}
@@ -461,7 +461,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       <footer className="bg-slate-900 text-slate-400 py-12 px-4 border-t border-slate-800">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-white">TEDRİS</span>
+            <span className="text-2xl font-bold text-white">TedrisEDU</span>
             <span className="text-sm bg-slate-800 px-2 py-1 rounded">v2.0</span>
           </div>
           <div className="flex gap-8 text-sm">
@@ -471,7 +471,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             <a href="#" className="hover:text-white transition-colors">İletişim</a>
           </div>
           <div className="text-sm">
-            &copy; 2024 Tedris. Tüm hakları saklıdır.
+            &copy; 2024 TedrisEDU. Tüm hakları saklıdır.
           </div>
         </div>
       </footer>

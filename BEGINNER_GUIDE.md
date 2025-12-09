@@ -1,6 +1,6 @@
-# 🎓 TEDRİS Deployment - Adım Adım Detaylı Rehber
+# 🎓 TedrisEDU Deployment - Adım Adım Detaylı Rehber
 
-Bu rehber, hiç teknik bilginiz olmasa bile TEDRİS platformunu canlıya almanız için hazırlanmıştır.
+Bu rehber, hiç teknik bilginiz olmasa bile TedrisEDU platformunu canlıya almanız için hazırlanmıştır.
 Her adım resimli ve detaylı anlatılmıştır.
 
 ---
@@ -532,13 +532,13 @@ Enter'a basın.
 **3. İlk commit:**
 Terminal'de yazın:
 ```bash
-git commit -m "Initial commit - TEDRİS Platform"
+git commit -m "Initial commit - TedrisEDU Platform"
 ```
 Enter'a basın.
 
 **Göreceksiniz:**
 ```
-[main ...] Initial commit - TEDRİS Platform
+[main ...] Initial commit - TedrisEDU Platform
  XX files changed, XXXX insertions(+)
 ```
 
@@ -1108,6 +1108,6 @@ Ekranda şunları göreceksiniz:
 
 ---
 
-**Hazırlayan**: TEDRİS Team  
+**Hazırlayan**: TedrisEDU Team  
 **Tarih**: 2025-11-25  
 **Versiyon**: 1.0

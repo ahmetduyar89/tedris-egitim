@@ -1,6 +1,6 @@
-# 🎓 TEDRİS - AI Destekli Eğitim Platformu
+# 🎓 TedrisEDU - AI Destekli Eğitim Platformu
 
-TEDRİS, öğretmenlerin iş yükünü azaltan ve öğrenci başarısını artıran yapay zeka destekli bir eğitim yönetim platformudur.
+TedrisEDU, öğretmenlerin iş yükünü azaltan ve öğrenci başarısını artıran yapay zeka destekli bir eğitim yönetim platformudur.
 
 ## ✨ Özellikler
 
@@ -226,6 +226,6 @@ Sorularınız için:
 
 ---
 
-**Yapımcı**: TEDRİS Team  
+**Yapımcı**: TedrisEDU Team  
 **Versiyon**: 1.0.0  
 **Son Güncelleme**: 2025-11-25

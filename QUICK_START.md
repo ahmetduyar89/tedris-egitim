@@ -1,6 +1,6 @@
-# 🚀 TEDRİS - Hızlı Başlangıç Rehberi
+# 🚀 TedrisEDU - Hızlı Başlangıç Rehberi
 
-Bu rehber, TEDRİS platformunu 30 dakikada canlıya almak için gereken minimum adımları içerir.
+Bu rehber, TedrisEDU platformunu 30 dakikada canlıya almak için gereken minimum adımları içerir.
 
 ---
 

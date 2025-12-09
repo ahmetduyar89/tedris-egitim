@@ -1,4 +1,4 @@
-# TEDRİS Deployment Checklist
+# TedrisEDU Deployment Checklist
 
 Bu dosyayı deployment sürecinde rehber olarak kullanın. Her adımı tamamladıkça işaretleyin.
 
@@ -62,7 +62,7 @@ Bu dosyayı deployment sürecinde rehber olarak kullanın. Her adımı tamamlad�
 cd "/Users/ahmetduyar/Downloads/project 2"
 git init
 git add .
-git commit -m "Initial commit - TEDRİS Platform"
+git commit -m "Initial commit - TedrisEDU Platform"
 git remote add origin https://github.com/KULLANICI_ADI/REPO_ADI.git
 git branch -M main
 git push -u origin main

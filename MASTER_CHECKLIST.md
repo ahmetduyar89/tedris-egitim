@@ -1,6 +1,6 @@
-# 🎯 TEDRİS - Komple Sistem Deployment Checklist
+# 🎯 TedrisEDU - Komple Sistem Deployment Checklist
 
-Bu checklist, TEDRİS platformunun sıfırdan canlıya alınması için gereken TÜM adımları içerir.
+Bu checklist, TedrisEDU platformunun sıfırdan canlıya alınması için gereken TÜM adımları içerir.
 Her adımı tamamladıkça işaretleyin.
 
 ---
@@ -135,7 +135,7 @@ cd "/Users/ahmetduyar/Downloads/project 2"
 ```bash
 git init
 git add .
-git commit -m "Initial commit - TEDRİS Platform v1.0"
+git commit -m "Initial commit - TedrisEDU Platform v1.0"
 ```
 
 - [ ] `git init` çalıştırıldı
@@ -707,4 +707,4 @@ Vercel'in verdiği değerleri domain sağlayıcınızda ayarlayın:
 
 ---
 
-**🎉 TEBRİKLER! TEDRİS platformunuz canlıda! 🎉**
+**🎉 TEBRİKLER! TedrisEDU platformunuz canlıda! 🎉**

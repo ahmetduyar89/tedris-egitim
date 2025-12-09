@@ -272,7 +272,7 @@ const getEnabledChannels = (preferences: any): NotificationChannel[] => {
  */
 const formatWhatsAppMessage = (payload: NotificationPayload): string => {
     const emoji = getNotificationEmoji(payload.type);
-    return `${emoji} *${payload.title}*\n\n${payload.message}\n\n_TEDRİS Platform_`;
+    return `${emoji} *${payload.title}*\n\n${payload.message}\n\n_TedrisEDU Platform_`;
 };
 
 /**
@@ -304,7 +304,7 @@ const formatEmailMessage = (payload: NotificationPayload): string => {
                 <div class="message">${payload.message}</div>
                 ${payload.actionUrl ? `<div style="text-align: center;"><a href="${payload.actionUrl}" class="button">Görüntüle</a></div>` : ''}
                 <div class="footer">
-                    <p>TEDRİS Platform</p>
+                    <p>TedrisEDU Platform</p>
                     <p>Bu bir otomatik bildirimdir.</p>
                 </div>
             </div>

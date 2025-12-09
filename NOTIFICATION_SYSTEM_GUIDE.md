@@ -81,8 +81,8 @@ Supabase Dashboard → Project Settings → Edge Functions → Secrets'a da ekle
 
 ```json
 {
-  "name": "TEDRİS Platform",
-  "short_name": "TEDRİS",
+  "name": "TedrisEDU Platform",
+  "short_name": "TedrisEDU",
   "description": "Özel Ders Takip Sistemi",
   "start_url": "/",
   "display": "standalone",
@@ -362,7 +362,7 @@ await sendLocalNotification('Test Bildirimi', {
 ```typescript
 const formatWhatsAppMessage = (payload: NotificationPayload): string => {
   // Kendi formatınızı oluşturun
-  return `🎓 *TEDRİS*\n\n${payload.title}\n\n${payload.message}`;
+  return `🎓 *TedrisEDU*\n\n${payload.title}\n\n${payload.message}`;
 };
 ```
 

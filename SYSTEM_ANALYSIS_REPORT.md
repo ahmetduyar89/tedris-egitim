@@ -1,4 +1,4 @@
-# 📊 TEDRİS Platform - Kapsamlı Sistem Analizi ve Geliştirme Önerileri
+# 📊 TedrisEDU Platform - Kapsamlı Sistem Analizi ve Geliştirme Önerileri
 
 **Tarih**: 26 Kasım 2025  
 **Versiyon**: 1.0.0  
@@ -28,7 +28,7 @@
 
 ### Puan: 7.2/10
 
-TEDRİS, modern teknolojiler kullanan, AI destekli özellikler sunan ve iyi yapılandırılmış bir eğitim platformudur. Ancak production-ready olabilmesi için önemli iyileştirmeler gerekiyor.
+TedrisEDU, modern teknolojiler kullanan, AI destekli özellikler sunan ve iyi yapılandırılmış bir eğitim platformudur. Ancak production-ready olabilmesi için önemli iyileştirmeler gerekiyor.
 
 ### Özet Değerlendirme
 
@@ -569,8 +569,8 @@ export default {
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'TEDRİS - Eğitim Platformu',
-        short_name: 'TEDRİS',
+        name: 'TedrisEDU - Eğitim Platformu',
+        short_name: 'TedrisEDU',
         theme_color: '#2BB4A9',
         icons: [
           {
@@ -683,16 +683,16 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendWelcomeEmail(user: User) {
   await resend.emails.send({
-    from: 'TEDRİS <noreply@tedris.com>',
+    from: 'TedrisEDU <noreply@tedris.com>',
     to: user.email,
-    subject: 'TEDRİS\'e Hoş Geldiniz!',
+    subject: 'TedrisEDU\'e Hoş Geldiniz!',
     react: WelcomeEmail({ name: user.name })
   });
 }
 
 export async function sendTestCompletedEmail(student: Student, test: Test) {
   await resend.emails.send({
-    from: 'TEDRİS <noreply@tedris.com>',
+    from: 'TedrisEDU <noreply@tedris.com>',
     to: student.contact,
     subject: `${test.title} - Test Tamamlandı`,
     react: TestCompletedEmail({ student, test })
@@ -709,7 +709,7 @@ export function WelcomeEmail({ name }: { name: string }) {
   return (
     <Html>
       <Text>Merhaba {name},</Text>
-      <Text>TEDRİS ailesine hoş geldiniz!</Text>
+      <Text>TedrisEDU ailesine hoş geldiniz!</Text>
       <Button href="https://tedris.com/dashboard">
         Dashboard'a Git
       </Button>
@@ -1604,7 +1604,7 @@ spec:
 
 ## 💡 Final Notlar
 
-TEDRİS, güçlü bir foundation'a sahip, modern teknolojiler kullanılan ve iyi düşünülmüş bir platform. Ancak production-ready olabilmesi için **performans**, **güvenlik** ve **test coverage** alanlarında acil aksiyonlar gerekiyor.
+TedrisEDU, güçlü bir foundation'a sahip, modern teknolojiler kullanılan ve iyi düşünülmüş bir platform. Ancak production-ready olabilmesi için **performans**, **güvenlik** ve **test coverage** alanlarında acil aksiyonlar gerekiyor.
 
 **En Kritik 3 Madde:**
 1. ❌ **Test Coverage Yok** → Regression riski çok yüksek

@@ -15,7 +15,7 @@ const TedrisLogo = () => (
       <circle cx="42" cy="30" r="15" fill="#F5C542" />
       <circle cx="31" cy="15" r="15" fill="#2BB4A9" />
     </g>
-    <text x="60" y="38" fontFamily="Poppins, sans-serif" fontSize="36" fontWeight="800" fill="#000000">TEDRİS</text>
+    <text x="60" y="38" fontFamily="Poppins, sans-serif" fontSize="36" fontWeight="800" fill="#000000">TedrisEDU</text>
   </svg>
 );
 

@@ -5,7 +5,7 @@
 
 ## Overview
 
-This document summarizes the successful integration of AI security improvements and gamification features into the TEDRİS platform, as outlined in the user's main objective.
+This document summarizes the successful integration of AI security improvements and gamification features into the TedrisEDU platform, as outlined in the user's main objective.
 
 ---
 

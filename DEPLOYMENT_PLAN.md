@@ -1,7 +1,7 @@
-# TEDRİS Deployment Planı
+# TedrisEDU Deployment Planı
 
 ## Genel Bakış
-Bu plan, TEDRİS eğitim platformunun Supabase veritabanına bağlanması ve Vercel/Netlify gibi bir platformda yayınlanması için adım adım talimatlar içerir.
+Bu plan, TedrisEDU eğitim platformunun Supabase veritabanına bağlanması ve Vercel/Netlify gibi bir platformda yayınlanması için adım adım talimatlar içerir.
 
 ---
 
@@ -76,7 +76,7 @@ git init
 git add .
 
 # İlk commit
-git commit -m "Initial commit - TEDRİS Platform"
+git commit -m "Initial commit - TedrisEDU Platform"
 
 # GitHub'da yeni bir repository oluşturun (https://github.com/new)
 # Repository adı: tedris-platform (veya istediğiniz isim)

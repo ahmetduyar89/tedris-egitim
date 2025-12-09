@@ -22,7 +22,7 @@ const TedrisLogo = () => (
             <circle cx="33" cy="24" r="12" fill="#F5C542" />
             <circle cx="24" cy="12" r="12" fill="#2BB4A9" />
         </g>
-        <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TEDRİS</text>
+        <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TedrisEDU</text>
     </svg>
 );
 

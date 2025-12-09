@@ -249,9 +249,9 @@ export async function submitComposition(
         })
         .eq('id', assignmentId)
         .select(`
-      *,
-      composition:compositions(*)
-    `)
+    *,
+    composition: compositions(*)
+        `)
         .single();
 
     if (error) throw error;

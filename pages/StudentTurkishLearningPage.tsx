@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { User, WeeklyTurkishGoals, BookAssignment } from '../types';
-import { getCurrentWeekGoals } from '../services/turkishLearningService';
+import { User, TurkishContentAssignment, BookAssignment } from '../types';
+import { getStudentTurkishAssignments } from '../services/turkishLearningService';
 import { getStudentBookAssignments } from '../services/bookReadingService';
+import TurkishLearningSession from './TurkishLearningSession';
 import BookQuestionAnsweringPage from './BookQuestionAnsweringPage';
 
 interface StudentTurkishLearningPageProps {
@@ -9,68 +10,112 @@ interface StudentTurkishLearningPageProps {
 }
 
 const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({ user }) => {
-    const [weeklyGoals, setWeeklyGoals] = useState<WeeklyTurkishGoals | null>(null);
+    const [turkishAssignments, setTurkishAssignments] = useState<TurkishContentAssignment[]>([]);
     const [bookAssignments, setBookAssignments] = useState<BookAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedAssignment, setSelectedAssignment] = useState<BookAssignment | null>(null);
+    const [selectedTurkishAssignment, setSelectedTurkishAssignment] = useState<TurkishContentAssignment | null>(null);
+    const [selectedBookAssignment, setSelectedBookAssignment] = useState<BookAssignment | null>(null);
 
     useEffect(() => {
         loadData();
     }, [user.id]);
 
     const loadData = async () => {
-        console.log('[Turkish] Loading data for student:', user.id);
         setIsLoading(true);
         try {
-            const [goals, books] = await Promise.all([
-                getCurrentWeekGoals(user.id),
+            const [turkish, books] = await Promise.all([
+                getStudentTurkishAssignments(user.id),
                 getStudentBookAssignments(user.id)
             ]);
 
-            console.log('[Turkish] Loaded goals:', goals);
-            console.log('[Turkish] Loaded book assignments:', books);
-            console.log('[Turkish] Number of book assignments:', books.length);
-
-            setWeeklyGoals(goals);
+            setTurkishAssignments(turkish);
             setBookAssignments(books);
         } catch (error) {
-            console.error('[Turkish] Error loading Turkish learning data:', error);
+            console.error('Error loading Turkish learning data:', error);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleStartTurkishAssignment = (assignment: TurkishContentAssignment) => {
+        setSelectedTurkishAssignment(assignment);
+    };
+
+    const handleCompleteTurkishAssignment = () => {
+        setSelectedTurkishAssignment(null);
+        loadData();
+    };
+
     const handleStartReading = async (assignmentId: string) => {
-        console.log('[Turkish] Starting reading for assignment:', assignmentId);
         try {
             const { updateBookAssignmentStatus } = await import('../services/bookReadingService');
             await updateBookAssignmentStatus(assignmentId, 'reading');
             await loadData();
-            console.log('[Turkish] Successfully started reading');
         } catch (error) {
-            console.error('[Turkish] Error starting reading:', error);
+            console.error('Error starting reading:', error);
             alert('Bir hata oluştu. Lütfen tekrar deneyin.');
         }
     };
 
     const handleAnswerQuestions = (assignment: BookAssignment) => {
-        console.log('[Turkish] Opening questions for assignment:', assignment);
-        console.log('[Turkish] Assignment ID:', assignment.id);
-        console.log('[Turkish] Book ID:', assignment.bookId);
-        console.log('[Turkish] Book object:', assignment.book);
-        setSelectedAssignment(assignment);
-        console.log('[Turkish] Selected assignment set, should navigate to questions page');
+        setSelectedBookAssignment(assignment);
     };
 
     const handleBackFromQuestions = () => {
-        console.log('[Turkish] Returning from questions page');
-        setSelectedAssignment(null);
-        loadData(); // Reload data to get updated status
+        setSelectedBookAssignment(null);
+        loadData();
     };
 
-    const getProgressPercentage = (learned: number, target: number) => {
-        if (target === 0) return 0;
-        return Math.min(Math.round((learned / target) * 100), 100);
+    const getCategoryIcon = (category: string) => {
+        switch (category) {
+            case 'vocabulary': return '📖';
+            case 'idiom': return '💬';
+            case 'proverb': return '🎯';
+            default: return '📚';
+        }
+    };
+
+    const getCategoryName = (category: string) => {
+        switch (category) {
+            case 'vocabulary': return 'Kelime';
+            case 'idiom': return 'Deyim';
+            case 'proverb': return 'Atasözü';
+            default: return 'İçerik';
+        }
+    };
+
+    const getStatusBadge = (assignment: TurkishContentAssignment) => {
+        const learnedCount = assignment.learnedContentIds?.length || 0;
+        const totalCount = assignment.contentIds?.length || 0;
+        const allLearned = learnedCount === totalCount && totalCount > 0;
+
+        switch (assignment.learningStatus) {
+            case 'not_started':
+                return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold">Başlanmadı</span>;
+            case 'learning':
+                return <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">Öğreniyor</span>;
+            case 'practicing':
+                return <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-semibold">Test Ediyor</span>;
+            case 'mastered':
+                return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">✓ Tamamlandı</span>;
+            default:
+                return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold">Bilinmiyor</span>;
+        }
+    };
+
+    const getDaysRemaining = (dueDate: string) => {
+        const due = new Date(dueDate);
+        const now = new Date();
+        const diffTime = due.getTime() - now.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    };
+
+    const getProgressPercentage = (assignment: TurkishContentAssignment) => {
+        const learnedCount = assignment.learnedContentIds?.length || 0;
+        const totalCount = assignment.contentIds?.length || 0;
+        if (totalCount === 0) return 0;
+        return Math.round((learnedCount / totalCount) * 100);
     };
 
     if (isLoading) {
@@ -81,112 +126,124 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
         );
     }
 
-    // Show question answering page if an assignment is selected
-    if (selectedAssignment) {
+    // Show Turkish learning session if selected
+    if (selectedTurkishAssignment) {
+        return (
+            <TurkishLearningSession
+                assignment={selectedTurkishAssignment}
+                onComplete={handleCompleteTurkishAssignment}
+                onBack={() => setSelectedTurkishAssignment(null)}
+            />
+        );
+    }
+
+    // Show book question answering if selected
+    if (selectedBookAssignment) {
         return (
             <BookQuestionAnsweringPage
                 user={user}
-                assignment={selectedAssignment}
+                assignment={selectedBookAssignment}
                 onBack={handleBackFromQuestions}
                 onComplete={handleBackFromQuestions}
             />
         );
     }
 
+    const activeAssignments = turkishAssignments.filter(a => a.learningStatus !== 'mastered');
+    const completedAssignments = turkishAssignments.filter(a => a.learningStatus === 'mastered');
+
     return (
         <div className="p-6 max-w-7xl mx-auto">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">📚 Türkçe Öğrenimi</h1>
                 <p className="text-gray-600 mt-2">
-                    Haftalık hedefleriniz ve atanan kitaplarınız
+                    Kelime, deyim ve atasözü öğrenme görevleriniz
                 </p>
             </div>
 
-            {!weeklyGoals && bookAssignments.length === 0 ? (
+            {activeAssignments.length === 0 && bookAssignments.length === 0 ? (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                     <div className="text-6xl mb-4">📖</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        Henüz içerik atanmamış
+                        Henüz görev atanmamış
                     </h3>
                     <p className="text-gray-600">
-                        Öğretmeniniz size kelime, deyim, atasözü veya kitap atadığında burada görünecek.
+                        Öğretmeniniz size görev atadığında burada görünecek.
                     </p>
                 </div>
             ) : (
                 <div className="space-y-6">
-                    {/* Weekly Goals */}
-                    {weeklyGoals && (
+                    {/* Active Turkish Assignments */}
+                    {activeAssignments.length > 0 && (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                Bu Haftanın Hedefleri
+                                🎯 Aktif Görevler
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Vocabulary */}
-                                <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-2xl">📖</span>
-                                        <span className="text-sm font-semibold text-purple-700">
-                                            {weeklyGoals.vocabularyLearned}/{weeklyGoals.vocabularyTarget}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-semibold text-gray-900 mb-2">Kelimeler</h3>
-                                    <div className="w-full bg-purple-200 rounded-full h-2">
-                                        <div
-                                            className="bg-purple-600 h-2 rounded-full transition-all"
-                                            style={{ width: `${getProgressPercentage(weeklyGoals.vocabularyLearned, weeklyGoals.vocabularyTarget)}%` }}
-                                        ></div>
-                                    </div>
-                                    <p className="text-xs text-purple-700 mt-1">
-                                        {getProgressPercentage(weeklyGoals.vocabularyLearned, weeklyGoals.vocabularyTarget)}% tamamlandı
-                                    </p>
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {activeAssignments.map((assignment) => {
+                                    const daysRemaining = getDaysRemaining(assignment.dueDate);
+                                    const progress = getProgressPercentage(assignment);
+                                    const learnedCount = assignment.learnedContentIds?.length || 0;
+                                    const totalCount = assignment.contentIds?.length || 0;
 
-                                {/* Idioms */}
-                                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-2xl">💬</span>
-                                        <span className="text-sm font-semibold text-blue-700">
-                                            {weeklyGoals.idiomsLearned}/{weeklyGoals.idiomsTarget}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-semibold text-gray-900 mb-2">Deyimler</h3>
-                                    <div className="w-full bg-blue-200 rounded-full h-2">
+                                    return (
                                         <div
-                                            className="bg-blue-600 h-2 rounded-full transition-all"
-                                            style={{ width: `${getProgressPercentage(weeklyGoals.idiomsLearned, weeklyGoals.idiomsTarget)}%` }}
-                                        ></div>
-                                    </div>
-                                    <p className="text-xs text-blue-700 mt-1">
-                                        {getProgressPercentage(weeklyGoals.idiomsLearned, weeklyGoals.idiomsTarget)}% tamamlandı
-                                    </p>
-                                </div>
+                                            key={assignment.id}
+                                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                                        >
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-3xl">{getCategoryIcon(assignment.category)}</span>
+                                                    <div>
+                                                        <h3 className="font-bold text-lg text-gray-900">
+                                                            {totalCount} {getCategoryName(assignment.category)}
+                                                        </h3>
+                                                        <p className="text-sm text-gray-600">
+                                                            {learnedCount}/{totalCount} öğrenildi
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {getStatusBadge(assignment)}
+                                            </div>
 
-                                {/* Proverbs */}
-                                <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-2xl">🎯</span>
-                                        <span className="text-sm font-semibold text-green-700">
-                                            {weeklyGoals.proverbsLearned}/{weeklyGoals.proverbsTarget}
-                                        </span>
-                                    </div>
-                                    <h3 className="font-semibold text-gray-900 mb-2">Atasözleri</h3>
-                                    <div className="w-full bg-green-200 rounded-full h-2">
-                                        <div
-                                            className="bg-green-600 h-2 rounded-full transition-all"
-                                            style={{ width: `${getProgressPercentage(weeklyGoals.proverbsLearned, weeklyGoals.proverbsTarget)}%` }}
-                                        ></div>
-                                    </div>
-                                    <p className="text-xs text-green-700 mt-1">
-                                        {getProgressPercentage(weeklyGoals.proverbsLearned, weeklyGoals.proverbsTarget)}% tamamlandı
-                                    </p>
-                                </div>
-                            </div>
+                                            {/* Progress bar */}
+                                            <div className="mb-3">
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                    <div
+                                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                                        style={{ width: `${progress}%` }}
+                                                    />
+                                                </div>
+                                            </div>
 
-                            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm text-blue-700">
-                                    💡 <strong>İpucu:</strong> Flashcard'lar sekmesinden kelime, deyim ve atasözlerini çalışabilirsiniz.
-                                    Her doğru cevap ilerlemenizi artırır!
-                                </p>
+                                            {/* Due date */}
+                                            <div className="flex items-center justify-between mb-4">
+                                                <span className={`text-sm font-semibold ${daysRemaining < 0 ? 'text-red-600' :
+                                                        daysRemaining <= 2 ? 'text-orange-600' :
+                                                            'text-gray-600'
+                                                    }`}>
+                                                    📅 {daysRemaining < 0 ? 'Süresi geçti!' :
+                                                        daysRemaining === 0 ? 'Bugün bitiyor' :
+                                                            daysRemaining === 1 ? 'Yarın bitiyor' :
+                                                                `${daysRemaining} gün kaldı`}
+                                                </span>
+                                                {assignment.practiceScore !== undefined && (
+                                                    <span className="text-sm font-semibold text-green-600">
+                                                        Test: {assignment.practiceScore}%
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Action button */}
+                                            <button
+                                                onClick={() => handleStartTurkishAssignment(assignment)}
+                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                                            >
+                                                {assignment.learningStatus === 'not_started' ? 'Başla' : 'Devam Et'}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -195,7 +252,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                     {bookAssignments.length > 0 && (
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                Atanan Kitaplar
+                                📚 Kitap Görevleri
                             </h2>
                             <div className="space-y-4">
                                 {bookAssignments.map((assignment) => (
@@ -207,8 +264,8 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                                         {assignment.book?.title}
                                                     </h3>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                        assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-gray-100 text-gray-700'
+                                                            assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-gray-100 text-gray-700'
                                                         }`}>
                                                         {assignment.status === 'completed' ? 'Tamamlandı' :
                                                             assignment.status === 'reading' ? 'Okunuyor' :
@@ -224,11 +281,6 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                                         <span>📅 Bitiş: {new Date(assignment.dueDate).toLocaleDateString('tr-TR')}</span>
                                                     )}
                                                 </div>
-                                                {assignment.book?.summary && (
-                                                    <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                                                        {assignment.book.summary}
-                                                    </p>
-                                                )}
                                             </div>
                                         </div>
                                         <div className="mt-4 flex gap-2">
@@ -248,14 +300,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                                     Soruları Cevapla
                                                 </button>
                                             )}
-                                            {(assignment.status === 'completed' || assignment.status === 'reviewed') && !assignment.teacherScore && (
-                                                <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-                                                    <span className="text-sm font-semibold text-blue-700">
-                                                        ⏳ Öğretmen değerlendirmesi bekleniyor
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {(assignment.status === 'completed' || assignment.status === 'reviewed') && assignment.teacherScore && (
+                                            {assignment.status === 'completed' && assignment.teacherScore && (
                                                 <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
                                                     <span className="text-sm font-semibold text-green-700">
                                                         ⭐ Puan: {assignment.teacherScore}/100
@@ -270,6 +315,40 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                                 </p>
                                             </div>
                                         )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Completed Assignments */}
+                    {completedAssignments.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">
+                                ✅ Tamamlanan Görevler
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {completedAssignments.map((assignment) => (
+                                    <div
+                                        key={assignment.id}
+                                        className="border border-green-200 bg-green-50 rounded-lg p-4"
+                                    >
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-2xl">{getCategoryIcon(assignment.category)}</span>
+                                            <div>
+                                                <h3 className="font-bold text-gray-900">
+                                                    {assignment.contentIds?.length} {getCategoryName(assignment.category)}
+                                                </h3>
+                                                {assignment.practiceScore !== undefined && (
+                                                    <p className="text-sm text-green-700 font-semibold">
+                                                        Skor: {assignment.practiceScore}%
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-gray-600">
+                                            {new Date(assignment.masteredAt || assignment.updatedAt).toLocaleDateString('tr-TR')}
+                                        </p>
                                     </div>
                                 ))}
                             </div>

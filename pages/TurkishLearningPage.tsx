@@ -8,6 +8,7 @@ import AddBookModal from '../components/AddBookModal';
 import ManageBookQuestionsModal from '../components/ManageBookQuestionsModal';
 import BookManagementSection from '../components/BookManagementSection';
 import AssignContentModal from '../components/AssignContentModal';
+import AssignTurkishContentModal from '../components/AssignTurkishContentModal';
 import BookAssignmentsManagement from '../components/BookAssignmentsManagement';
 
 interface TurkishLearningPageProps {
@@ -23,6 +24,7 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
     const [showAddModal, setShowAddModal] = useState(false);
     const [showBulkImportModal, setShowBulkImportModal] = useState(false);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showNewAssignModal, setShowNewAssignModal] = useState(false);
     const [activeTab, setActiveTab] = useState<'vocabulary' | 'idiom' | 'proverb'>('vocabulary');
 
     useEffect(() => {
@@ -146,13 +148,13 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                     Toplu Ekle
                 </button>
                 <button
-                    onClick={() => setShowAssignModal(true)}
+                    onClick={() => setShowNewAssignModal(true)}
                     className="bg-purple-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                     </svg>
-                    Öğrenciye Ata
+                    Yeni Atama Oluştur
                 </button>
             </div>
 
@@ -274,6 +276,16 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                     students={students}
                     onClose={() => setShowAssignModal(false)}
                     onSuccess={loadContent}
+                />
+            )}
+
+            {showNewAssignModal && (
+                <AssignTurkishContentModal
+                    isOpen={showNewAssignModal}
+                    onClose={() => setShowNewAssignModal(false)}
+                    teacherId={user.id}
+                    students={students}
+                    onAssignmentCreated={loadContent}
                 />
             )}
         </div>

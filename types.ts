@@ -868,3 +868,62 @@ export interface TurkishLearningProgress {
   totalMastered: number;
   currentStreak: number;
 }
+
+// ============================================================================
+// TURKISH CONTENT ASSIGNMENT SYSTEM (New Learning Flow)
+// ============================================================================
+
+export type TurkishLearningStatus = 'not_started' | 'learning' | 'practicing' | 'mastered';
+
+export interface TurkishContentAssignment {
+  id: string;
+  studentId: string;
+  teacherId: string;
+  contentIds: string[]; // TurkishContentLibraryItem IDs
+  category: 'vocabulary' | 'idiom' | 'proverb';
+  assignedAt: string;
+  dueDate: string; // Deadline for completion
+
+  // Learning phase
+  learningStatus: TurkishLearningStatus;
+  learnedContentIds: string[]; // Content marked as learned
+
+  // Practice phase
+  practiceAttempts: number;
+  practiceScore?: number; // 0-100
+  practiceCompletedAt?: string;
+
+  // Mastery phase (moved to flashcard system)
+  masteredAt?: string;
+
+  createdAt: string;
+  updatedAt: string;
+
+  // Populated fields
+  contents?: TurkishContentLibraryItem[];
+  student?: Student;
+}
+
+export interface TurkishContentProgress {
+  id: string;
+  assignmentId: string;
+  studentId: string;
+  contentId: string;
+
+  // Learning tracking
+  viewCount: number;
+  markedAsLearned: boolean;
+  learnedAt?: string;
+
+  // Practice tracking
+  practiceAttempts: number;
+  correctCount: number;
+  incorrectCount: number;
+  lastPracticeAt?: string;
+
+  createdAt: string;
+  updatedAt: string;
+
+  // Populated field
+  content?: TurkishContentLibraryItem;
+}

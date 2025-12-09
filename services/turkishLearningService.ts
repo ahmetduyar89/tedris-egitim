@@ -502,3 +502,311 @@ const mapWeeklyGoals = (data: any): WeeklyTurkishGoals => ({
     updatedAt: data.updated_at,
     bookAssignment: data.book_assignments
 });
+
+// ============================================================================
+// NEW TURKISH CONTENT ASSIGNMENT SYSTEM (3-Stage Learning Flow)
+// ============================================================================
+
+import { TurkishContentAssignment, TurkishContentProgress } from '../types';
+
+/**
+ * Create a new Turkish content assignment with deadline
+ */
+export const createTurkishContentAssignment = async (
+    teacherId: string,
+    studentId: string,
+    contentIds: string[],
+    category: 'vocabulary' | 'idiom' | 'proverb',
+    dueDate: string
+): Promise<TurkishContentAssignment> => {
+    const { data, error } = await supabase
+        .from('turkish_content_assignments')
+        .insert({
+            teacher_id: teacherId,
+            student_id: studentId,
+            content_ids: contentIds,
+            category,
+            due_date: dueDate,
+            learning_status: 'not_started',
+            learned_content_ids: [],
+            practice_attempts: 0
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    return {
+        id: data.id,
+        studentId: data.student_id,
+        teacherId: data.teacher_id,
+        contentIds: data.content_ids,
+        category: data.category,
+        assignedAt: data.assigned_at,
+        dueDate: data.due_date,
+        learningStatus: data.learning_status,
+        learnedContentIds: data.learned_content_ids,
+        practiceAttempts: data.practice_attempts,
+        practiceScore: data.practice_score,
+        practiceCompletedAt: data.practice_completed_at,
+        masteredAt: data.mastered_at,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+    };
+};
+
+/**
+ * Get all assignments for a student
+ */
+export const getStudentTurkishAssignments = async (
+    studentId: string
+): Promise<TurkishContentAssignment[]> => {
+    const { data, error } = await supabase
+        .from('turkish_content_assignments')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return data.map((item: any) => ({
+        id: item.id,
+        studentId: item.student_id,
+        teacherId: item.teacher_id,
+        contentIds: item.content_ids,
+        category: item.category,
+        assignedAt: item.assigned_at,
+        dueDate: item.due_date,
+        learningStatus: item.learning_status,
+        learnedContentIds: item.learned_content_ids,
+        practiceAttempts: item.practice_attempts,
+        practiceScore: item.practice_score,
+        practiceCompletedAt: item.practice_completed_at,
+        masteredAt: item.mastered_at,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at
+    }));
+};
+
+/**
+ * Mark content as learned in an assignment
+ */
+export const markAssignmentContentAsLearned = async (
+    assignmentId: string,
+    contentId: string
+): Promise<void> => {
+    // Get current assignment
+    const { data: assignment, error: fetchError } = await supabase
+        .from('turkish_content_assignments')
+        .select('learned_content_ids, student_id')
+        .eq('id', assignmentId)
+        .single();
+
+    if (fetchError) throw fetchError;
+
+    const learnedIds = assignment.learned_content_ids || [];
+    if (!learnedIds.includes(contentId)) {
+        learnedIds.push(contentId);
+    }
+
+    // Update assignment
+    const { error } = await supabase
+        .from('turkish_content_assignments')
+        .update({
+            learned_content_ids: learnedIds,
+            learning_status: 'learning'
+        })
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+
+    // Create or update progress record
+    const { error: progressError } = await supabase
+        .from('turkish_content_progress')
+        .upsert({
+            assignment_id: assignmentId,
+            student_id: assignment.student_id,
+            content_id: contentId,
+            marked_as_learned: true,
+            learned_at: new Date().toISOString(),
+            view_count: 1
+        }, {
+            onConflict: 'assignment_id,content_id'
+        });
+
+    if (progressError) throw progressError;
+};
+
+/**
+ * Get assignment progress details
+ */
+export const getAssignmentProgress = async (
+    assignmentId: string
+): Promise<TurkishContentProgress[]> => {
+    const { data, error } = await supabase
+        .from('turkish_content_progress')
+        .select('*')
+        .eq('assignment_id', assignmentId);
+
+    if (error) throw error;
+
+    return data.map((item: any) => ({
+        id: item.id,
+        assignmentId: item.assignment_id,
+        studentId: item.student_id,
+        contentId: item.content_id,
+        viewCount: item.view_count,
+        markedAsLearned: item.marked_as_learned,
+        learnedAt: item.learned_at,
+        practiceAttempts: item.practice_attempts,
+        correctCount: item.correct_count,
+        incorrectCount: item.incorrect_count,
+        lastPracticeAt: item.last_practice_at,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at
+    }));
+};
+
+/**
+ * Submit a practice answer
+ */
+export const submitPracticeAnswer = async (
+    assignmentId: string,
+    studentId: string,
+    contentId: string,
+    isCorrect: boolean
+): Promise<void> => {
+    const { data: progress, error: fetchError } = await supabase
+        .from('turkish_content_progress')
+        .select('*')
+        .eq('assignment_id', assignmentId)
+        .eq('content_id', contentId)
+        .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    const updateData: any = {
+        practice_attempts: (progress?.practice_attempts || 0) + 1,
+        last_practice_at: new Date().toISOString()
+    };
+
+    if (isCorrect) {
+        updateData.correct_count = (progress?.correct_count || 0) + 1;
+    } else {
+        updateData.incorrect_count = (progress?.incorrect_count || 0) + 1;
+    }
+
+    const { error } = await supabase
+        .from('turkish_content_progress')
+        .upsert({
+            assignment_id: assignmentId,
+            student_id: studentId,
+            content_id: contentId,
+            ...updateData
+        }, {
+            onConflict: 'assignment_id,content_id'
+        });
+
+    if (error) throw error;
+};
+
+/**
+ * Complete practice session and update score
+ */
+export const completePracticeSession = async (
+    assignmentId: string,
+    score: number
+): Promise<void> => {
+    const { data: assignment, error: fetchError } = await supabase
+        .from('turkish_content_assignments')
+        .select('practice_attempts')
+        .eq('id', assignmentId)
+        .single();
+
+    if (fetchError) throw fetchError;
+
+    const { error } = await supabase
+        .from('turkish_content_assignments')
+        .update({
+            learning_status: 'practicing',
+            practice_attempts: (assignment.practice_attempts || 0) + 1,
+            practice_score: score,
+            practice_completed_at: new Date().toISOString()
+        })
+        .eq('id', assignmentId);
+
+    if (error) throw error;
+};
+
+/**
+ * Move successfully learned content to flashcard system
+ */
+export const moveToSpacedRepetition = async (
+    assignmentId: string,
+    studentId: string
+): Promise<void> => {
+    // Get assignment details
+    const { data: assignment, error: assignmentError } = await supabase
+        .from('turkish_content_assignments')
+        .select('*, turkish_content_library(*)')
+        .eq('id', assignmentId)
+        .single();
+
+    if (assignmentError) throw assignmentError;
+
+    // Get content items
+    const { data: contentItems, error: contentError } = await supabase
+        .from('turkish_content_library')
+        .select('*')
+        .in('id', assignment.content_ids);
+
+    if (contentError) throw contentError;
+
+    // Create flashcards
+    const flashcardData = contentItems.map((item: any) => ({
+        teacher_id: assignment.teacher_id,
+        subject: 'Türkçe',
+        grade: 8, // Default
+        topic: item.category,
+        front_content: item.front_content,
+        back_content: item.back_content,
+        difficulty_level: item.difficulty_level,
+        category: item.category,
+        is_ai_generated: item.is_ai_generated
+    }));
+
+    const { data: flashcards, error: flashcardError } = await supabase
+        .from('flashcards')
+        .insert(flashcardData)
+        .select();
+
+    if (flashcardError) throw flashcardError;
+
+    // Create spaced repetition schedules
+    const scheduleData = flashcards.map((flashcard: any) => ({
+        student_id: studentId,
+        flashcard_id: flashcard.id,
+        ease_factor: 2.5,
+        interval_days: 1,
+        repetition_count: 0,
+        next_review_date: new Date().toISOString(),
+        mastery_level: 0
+    }));
+
+    const { error: scheduleError } = await supabase
+        .from('spaced_repetition_schedule')
+        .insert(scheduleData);
+
+    if (scheduleError) throw scheduleError;
+
+    // Mark assignment as mastered
+    const { error: updateError } = await supabase
+        .from('turkish_content_assignments')
+        .update({
+            learning_status: 'mastered',
+            mastered_at: new Date().toISOString()
+        })
+        .eq('id', assignmentId);
+
+    if (updateError) throw updateError;
+};

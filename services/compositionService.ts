@@ -99,6 +99,7 @@ export async function deleteComposition(id: string): Promise<void> {
 
 /**
  * Assign a composition to multiple students
+ * Skips students who already have this composition assigned
  */
 export async function assignComposition(
     compositionId: string,
@@ -106,8 +107,26 @@ export async function assignComposition(
     teacherId: string,
     dueDate?: string,
     isMandatory: boolean = true
-): Promise<void> {
-    const assignments = studentIds.map(studentId => ({
+): Promise<{ assigned: number; skipped: number }> {
+    // Check for existing assignments
+    const { data: existingAssignments } = await supabase
+        .from('composition_assignments')
+        .select('student_id')
+        .eq('composition_id', compositionId)
+        .in('student_id', studentIds);
+
+    const existingStudentIds = new Set(
+        existingAssignments?.map(a => a.student_id) || []
+    );
+
+    // Filter out students who already have this assignment
+    const newStudentIds = studentIds.filter(id => !existingStudentIds.has(id));
+
+    if (newStudentIds.length === 0) {
+        return { assigned: 0, skipped: studentIds.length };
+    }
+
+    const assignments = newStudentIds.map(studentId => ({
         composition_id: compositionId,
         student_id: studentId,
         teacher_id: teacherId,
@@ -121,6 +140,11 @@ export async function assignComposition(
         .insert(assignments);
 
     if (error) throw error;
+
+    return {
+        assigned: newStudentIds.length,
+        skipped: existingStudentIds.size
+    };
 }
 
 /**

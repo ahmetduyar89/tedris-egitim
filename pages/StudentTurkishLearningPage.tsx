@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, TurkishContentAssignment, BookAssignment } from '../types';
+import { User, TurkishContentAssignment, BookAssignment, CompositionAssignment } from '../types';
 import { getStudentTurkishAssignments } from '../services/turkishLearningService';
 import { getStudentBookAssignments } from '../services/bookReadingService';
+import { getStudentAssignments } from '../services/compositionService';
 import TurkishLearningSession from './TurkishLearningSession';
 import BookQuestionAnsweringPage from './BookQuestionAnsweringPage';
+import CompositionWritingPage from './CompositionWritingPage';
+import CompositionResultsView from '../components/CompositionResultsView';
 
 interface StudentTurkishLearningPageProps {
     user: User;
@@ -12,9 +15,12 @@ interface StudentTurkishLearningPageProps {
 const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({ user }) => {
     const [turkishAssignments, setTurkishAssignments] = useState<TurkishContentAssignment[]>([]);
     const [bookAssignments, setBookAssignments] = useState<BookAssignment[]>([]);
+    const [compositionAssignments, setCompositionAssignments] = useState<CompositionAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTurkishAssignment, setSelectedTurkishAssignment] = useState<TurkishContentAssignment | null>(null);
     const [selectedBookAssignment, setSelectedBookAssignment] = useState<BookAssignment | null>(null);
+    const [selectedCompositionId, setSelectedCompositionId] = useState<string | null>(null);
+    const [viewCompositionResults, setViewCompositionResults] = useState<CompositionAssignment | null>(null);
 
     useEffect(() => {
         loadData();
@@ -24,9 +30,10 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
         setIsLoading(true);
         try {
             console.log('[StudentTurkishLearningPage] Loading data for user:', user.id);
-            const [turkish, books] = await Promise.all([
+            const [turkish, books, compositions] = await Promise.all([
                 getStudentTurkishAssignments(user.id),
-                getStudentBookAssignments(user.id)
+                getStudentBookAssignments(user.id),
+                getStudentAssignments(user.id)
             ]);
 
             console.log('[StudentTurkishLearningPage] Loaded Turkish assignments:', turkish);
@@ -38,6 +45,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
 
             setTurkishAssignments(turkish);
             setBookAssignments(books);
+            setCompositionAssignments(compositions);
         } catch (error) {
             console.error('[StudentTurkishLearningPage] Error loading Turkish learning data:', error);
         } finally {
@@ -162,6 +170,30 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
         );
     }
 
+    // Show composition writing page if selected
+    if (selectedCompositionId) {
+        return (
+            <CompositionWritingPage
+                assignmentId={selectedCompositionId}
+                onBack={() => setSelectedCompositionId(null)}
+                onSubmitSuccess={() => {
+                    setSelectedCompositionId(null);
+                    loadData();
+                }}
+            />
+        );
+    }
+
+    // Show composition results if selected
+    if (viewCompositionResults) {
+        return (
+            <CompositionResultsView
+                assignment={viewCompositionResults}
+                onBack={() => setViewCompositionResults(null)}
+            />
+        );
+    }
+
     const activeAssignments = turkishAssignments.filter(a => a.learningStatus !== 'mastered');
     const completedAssignments = turkishAssignments.filter(a => a.learningStatus === 'mastered');
 
@@ -174,7 +206,7 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                 </p>
             </div>
 
-            {activeAssignments.length === 0 && bookAssignments.length === 0 ? (
+            {activeAssignments.length === 0 && bookAssignments.length === 0 && compositionAssignments.length === 0 ? (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                     <div className="text-6xl mb-4">📖</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -330,6 +362,95 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                         )}
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Composition Assignments */}
+                    {compositionAssignments.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h2 className="text-xl font-bold text-gray-900 mb-4">
+                                ✍️ Kompozisyon Görevleri
+                            </h2>
+                            <div className="space-y-4">
+                                {compositionAssignments.map((assignment) => {
+                                    const isSubmitted = assignment.status === 'submitted' || assignment.status === 'ai_evaluated' || assignment.status === 'teacher_reviewed';
+                                    const hasResults = assignment.aiScore !== undefined || assignment.teacherScore !== undefined;
+
+                                    return (
+                                        <div key={assignment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <h3 className="font-bold text-lg text-gray-900">
+                                                            {assignment.composition?.title}
+                                                        </h3>
+                                                        <span className={`text-xs px-2 py-1 rounded-full ${assignment.status === 'teacher_reviewed' ? 'bg-green-100 text-green-700' :
+                                                                assignment.status === 'ai_evaluated' ? 'bg-blue-100 text-blue-700' :
+                                                                    assignment.status === 'submitted' ? 'bg-yellow-100 text-yellow-700' :
+                                                                        assignment.status === 'draft' ? 'bg-orange-100 text-orange-700' :
+                                                                            'bg-gray-100 text-gray-700'
+                                                            }`}>
+                                                            {assignment.status === 'teacher_reviewed' ? 'Değerlendirildi' :
+                                                                assignment.status === 'ai_evaluated' ? 'AI Değerlendirildi' :
+                                                                    assignment.status === 'submitted' ? 'Gönderildi' :
+                                                                        assignment.status === 'draft' ? 'Taslak' :
+                                                                            'Atandı'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mb-2">
+                                                        {assignment.composition?.description}
+                                                    </p>
+                                                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                                                        <span>📏 {assignment.composition?.minWordCount}-{assignment.composition?.maxWordCount} kelime</span>
+                                                        {assignment.wordCount && (
+                                                            <span>✍️ {assignment.wordCount} kelime yazıldı</span>
+                                                        )}
+                                                        {assignment.dueDate && (
+                                                            <span>📅 Bitiş: {new Date(assignment.dueDate).toLocaleDateString('tr-TR')}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4 flex gap-2">
+                                                {!isSubmitted && (
+                                                    <button
+                                                        onClick={() => setSelectedCompositionId(assignment.id)}
+                                                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors"
+                                                    >
+                                                        {assignment.status === 'draft' ? 'Devam Et' : 'Yazmaya Başla'}
+                                                    </button>
+                                                )}
+                                                {hasResults && (
+                                                    <button
+                                                        onClick={() => setViewCompositionResults(assignment)}
+                                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+                                                    >
+                                                        Sonuçları Gör
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {(assignment.aiScore !== undefined || assignment.teacherScore !== undefined) && (
+                                                <div className="mt-3 flex gap-2">
+                                                    {assignment.aiScore !== undefined && (
+                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                                                            <span className="text-sm font-semibold text-blue-700">
+                                                                🤖 AI: {assignment.aiScore}/100
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {assignment.teacherScore !== undefined && (
+                                                        <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                                                            <span className="text-sm font-semibold text-green-700">
+                                                                👨‍🏫 Öğretmen: {assignment.teacherScore}/100
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

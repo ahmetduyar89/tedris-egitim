@@ -50,7 +50,7 @@ const AssignCompositionModal: React.FC<AssignCompositionModalProps> = ({
 
         setIsSubmitting(true);
         try {
-            await assignComposition(
+            const result = await assignComposition(
                 composition.id,
                 Array.from(selectedStudents),
                 teacherId,
@@ -58,7 +58,14 @@ const AssignCompositionModal: React.FC<AssignCompositionModalProps> = ({
                 isMandatory
             );
 
-            alert(`Kompozisyon ${selectedStudents.size} öğrenciye başarıyla atandı!`);
+            if (result.skipped > 0 && result.assigned === 0) {
+                alert(`Tüm seçili öğrencilere bu kompozisyon zaten atanmış.`);
+            } else if (result.skipped > 0) {
+                alert(`${result.assigned} öğrenciye atandı. ${result.skipped} öğrenci zaten bu kompozisyona sahip olduğu için atlanmadı.`);
+            } else {
+                alert(`Kompozisyon ${result.assigned} öğrenciye başarıyla atandı!`);
+            }
+
             onSuccess();
             onClose();
         } catch (error) {

@@ -58,14 +58,21 @@ const TurkishLearningSession: React.FC<TurkishLearningSessionProps> = ({
 
             setContents(mappedContents);
 
+            console.log('[TurkishLearningSession] Loaded contents:', mappedContents.length);
+            console.log('[TurkishLearningSession] Assignment status:', assignment.learningStatus);
+            console.log('[TurkishLearningSession] Learned content IDs:', assignment.learnedContentIds);
+
             // Determine initial mode based on assignment status
             if (assignment.learningStatus === 'practicing' || assignment.learningStatus === 'mastered') {
+                console.log('[TurkishLearningSession] Setting mode to practice (status-based)');
                 setMode('practice');
             } else if (assignment.learnedContentIds && assignment.learnedContentIds.length > 0 && assignment.learnedContentIds.length === assignment.contentIds.length) {
                 // Only go to practice if there are actually learned items
+                console.log('[TurkishLearningSession] Setting mode to practice (all learned)');
                 setMode('practice');
             } else {
                 // Default to learning mode
+                console.log('[TurkishLearningSession] Setting mode to learning (default)');
                 setMode('learning');
             }
         } catch (error) {
@@ -94,10 +101,13 @@ const TurkishLearningSession: React.FC<TurkishLearningSessionProps> = ({
             setCurrentContentIndex(currentContentIndex + 1);
         } else {
             // All content viewed, check if all learned
-            if (learnedContentIds.length === contents.length) {
+            console.log('[TurkishLearningSession] End of content. Learned:', learnedContentIds.length, 'Total:', contents.length);
+            if (learnedContentIds.length > 0 && learnedContentIds.length === contents.length) {
+                console.log('[TurkishLearningSession] All learned, switching to practice');
                 setMode('practice');
             } else {
                 // Loop back to first
+                console.log('[TurkishLearningSession] Not all learned, looping back');
                 setCurrentContentIndex(0);
             }
         }

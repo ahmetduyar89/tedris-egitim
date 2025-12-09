@@ -102,7 +102,7 @@ const TurkishContentCard: React.FC<TurkishContentCardProps> = ({
                         style={{
                             backfaceVisibility: 'hidden',
                             WebkitBackfaceVisibility: 'hidden',
-                            transform: 'rotateY(180deg)'
+                            transform: 'rotateY(180deg) scaleX(-1)'
                         }}
                     >
                         <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl shadow-2xl p-8 flex flex-col text-white">

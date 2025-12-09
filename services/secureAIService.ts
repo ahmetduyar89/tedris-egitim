@@ -294,3 +294,95 @@ export const analyzeDiagnosisTest = async (
 };
 
 
+// ============================================================================
+// COMPOSITION EVALUATION
+// ============================================================================
+
+/**
+ * Evaluate a composition with AI
+ * Provides comprehensive feedback on grammar, spelling, content, organization, and vocabulary
+ */
+export const evaluateComposition = async (
+    prompt: string,
+    studentText: string,
+    minWords: number,
+    maxWords: number
+): Promise<any> => {
+    const evaluationPrompt = `
+Sen bir Türkçe öğretmenisin. Aşağıdaki öğrenci kompozisyonunu değerlendir.
+
+KONU: ${prompt}
+
+ÖĞRENCİ METNİ:
+${studentText}
+
+DEĞERLENDİRME KRİTERLERİ:
+- Kelime sayısı: ${minWords}-${maxWords} arası olmalı (mevcut: ${studentText.trim().split(/\s+/).length} kelime)
+- İçerik (0-100): Konuya uygunluk, fikir zenginliği, yaratıcılık
+- Organizasyon (0-100): Giriş-gelişme-sonuç, paragraf düzeni, akıcılık
+- Gramer (0-100): Dilbilgisi kurallarına uygunluk, cümle yapısı
+- Kelime Dağarcığı (0-100): Kelime seçimi, çeşitlilik, uygunluk
+
+Lütfen JSON formatında değerlendir:
+{
+  "overall": "Genel değerlendirme (2-3 cümle)",
+  "strengths": ["Güçlü yön 1", "Güçlü yön 2", "Güçlü yön 3"],
+  "improvements": ["Geliştirilmesi gereken alan 1", "Geliştirilmesi gereken alan 2"],
+  "grammarIssues": [
+    {
+      "issue": "Hata açıklaması",
+      "suggestion": "Düzeltme önerisi",
+      "position": 123
+    }
+  ],
+  "spellingIssues": [
+    {
+      "word": "yanlış kelime",
+      "suggestion": "doğru yazım",
+      "position": 45
+    }
+  ],
+  "vocabularyScore": 85,
+  "grammarScore": 78,
+  "organizationScore": 90,
+  "contentScore": 88
+}
+
+SADECE JSON döndür, başka açıklama ekleme!
+`;
+
+    try {
+        const response = await invokeAIFunction<any>('generateContent', { 
+            prompt: evaluationPrompt 
+        });
+        
+        // Parse the response if it's a string
+        if (typeof response === 'string') {
+            // Clean up markdown code blocks if present
+            let cleanedResponse = response.trim();
+            if (cleanedResponse.startsWith('```json')) {
+                cleanedResponse = cleanedResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+            } else if (cleanedResponse.startsWith('```')) {
+                cleanedResponse = cleanedResponse.replace(/```\n?/g, '');
+            }
+            return JSON.parse(cleanedResponse);
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('Error evaluating composition:', error);
+        // Return a fallback evaluation
+        return {
+            overall: "Değerlendirme yapılamadı. Lütfen tekrar deneyin.",
+            strengths: ["Metin gönderildi"],
+            improvements: ["Teknik bir sorun oluştu"],
+            grammarIssues: [],
+            spellingIssues: [],
+            vocabularyScore: 0,
+            grammarScore: 0,
+            organizationScore: 0,
+            contentScore: 0
+        };
+    }
+};
+

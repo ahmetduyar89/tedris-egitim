@@ -927,3 +927,91 @@ export interface TurkishContentProgress {
   // Populated field
   content?: TurkishContentLibraryItem;
 }
+// ============================================================================
+// COMPOSITION WRITING SYSTEM
+// ============================================================================
+
+export type CompositionCategory = 'narrative' | 'descriptive' | 'expository' | 'persuasive' | 'creative' | 'general';
+export type CompositionStatus = 'assigned' | 'draft' | 'submitted' | 'ai_evaluated' | 'teacher_reviewed';
+
+export interface CompositionRubric {
+  content: number; // 0-25
+  organization: number; // 0-25
+  grammar: number; // 0-25
+  vocabulary: number; // 0-25
+}
+
+export interface Composition {
+  id: string;
+  teacherId: string;
+  title: string;
+  description: string;
+  prompt: string;
+  guidelines: string[];
+  minWordCount: number;
+  maxWordCount: number;
+  difficultyLevel: number; // 1-5
+  gradeLevel?: number;
+  category: CompositionCategory;
+  rubric?: CompositionRubric;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GrammarIssue {
+  issue: string;
+  suggestion: string;
+  position?: number;
+}
+
+export interface SpellingIssue {
+  word: string;
+  suggestion: string;
+  position?: number;
+}
+
+export interface AICompositionFeedback {
+  overall: string;
+  strengths: string[];
+  improvements: string[];
+  grammarIssues: GrammarIssue[];
+  spellingIssues: SpellingIssue[];
+  vocabularyScore: number; // 0-100
+  grammarScore: number; // 0-100
+  organizationScore: number; // 0-100
+  contentScore: number; // 0-100
+}
+
+export interface CompositionAssignment {
+  id: string;
+  compositionId: string;
+  studentId: string;
+  teacherId: string;
+  assignedAt: string;
+  dueDate?: string;
+  status: CompositionStatus;
+  isMandatory: boolean;
+  
+  // Submission
+  studentText?: string;
+  wordCount?: number;
+  startedAt?: string;
+  submittedAt?: string;
+  
+  // AI Evaluation
+  aiScore?: number;
+  aiFeedback?: AICompositionFeedback;
+  aiEvaluatedAt?: string;
+  
+  // Teacher Evaluation
+  teacherScore?: number;
+  teacherFeedback?: string;
+  teacherReviewedAt?: string;
+  
+  createdAt: string;
+  updatedAt: string;
+  
+  // Populated fields
+  composition?: Composition;
+}

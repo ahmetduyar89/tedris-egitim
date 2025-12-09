@@ -11,6 +11,7 @@ import AssignContentModal from '../components/AssignContentModal';
 import AssignTurkishContentModal from '../components/AssignTurkishContentModal';
 import BookAssignmentsManagement from '../components/BookAssignmentsManagement';
 import TurkishAssignmentsManagement from '../components/TurkishAssignmentsManagement';
+import CompositionManagement from '../components/CompositionManagement';
 
 interface TurkishLearningPageProps {
     user: User;
@@ -250,12 +251,15 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
             <BookManagementSection user={user} />
 
             {/* Book Assignments Management */}
-            <div className="mt-8">
-                <BookAssignmentsManagement user={user} students={students} />
-            </div>
+            <BookAssignmentsManagement user={user} students={students} />
 
             {/* Turkish Content Assignments Management */}
             <TurkishAssignmentsManagement user={user} students={students} />
+
+            {/* Composition Management */}
+            <div className="mt-8">
+                <CompositionManagement user={user} students={students} />
+            </div>
 
             {/* Modals */}
             {showAddModal && (

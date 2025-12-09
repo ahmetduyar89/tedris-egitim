@@ -61,8 +61,12 @@ const TurkishLearningSession: React.FC<TurkishLearningSessionProps> = ({
             // Determine initial mode based on assignment status
             if (assignment.learningStatus === 'practicing' || assignment.learningStatus === 'mastered') {
                 setMode('practice');
-            } else if (assignment.learnedContentIds?.length === assignment.contentIds.length) {
+            } else if (assignment.learnedContentIds && assignment.learnedContentIds.length > 0 && assignment.learnedContentIds.length === assignment.contentIds.length) {
+                // Only go to practice if there are actually learned items
                 setMode('practice');
+            } else {
+                // Default to learning mode
+                setMode('learning');
             }
         } catch (error) {
             console.error('Error loading contents:', error);

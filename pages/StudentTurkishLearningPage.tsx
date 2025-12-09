@@ -23,21 +23,34 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
     const loadData = async () => {
         setIsLoading(true);
         try {
+            console.log('[StudentTurkishLearningPage] Loading data for user:', user.id);
             const [turkish, books] = await Promise.all([
                 getStudentTurkishAssignments(user.id),
                 getStudentBookAssignments(user.id)
             ]);
 
+            console.log('[StudentTurkishLearningPage] Loaded Turkish assignments:', turkish);
+            console.log('[StudentTurkishLearningPage] Number of assignments:', turkish.length);
+            if (turkish.length > 0) {
+                console.log('[StudentTurkishLearningPage] First assignment:', turkish[0]);
+                console.log('[StudentTurkishLearningPage] First assignment contentIds:', turkish[0].contentIds);
+            }
+
             setTurkishAssignments(turkish);
             setBookAssignments(books);
         } catch (error) {
-            console.error('Error loading Turkish learning data:', error);
+            console.error('[StudentTurkishLearningPage] Error loading Turkish learning data:', error);
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleStartTurkishAssignment = (assignment: TurkishContentAssignment) => {
+        console.log('[StudentTurkishLearningPage] Starting assignment:', assignment);
+        console.log('[StudentTurkishLearningPage] Assignment ID:', assignment.id);
+        console.log('[StudentTurkishLearningPage] Assignment contentIds:', assignment.contentIds);
+        console.log('[StudentTurkishLearningPage] Assignment contentIds type:', typeof assignment.contentIds);
+        console.log('[StudentTurkishLearningPage] Assignment contentIds is array:', Array.isArray(assignment.contentIds));
         setSelectedTurkishAssignment(assignment);
     };
 
@@ -219,8 +232,8 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                             {/* Due date */}
                                             <div className="flex items-center justify-between mb-4">
                                                 <span className={`text-sm font-semibold ${daysRemaining < 0 ? 'text-red-600' :
-                                                        daysRemaining <= 2 ? 'text-orange-600' :
-                                                            'text-gray-600'
+                                                    daysRemaining <= 2 ? 'text-orange-600' :
+                                                        'text-gray-600'
                                                     }`}>
                                                     📅 {daysRemaining < 0 ? 'Süresi geçti!' :
                                                         daysRemaining === 0 ? 'Bugün bitiyor' :
@@ -264,8 +277,8 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
                                                         {assignment.book?.title}
                                                     </h3>
                                                     <span className={`text-xs px-2 py-1 rounded-full ${assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                            assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-gray-100 text-gray-700'
+                                                        assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-700'
                                                         }`}>
                                                         {assignment.status === 'completed' ? 'Tamamlandı' :
                                                             assignment.status === 'reading' ? 'Okunuyor' :

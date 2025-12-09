@@ -36,10 +36,25 @@ const TurkishLearningSession: React.FC<TurkishLearningSessionProps> = ({
     const loadContents = async () => {
         setIsLoading(true);
         try {
+            console.log('[TurkishLearningSession] Loading contents for assignment:', assignment.id);
+            console.log('[TurkishLearningSession] Content IDs to load:', assignment.contentIds);
+            console.log('[TurkishLearningSession] Content IDs type:', typeof assignment.contentIds);
+            console.log('[TurkishLearningSession] Content IDs is array:', Array.isArray(assignment.contentIds));
+
+            if (!assignment.contentIds || assignment.contentIds.length === 0) {
+                console.error('[TurkishLearningSession] No content IDs in assignment!');
+                alert('Bu atamada içerik bulunamadı. Lütfen öğretmeninizle iletişime geçin.');
+                onBack();
+                return;
+            }
+
             const { data, error } = await supabase
                 .from('turkish_content_library')
                 .select('*')
                 .in('id', assignment.contentIds);
+
+            console.log('[TurkishLearningSession] Query result - data:', data);
+            console.log('[TurkishLearningSession] Query result - error:', error);
 
             if (error) throw error;
 

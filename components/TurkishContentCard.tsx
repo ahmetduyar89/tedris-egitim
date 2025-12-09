@@ -66,16 +66,21 @@ const TurkishContentCard: React.FC<TurkishContentCardProps> = ({
             </div>
 
             {/* Flip card */}
-            <div className="perspective-1000 w-full max-w-md">
+            <div className="w-full max-w-md" style={{ perspective: '1000px' }}>
                 <div
-                    className={`relative w-full h-80 transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''
-                        }`}
-                    style={{ transformStyle: 'preserve-3d' }}
+                    className="relative w-full h-80 transition-all duration-500"
+                    style={{
+                        transformStyle: 'preserve-3d',
+                        transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                    }}
                 >
                     {/* Front side */}
                     <div
-                        className={`absolute w-full h-full backface-hidden ${isFlipped ? 'hidden' : ''
-                            }`}
+                        className="absolute w-full h-full"
+                        style={{
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden'
+                        }}
                     >
                         <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-2xl p-8 flex flex-col items-center justify-center text-white">
                             <div className="text-6xl mb-4">{getCategoryIcon()}</div>
@@ -93,9 +98,12 @@ const TurkishContentCard: React.FC<TurkishContentCardProps> = ({
 
                     {/* Back side */}
                     <div
-                        className={`absolute w-full h-full backface-hidden ${!isFlipped ? 'hidden' : ''
-                            }`}
-                        style={{ transform: 'rotateY(180deg)' }}
+                        className="absolute w-full h-full"
+                        style={{
+                            backfaceVisibility: 'hidden',
+                            WebkitBackfaceVisibility: 'hidden',
+                            transform: 'rotateY(180deg)'
+                        }}
                     >
                         <div className="w-full h-full bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl shadow-2xl p-8 flex flex-col text-white">
                             <div className="text-4xl mb-2 text-center">{getCategoryIcon()}</div>

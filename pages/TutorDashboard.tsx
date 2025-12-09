@@ -494,8 +494,8 @@ const StudentCard: React.FC<{ student: Student; onSelect: () => void; onEdit: ()
                 </div>
                 <div className="bg-gray-50 rounded p-2">
                     <p className="text-xs text-gray-500">Durum</p>
-                    <p className={`text-xs font-medium ${student.learningLoopStatus === 'active' ? 'text-green-600' : 'text-gray-500'}`}>
-                        {student.learningLoopStatus === 'active' ? 'Aktif' : 'Pasif'}
+                    <p className={`text-xs font-medium ${student.learningLoopStatus !== LearningLoopStatus.Initial ? 'text-green-600' : 'text-gray-500'}`}>
+                        {student.learningLoopStatus !== LearningLoopStatus.Initial ? 'Aktif' : 'Pasif'}
                     </p>
                 </div>
             </div>

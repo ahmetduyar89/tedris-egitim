@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import * as Recharts from 'recharts';
 import { Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment } from '../types';
+import { PDFTestSubmission } from '../services/pdfTestService';
 
 const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } = Recharts;
 
@@ -20,6 +21,7 @@ interface OverallAnalyticsProps {
   flashcards: Flashcard[];
   spacedRepetitionSchedules: SpacedRepetitionSchedule[];
   questionBankAssignments?: QuestionBankAssignment[];
+  pdfTestSubmissions?: PDFTestSubmission[];
   studentName: string;
 }
 
@@ -29,11 +31,13 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
   flashcards,
   spacedRepetitionSchedules,
   questionBankAssignments = [],
+  pdfTestSubmissions = [],
   studentName
 }) => {
   const completedTests = useMemo(() => tests.filter(t => t.completed && t.analysis), [tests]);
   const completedAssignments = useMemo(() => assignments.filter(a => a.submission?.status === 'Değerlendirildi'), [assignments]);
   const completedQBTests = useMemo(() => questionBankAssignments.filter(qb => qb.status === 'Tamamlandı'), [questionBankAssignments]);
+  const completedPDFTests = useMemo(() => pdfTestSubmissions.filter(pdf => pdf.status === 'completed' && pdf.scorePercentage !== undefined), [pdfTestSubmissions]);
 
   const overallStats = useMemo(() => {
     // Total counts should reflect ALL assigned items, not just completed ones
@@ -41,6 +45,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     const totalAssignments = assignments.length;
     const totalFlashcards = flashcards.length;
     const totalQBTests = questionBankAssignments.length;
+    const totalPDFTests = pdfTestSubmissions.length;
 
     const avgTestScore = completedTests.length > 0
       ? Math.round(completedTests.reduce((sum, t) => sum + (t.score || 0), 0) / completedTests.length)
@@ -57,6 +62,10 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       ? Math.round(completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0) / completedQBTests.length)
       : 0;
 
+    const avgPDFTestScore = completedPDFTests.length > 0
+      ? Math.round(completedPDFTests.reduce((sum, pdf) => sum + (pdf.scorePercentage || 0), 0) / completedPDFTests.length)
+      : 0;
+
     const masteredFlashcards = spacedRepetitionSchedules.filter(s => s.intervalDays >= 30).length;
     const flashcardMasteryRate = totalFlashcards > 0
       ? Math.round((masteredFlashcards / totalFlashcards) * 100)
@@ -67,17 +76,20 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       totalAssignments,
       totalFlashcards,
       totalQBTests,
+      totalPDFTests,
       avgTestScore,
       avgAssignmentScore,
       avgQBTestScore,
+      avgPDFTestScore,
       flashcardMasteryRate,
-      totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests,
+      totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests + totalPDFTests,
       // Add completion counts for UI display if needed
       completedTestsCount: completedTests.length,
       completedAssignmentsCount: completedAssignments.length,
-      completedQBTestsCount: completedQBTests.length
+      completedQBTestsCount: completedQBTests.length,
+      completedPDFTestsCount: completedPDFTests.length
     };
-  }, [tests, assignments, flashcards, spacedRepetitionSchedules, questionBankAssignments, completedTests, completedAssignments, completedQBTests]);
+  }, [tests, assignments, flashcards, spacedRepetitionSchedules, questionBankAssignments, pdfTestSubmissions, completedTests, completedAssignments, completedQBTests, completedPDFTests]);
 
   const progressOverTime = useMemo(() => {
     const allActivities = [
@@ -91,6 +103,11 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         score: qb.score || 0,
         type: 'Soru Bankası'
       })),
+      ...completedPDFTests.map(pdf => ({
+        date: new Date(pdf.submittedAt || ''),
+        score: pdf.scorePercentage || 0,
+        type: 'PDF Test'
+      })),
       ...completedAssignments.map(a => ({
         date: new Date(a.submission?.submittedAt || ''),
         score: a.submission?.teacherScore ?? a.submission?.aiScore ?? 0,
@@ -103,7 +120,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       puan: activity.score,
       tip: activity.type
     }));
-  }, [completedTests, completedAssignments, completedQBTests]);
+  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests]);
 
   const subjectPerformance = useMemo(() => {
     const subjectMap = new Map<string, { total: number; sum: number }>();
@@ -140,12 +157,24 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       }
     });
 
+    completedPDFTests.forEach(pdfTest => {
+      if (pdfTest.pdfTest?.subject) {
+        const subject = pdfTest.pdfTest.subject;
+        if (!subjectMap.has(subject)) {
+          subjectMap.set(subject, { total: 0, sum: 0 });
+        }
+        const data = subjectMap.get(subject)!;
+        data.total += 1;
+        data.sum += pdfTest.scorePercentage || 0;
+      }
+    });
+
     return Array.from(subjectMap.entries()).map(([subject, data]) => ({
       subject,
       ortalama: Math.round(data.sum / data.total),
       aktivite: data.total
     }));
-  }, [completedTests, completedAssignments, completedQBTests]);
+  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests]);
 
   const weakTopicsAggregated = useMemo(() => {
     const topicMap = new Map<string, number>();
@@ -246,6 +275,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       { name: 'Testler', value: overallStats.totalTests, color: COLORS.primary },
       { name: 'Ödevler', value: overallStats.totalAssignments, color: COLORS.secondary },
       { name: 'Soru Bankası', value: overallStats.totalQBTests, color: COLORS.purple },
+      { name: 'PDF Testler', value: overallStats.totalPDFTests, color: COLORS.warning },
       { name: 'Flashcardlar', value: overallStats.totalFlashcards, color: COLORS.pink }
     ];
   }, [overallStats]);
@@ -254,7 +284,8 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     const totalScores = [
       overallStats.avgTestScore,
       overallStats.avgAssignmentScore,
-      overallStats.avgQBTestScore
+      overallStats.avgQBTestScore,
+      overallStats.avgPDFTestScore
     ].filter(score => score > 0);
     const avg = totalScores.length > 0
       ? totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length
@@ -294,7 +325,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
           <div className="text-xs text-gray-500 mb-1">Testler</div>
           <div className="text-2xl font-bold text-blue-600">{overallStats.totalTests}</div>
@@ -314,6 +345,12 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">PDF Testler</div>
+          <div className="text-2xl font-bold text-orange-600">{overallStats.totalPDFTests}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgPDFTestScore}%</div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
           <div className="text-xs text-gray-500 mb-1">Flashcardlar</div>
           <div className="text-2xl font-bold text-pink-600">{overallStats.totalFlashcards}</div>
           <div className="text-xs text-gray-400 mt-0.5">Hakimiyet: {overallStats.flashcardMasteryRate}%</div>
@@ -322,9 +359,9 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
           <div className="text-xs text-gray-500 mb-1">Genel Ortalama</div>
           <div className="text-2xl font-bold text-green-600">
-            {Math.round((overallStats.avgTestScore + overallStats.avgAssignmentScore) / 2)}%
+            {Math.round((overallStats.avgTestScore + overallStats.avgAssignmentScore + overallStats.avgPDFTestScore) / 3)}%
           </div>
-          <div className="text-xs text-gray-400 mt-0.5">Test + Ödev</div>
+          <div className="text-xs text-gray-400 mt-0.5">Tüm Testler</div>
         </div>
       </div>
 

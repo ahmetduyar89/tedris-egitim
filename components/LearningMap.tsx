@@ -157,8 +157,85 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                     })
                 );
 
+                // Fetch PDF test submissions
+                const pdfSubmissionsSnapshot = await db.collection('pdf_test_submissions')
+                    .where('studentId', '==', student.id)
+                    .where('status', '==', 'completed')
+                    .get();
+
+                const pdfTests = await Promise.all(
+                    pdfSubmissionsSnapshot.docs.map(async (doc: any) => {
+                        const submission = doc.data();
+                        const pdfTestDoc = await db.collection('pdf_tests').doc(submission.pdf_test_id || submission.pdfTestId).get();
+
+                        if (!pdfTestDoc.exists) {
+                            console.warn(`⚠️ PDF test bulunamadı: ${submission.pdf_test_id || submission.pdfTestId}`);
+                            return null;
+                        }
+
+                        const pdfTest = pdfTestDoc.data();
+                        const answerKey = pdfTest.answerKey || pdfTest.answer_key || {};
+                        const studentAnswers = submission.studentAnswers || submission.student_answers || {};
+
+                        // Create topic breakdown based on subject/unit
+                        const topic = pdfTest.unit || pdfTest.subject || 'Genel';
+                        const correct = submission.correctCount || submission.correct_count || 0;
+                        const wrong = submission.wrongCount || submission.wrong_count || 0;
+
+                        const topicBreakdown = [{
+                            topic: topic,
+                            correct: correct,
+                            wrong: wrong
+                        }];
+
+                        // Build questions list
+                        const questionsList: Question[] = [];
+                        Object.keys(answerKey).forEach((questionNum) => {
+                            const correctAnswer = answerKey[questionNum];
+                            const studentAnswer = studentAnswers[questionNum] || '';
+                            const isCorrect = studentAnswer === correctAnswer;
+
+                            questionsList.push({
+                                id: `pdf-${doc.id}-q${questionNum}`,
+                                text: `Soru ${questionNum}`,
+                                type: QuestionType.MultipleChoice,
+                                studentAnswer: studentAnswer,
+                                correctAnswer: correctAnswer,
+                                isCorrect: isCorrect,
+                                topic: topic
+                            });
+                        });
+
+                        const test: Test = {
+                            id: doc.id,
+                            title: pdfTest.title || 'PDF Testi',
+                            studentId: student.id,
+                            subject: pdfTest.subject,
+                            unit: pdfTest.unit || 'Genel',
+                            duration: pdfTest.durationMinutes || pdfTest.duration_minutes || 0,
+                            dueDate: pdfTest.dueDate || pdfTest.due_date || '',
+                            completed: true,
+                            submissionDate: submission.submittedAt || submission.submitted_at || new Date().toISOString(),
+                            score: submission.scorePercentage || submission.score_percentage || 0,
+                            questions: questionsList,
+                            analysis: {
+                                summary: {
+                                    correct: correct,
+                                    wrong: wrong,
+                                    scorePercent: submission.scorePercentage || submission.score_percentage || 0
+                                },
+                                analysis: { weakTopics: [], strongTopics: [], recommendations: [], overallComment: '' },
+                                questionEvaluations: questionsList,
+                                topicBreakdown: topicBreakdown
+                            }
+                        };
+                        return test;
+                    })
+                );
+
                 const validQbTests = qbTests.filter((t): t is Test => t !== null);
-                const allTests = [...studentTests, ...validQbTests]
+                const validPdfTests = pdfTests.filter((t): t is Test => t !== null);
+                const allTests = [...studentTests, ...validQbTests, ...validPdfTests]
                     .sort((a, b) => new Date(a.submissionDate!).getTime() - new Date(b.submissionDate!).getTime());
 
                 if (allTests.length > 0) {

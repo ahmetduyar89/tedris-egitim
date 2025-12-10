@@ -1514,7 +1514,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
                 onClick={() => setActiveTab('turkish')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === 'turkish' ? 'bg-primary text-white shadow-md transform scale-105' : 'text-text-secondary hover:bg-gray-100'}`}
               >
-                📚 Türkçe
+                📚 Branş Çalışmaları
               </button>
               {weeklyProgram && (
                 <button

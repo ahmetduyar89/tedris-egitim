@@ -232,19 +232,25 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             weekStart.setDate(diff);
             weekStart.setHours(0, 0, 0, 0);
 
+            // Calculate week end (Sunday 23:59:59)
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
+            weekEnd.setHours(23, 59, 59, 999);
+
             console.log('[DashboardOverview] Week start (Monday):', weekStart.toISOString());
+            console.log('[DashboardOverview] Week end (Sunday):', weekEnd.toISOString());
             console.log('[DashboardOverview] Current time:', now.toISOString());
 
-            // This week's lessons count (all lessons from Monday to now)
+            // This week's lessons count (ALL lessons from Monday to Sunday - entire week)
             const { count: weekCount } = await supabase
                 .from('private_lessons')
                 .select('*', { count: 'exact', head: true })
                 .eq('tutor_id', user.id)
                 .gte('start_time', weekStart.toISOString())
-                .lte('start_time', now.toISOString())
+                .lte('start_time', weekEnd.toISOString())
                 .neq('status', 'cancelled');
 
-            // Completed lessons this week (status = 'completed')
+            // Completed lessons this week (status = 'completed', from Monday to now)
             const { count: completedLessonsCount } = await supabase
                 .from('private_lessons')
                 .select('*', { count: 'exact', head: true })
@@ -253,7 +259,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 .gte('start_time', weekStart.toISOString())
                 .lte('start_time', now.toISOString());
 
-            console.log('[DashboardOverview] Completed lessons this week:', completedLessonsCount);
+            console.log('[DashboardOverview] Total lessons this week (Mon-Sun):', weekCount);
+            console.log('[DashboardOverview] Completed lessons this week (Mon-Now):', completedLessonsCount);
 
             // Completed tests (for average score calculation)
             const { data: completedTests } = await supabase

@@ -65,6 +65,17 @@ export async function markLessonAttendance(
         result = data;
     }
 
+    // Update the lesson status in private_lessons table
+    const { error: updateError } = await supabase
+        .from('private_lessons')
+        .update({ status: attendanceStatus })
+        .eq('id', lessonId);
+
+    if (updateError) {
+        console.error('Error updating lesson status:', updateError);
+        // Don't throw - attendance is already saved
+    }
+
     return mapAttendanceFromDB(result);
 }
 

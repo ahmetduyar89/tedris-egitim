@@ -197,301 +197,484 @@ const StudentTurkishLearningPage: React.FC<StudentTurkishLearningPageProps> = ({
     const activeAssignments = turkishAssignments.filter(a => a.learningStatus !== 'mastered');
     const completedAssignments = turkishAssignments.filter(a => a.learningStatus === 'mastered');
 
+    const activeBookAssignments = bookAssignments.filter(b => b.status !== 'completed');
+    const completedBookAssignments = bookAssignments.filter(b => b.status === 'completed');
+
+    const activeCompositions = compositionAssignments.filter(c => c.status !== 'teacher_reviewed');
+    const completedCompositions = compositionAssignments.filter(c => c.status === 'teacher_reviewed');
+
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">📚 Türkçe Öğrenimi</h1>
-                <p className="text-gray-600 mt-2">
-                    Kelime, deyim ve atasözü öğrenme görevleriniz
+        <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+            {/* Page Header */}
+            <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    📚 Branş Çalışmaları
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
+                    Türkçe dersi görevlerin ve çalışmaların
                 </p>
             </div>
 
+            {/* Empty State */}
             {activeAssignments.length === 0 && bookAssignments.length === 0 && compositionAssignments.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                     <div className="text-6xl mb-4">📖</div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
                         Henüz görev atanmamış
                     </h3>
                     <p className="text-gray-600">
-                        Öğretmeniniz size görev atadığında burada görünecek.
+                        Öğretmenin size görev atadığında burada görünecek.
                     </p>
                 </div>
             ) : (
-                <div className="space-y-6">
-                    {/* Active Turkish Assignments */}
-                    {activeAssignments.length > 0 && (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                🎯 Aktif Görevler
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {activeAssignments.map((assignment) => {
-                                    const daysRemaining = getDaysRemaining(assignment.dueDate);
-                                    const progress = getProgressPercentage(assignment);
-                                    const learnedCount = assignment.learnedContentIds?.length || 0;
-                                    const totalCount = assignment.contentIds?.length || 0;
+                <>
+                    {/* ============================================ */}
+                    {/* SECTION 1: KELİME / DEYİM / ATASÖZÜ */}
+                    {/* ============================================ */}
+                    {(activeAssignments.length > 0 || completedAssignments.length > 0) && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            {/* Section Header */}
+                            <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    📖 Kelime, Deyim ve Atasözü Görevleri
+                                </h2>
+                                <p className="text-purple-100 text-sm mt-1">
+                                    {activeAssignments.length} aktif görev
+                                </p>
+                            </div>
 
-                                    return (
-                                        <div
-                                            key={assignment.id}
-                                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                        >
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-3xl">{getCategoryIcon(assignment.category)}</span>
-                                                    <div>
-                                                        <h3 className="font-bold text-lg text-gray-900">
-                                                            {totalCount} {getCategoryName(assignment.category)}
-                                                        </h3>
-                                                        <p className="text-sm text-gray-600">
-                                                            {learnedCount}/{totalCount} öğrenildi
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {getStatusBadge(assignment)}
-                                            </div>
+                            <div className="p-6">
+                                {/* Active Assignments */}
+                                {activeAssignments.length > 0 && (
+                                    <div className="mb-6">
+                                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            🎯 Aktif Görevler
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {activeAssignments.map((assignment) => {
+                                                const daysRemaining = getDaysRemaining(assignment.dueDate);
+                                                const progress = getProgressPercentage(assignment);
+                                                const learnedCount = assignment.learnedContentIds?.length || 0;
+                                                const totalCount = assignment.contentIds?.length || 0;
 
-                                            {/* Progress bar */}
-                                            <div className="mb-3">
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                return (
                                                     <div
-                                                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                                        style={{ width: `${progress}%` }}
-                                                    />
-                                                </div>
-                                            </div>
+                                                        key={assignment.id}
+                                                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-white to-gray-50"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-3xl">{getCategoryIcon(assignment.category)}</span>
+                                                                <div>
+                                                                    <h4 className="font-bold text-base text-gray-900">
+                                                                        {totalCount} {getCategoryName(assignment.category)}
+                                                                    </h4>
+                                                                    <p className="text-xs text-gray-600">
+                                                                        {learnedCount}/{totalCount} öğrenildi
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            {getStatusBadge(assignment)}
+                                                        </div>
 
-                                            {/* Due date */}
-                                            <div className="flex items-center justify-between mb-4">
-                                                <span className={`text-sm font-semibold ${daysRemaining < 0 ? 'text-red-600' :
-                                                    daysRemaining <= 2 ? 'text-orange-600' :
-                                                        'text-gray-600'
-                                                    }`}>
-                                                    📅 {daysRemaining < 0 ? 'Süresi geçti!' :
-                                                        daysRemaining === 0 ? 'Bugün bitiyor' :
-                                                            daysRemaining === 1 ? 'Yarın bitiyor' :
-                                                                `${daysRemaining} gün kaldı`}
-                                                </span>
-                                                {assignment.practiceScore !== undefined && (
-                                                    <span className="text-sm font-semibold text-green-600">
-                                                        Test: {assignment.practiceScore}%
-                                                    </span>
-                                                )}
-                                            </div>
+                                                        {/* Progress bar */}
+                                                        <div className="mb-3">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-xs font-medium text-gray-600">İlerleme</span>
+                                                                <span className="text-xs font-bold text-blue-600">{progress}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                                                <div
+                                                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                                                                    style={{ width: `${progress}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
 
-                                            {/* Action button */}
-                                            <button
-                                                onClick={() => handleStartTurkishAssignment(assignment)}
-                                                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                                            >
-                                                {assignment.learningStatus === 'not_started' ? 'Başla' : 'Devam Et'}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
+                                                        {/* Due date and score */}
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <span className={`text-xs font-semibold ${daysRemaining < 0 ? 'text-red-600' :
+                                                                daysRemaining <= 2 ? 'text-orange-600' :
+                                                                    'text-gray-600'
+                                                                }`}>
+                                                                📅 {daysRemaining < 0 ? 'Süresi geçti!' :
+                                                                    daysRemaining === 0 ? 'Bugün bitiyor' :
+                                                                        daysRemaining === 1 ? 'Yarın bitiyor' :
+                                                                            `${daysRemaining} gün kaldı`}
+                                                            </span>
+                                                            {assignment.practiceScore !== undefined && (
+                                                                <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                                                    ✓ Test: {assignment.practiceScore}%
+                                                                </span>
+                                                            )}
+                                                        </div>
 
-                    {/* Book Assignments */}
-                    {bookAssignments.length > 0 && (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                📚 Kitap Görevleri
-                            </h2>
-                            <div className="space-y-4">
-                                {bookAssignments.map((assignment) => (
-                                    <div key={assignment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <h3 className="font-bold text-lg text-gray-900">
-                                                        {assignment.book?.title}
-                                                    </h3>
-                                                    <span className={`text-xs px-2 py-1 rounded-full ${assignment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                        assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-gray-100 text-gray-700'
-                                                        }`}>
-                                                        {assignment.status === 'completed' ? 'Tamamlandı' :
-                                                            assignment.status === 'reading' ? 'Okunuyor' :
-                                                                'Atandı'}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-gray-600 mb-2">
-                                                    ✍️ {assignment.book?.author}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                    <span>📄 {assignment.book?.pageCount} sayfa</span>
-                                                    {assignment.dueDate && (
-                                                        <span>📅 Bitiş: {new Date(assignment.dueDate).toLocaleDateString('tr-TR')}</span>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                        {/* Action button */}
+                                                        <button
+                                                            onClick={() => handleStartTurkishAssignment(assignment)}
+                                                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm shadow-sm hover:shadow"
+                                                        >
+                                                            {assignment.learningStatus === 'not_started' ? '🚀 Başla' : '▶️ Devam Et'}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                        <div className="mt-4 flex gap-2">
-                                            {assignment.status === 'assigned' && (
-                                                <button
-                                                    onClick={() => handleStartReading(assignment.id)}
-                                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                                                >
-                                                    Okumaya Başla
-                                                </button>
-                                            )}
-                                            {assignment.status === 'reading' && (
-                                                <button
-                                                    onClick={() => handleAnswerQuestions(assignment)}
-                                                    className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
-                                                >
-                                                    Soruları Cevapla
-                                                </button>
-                                            )}
-                                            {assignment.status === 'completed' && assignment.teacherScore && (
-                                                <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-                                                    <span className="text-sm font-semibold text-green-700">
-                                                        ⭐ Puan: {assignment.teacherScore}/100
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {assignment.teacherFeedback && (
-                                            <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                                                <p className="text-sm text-yellow-800">
-                                                    <strong>Öğretmen Yorumu:</strong> {assignment.teacherFeedback}
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
-                                ))}
+                                )}
+
+                                {/* Completed Assignments */}
+                                {completedAssignments.length > 0 && (
+                                    <div>
+                                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            ✅ Tamamlanan Görevler
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {completedAssignments.map((assignment) => {
+                                                const totalCount = assignment.contentIds?.length || 0;
+
+                                                return (
+                                                    <div
+                                                        key={assignment.id}
+                                                        className="border border-green-200 rounded-lg p-3 bg-green-50"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-2xl">{getCategoryIcon(assignment.category)}</span>
+                                                                <div>
+                                                                    <h4 className="font-semibold text-sm text-gray-900">
+                                                                        {totalCount} {getCategoryName(assignment.category)}
+                                                                    </h4>
+                                                                    {assignment.practiceScore !== undefined && (
+                                                                        <p className="text-xs text-green-700 font-semibold">
+                                                                            Test: {assignment.practiceScore}%
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                                ✓ Tamamlandı
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
-                    {/* Composition Assignments */}
-                    {compositionAssignments.length > 0 && (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                ✍️ Kompozisyon Görevleri
-                            </h2>
-                            <div className="space-y-4">
-                                {compositionAssignments.map((assignment) => {
-                                    const isSubmitted = assignment.status === 'submitted' || assignment.status === 'ai_evaluated' || assignment.status === 'teacher_reviewed';
-                                    const hasResults = assignment.aiScore !== undefined || assignment.teacherScore !== undefined;
+                    {/* ============================================ */}
+                    {/* SECTION 2: KİTAP GÖREVLERİ */}
+                    {/* ============================================ */}
+                    {bookAssignments.length > 0 && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            {/* Section Header */}
+                            <div className="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    📚 Kitap Okuma Görevleri
+                                </h2>
+                                <p className="text-orange-100 text-sm mt-1">
+                                    {activeBookAssignments.length} aktif görev
+                                </p>
+                            </div>
 
-                                    return (
-                                        <div key={assignment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <h3 className="font-bold text-lg text-gray-900">
-                                                            {assignment.composition?.title}
-                                                        </h3>
-                                                        <span className={`text-xs px-2 py-1 rounded-full ${assignment.status === 'teacher_reviewed' ? 'bg-green-100 text-green-700' :
-                                                                assignment.status === 'ai_evaluated' ? 'bg-blue-100 text-blue-700' :
-                                                                    assignment.status === 'submitted' ? 'bg-yellow-100 text-yellow-700' :
-                                                                        assignment.status === 'draft' ? 'bg-orange-100 text-orange-700' :
-                                                                            'bg-gray-100 text-gray-700'
-                                                            }`}>
-                                                            {assignment.status === 'teacher_reviewed' ? 'Değerlendirildi' :
-                                                                assignment.status === 'ai_evaluated' ? 'AI Değerlendirildi' :
-                                                                    assignment.status === 'submitted' ? 'Gönderildi' :
-                                                                        assignment.status === 'draft' ? 'Taslak' :
-                                                                            'Atandı'}
+                            <div className="p-6">
+                                {/* Active Book Assignments */}
+                                {activeBookAssignments.length > 0 && (
+                                    <div className="mb-6">
+                                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            📖 Okunacak Kitaplar
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {activeBookAssignments.map((assignment) => {
+                                                const daysRemaining = getDaysRemaining(assignment.dueDate);
+                                                const hasQuestions = assignment.book?.questions && assignment.book.questions.length > 0;
+
+                                                return (
+                                                    <div
+                                                        key={assignment.id}
+                                                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-white to-orange-50"
+                                                    >
+                                                        <div className="flex items-start gap-3 mb-3">
+                                                            <div className="text-4xl">📕</div>
+                                                            <div className="flex-1">
+                                                                <h4 className="font-bold text-base text-gray-900 mb-1">
+                                                                    {assignment.book?.title}
+                                                                </h4>
+                                                                <p className="text-xs text-gray-600 mb-1">
+                                                                    {assignment.book?.author}
+                                                                </p>
+                                                                {hasQuestions && (
+                                                                    <p className="text-xs text-orange-600 font-semibold">
+                                                                        📝 {assignment.book.questions.length} soru
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${assignment.status === 'assigned' ? 'bg-gray-100 text-gray-700' :
+                                                                assignment.status === 'reading' ? 'bg-blue-100 text-blue-700' :
+                                                                    assignment.status === 'questions_answered' ? 'bg-orange-100 text-orange-700' :
+                                                                        'bg-green-100 text-green-700'
+                                                                }`}>
+                                                                {assignment.status === 'assigned' ? 'Atandı' :
+                                                                    assignment.status === 'reading' ? 'Okunuyor' :
+                                                                        assignment.status === 'questions_answered' ? 'Sorular Cevaplandı' :
+                                                                            'Tamamlandı'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Due date */}
+                                                        <div className="mb-3">
+                                                            <span className={`text-xs font-semibold ${daysRemaining < 0 ? 'text-red-600' :
+                                                                daysRemaining <= 2 ? 'text-orange-600' :
+                                                                    'text-gray-600'
+                                                                }`}>
+                                                                📅 {daysRemaining < 0 ? 'Süresi geçti!' :
+                                                                    daysRemaining === 0 ? 'Bugün bitiyor' :
+                                                                        daysRemaining === 1 ? 'Yarın bitiyor' :
+                                                                            `${daysRemaining} gün kaldı`}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Action buttons */}
+                                                        <div className="flex gap-2">
+                                                            {assignment.status === 'assigned' && (
+                                                                <button
+                                                                    onClick={() => handleStartReading(assignment.id)}
+                                                                    className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm shadow-sm hover:shadow"
+                                                                >
+                                                                    📖 Okumaya Başla
+                                                                </button>
+                                                            )}
+                                                            {assignment.status === 'reading' && hasQuestions && (
+                                                                <button
+                                                                    onClick={() => handleAnswerQuestions(assignment)}
+                                                                    className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm shadow-sm hover:shadow"
+                                                                >
+                                                                    📝 Soruları Cevapla
+                                                                </button>
+                                                            )}
+                                                            {assignment.status === 'questions_answered' && (
+                                                                <div className="flex-1 text-center text-sm text-gray-600 py-2">
+                                                                    ⏳ Öğretmen değerlendirmesi bekleniyor
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Completed Book Assignments */}
+                                {completedBookAssignments.length > 0 && (
+                                    <div>
+                                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            ✅ Tamamlanan Kitaplar
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {completedBookAssignments.map((assignment) => (
+                                                <div
+                                                    key={assignment.id}
+                                                    className="border border-green-200 rounded-lg p-3 bg-green-50"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-2xl">📕</span>
+                                                            <div>
+                                                                <h4 className="font-semibold text-sm text-gray-900">
+                                                                    {assignment.book?.title}
+                                                                </h4>
+                                                                {assignment.teacherScore !== undefined && (
+                                                                    <p className="text-xs text-green-700 font-semibold">
+                                                                        Puan: {assignment.teacherScore}/100
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                            ✓ Tamamlandı
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600 mb-2">
-                                                        {assignment.composition?.description}
-                                                    </p>
-                                                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                                                        <span>📏 {assignment.composition?.minWordCount}-{assignment.composition?.maxWordCount} kelime</span>
-                                                        {assignment.wordCount && (
-                                                            <span>✍️ {assignment.wordCount} kelime yazıldı</span>
-                                                        )}
-                                                        {assignment.dueDate && (
-                                                            <span>📅 Bitiş: {new Date(assignment.dueDate).toLocaleDateString('tr-TR')}</span>
-                                                        )}
-                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="mt-4 flex gap-2">
-                                                {!isSubmitted && (
-                                                    <button
-                                                        onClick={() => setSelectedCompositionId(assignment.id)}
-                                                        className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors"
-                                                    >
-                                                        {assignment.status === 'draft' ? 'Devam Et' : 'Yazmaya Başla'}
-                                                    </button>
-                                                )}
-                                                {hasResults && (
-                                                    <button
-                                                        onClick={() => setViewCompositionResults(assignment)}
-                                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
-                                                    >
-                                                        Sonuçları Gör
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {(assignment.aiScore !== undefined || assignment.teacherScore !== undefined) && (
-                                                <div className="mt-3 flex gap-2">
-                                                    {assignment.aiScore !== undefined && (
-                                                        <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                                                            <span className="text-sm font-semibold text-blue-700">
-                                                                🤖 AI: {assignment.aiScore}/100
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {assignment.teacherScore !== undefined && (
-                                                        <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                                                            <span className="text-sm font-semibold text-green-700">
-                                                                👨‍🏫 Öğretmen: {assignment.teacherScore}/100
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
+                                            ))}
                                         </div>
-                                    );
-                                })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
-                    {/* Completed Assignments */}
-                    {completedAssignments.length > 0 && (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                ✅ Tamamlanan Görevler
-                            </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {completedAssignments.map((assignment) => (
-                                    <div
-                                        key={assignment.id}
-                                        className="border border-green-200 bg-green-50 rounded-lg p-4"
-                                    >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-2xl">{getCategoryIcon(assignment.category)}</span>
-                                            <div>
-                                                <h3 className="font-bold text-gray-900">
-                                                    {assignment.contentIds?.length} {getCategoryName(assignment.category)}
-                                                </h3>
-                                                {assignment.practiceScore !== undefined && (
-                                                    <p className="text-sm text-green-700 font-semibold">
-                                                        Skor: {assignment.practiceScore}%
-                                                    </p>
-                                                )}
-                                            </div>
+                    {/* ============================================ */}
+                    {/* SECTION 3: KOMPOZİSYON GÖREVLERİ */}
+                    {/* ============================================ */}
+                    {compositionAssignments.length > 0 && (
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            {/* Section Header */}
+                            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    ✍️ Kompozisyon Görevleri
+                                </h2>
+                                <p className="text-indigo-100 text-sm mt-1">
+                                    {activeCompositions.length} aktif görev
+                                </p>
+                            </div>
+
+                            <div className="p-6">
+                                {/* Active Compositions */}
+                                {activeCompositions.length > 0 && (
+                                    <div className="mb-6">
+                                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            ✍️ Yazılacak Kompozisyonlar
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {activeCompositions.map((assignment) => {
+                                                const daysRemaining = getDaysRemaining(assignment.dueDate);
+
+                                                return (
+                                                    <div
+                                                        key={assignment.id}
+                                                        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-white to-indigo-50"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-3xl">✍️</span>
+                                                                <div>
+                                                                    <h4 className="font-bold text-base text-gray-900">
+                                                                        {assignment.composition?.title}
+                                                                    </h4>
+                                                                    <p className="text-xs text-gray-600">
+                                                                        {assignment.composition?.minWordCount}-{assignment.composition?.maxWordCount} kelime
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${assignment.status === 'assigned' ? 'bg-gray-100 text-gray-700' :
+                                                                assignment.status === 'draft' ? 'bg-blue-100 text-blue-700' :
+                                                                    assignment.status === 'submitted' ? 'bg-orange-100 text-orange-700' :
+                                                                        assignment.status === 'ai_evaluated' ? 'bg-purple-100 text-purple-700' :
+                                                                            'bg-green-100 text-green-700'
+                                                                }`}>
+                                                                {assignment.status === 'assigned' ? 'Atandı' :
+                                                                    assignment.status === 'draft' ? 'Taslak' :
+                                                                        assignment.status === 'submitted' ? 'Gönderildi' :
+                                                                            assignment.status === 'ai_evaluated' ? 'AI Değerlendirdi' :
+                                                                                'Tamamlandı'}
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Word count */}
+                                                        {assignment.wordCount !== undefined && assignment.wordCount > 0 && (
+                                                            <div className="mb-3">
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                    <span className="text-xs font-medium text-gray-600">Kelime Sayısı</span>
+                                                                    <span className="text-xs font-bold text-indigo-600">{assignment.wordCount}</span>
+                                                                </div>
+                                                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                                                    <div
+                                                                        className="bg-gradient-to-r from-indigo-500 to-purple-500 h-1.5 rounded-full"
+                                                                        style={{
+                                                                            width: `${Math.min(100, (assignment.wordCount / (assignment.composition?.maxWordCount || 500)) * 100)}%`
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Due date and scores */}
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <span className={`text-xs font-semibold ${daysRemaining < 0 ? 'text-red-600' :
+                                                                daysRemaining <= 2 ? 'text-orange-600' :
+                                                                    'text-gray-600'
+                                                                }`}>
+                                                                📅 {daysRemaining < 0 ? 'Süresi geçti!' :
+                                                                    daysRemaining === 0 ? 'Bugün bitiyor' :
+                                                                        daysRemaining === 1 ? 'Yarın bitiyor' :
+                                                                            `${daysRemaining} gün kaldı`}
+                                                            </span>
+                                                            {assignment.aiScore !== undefined && (
+                                                                <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+                                                                    🤖 AI: {assignment.aiScore}/100
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Action button */}
+                                                        <button
+                                                            onClick={() => {
+                                                                if (assignment.status === 'teacher_reviewed') {
+                                                                    setViewCompositionResults(assignment);
+                                                                } else {
+                                                                    setSelectedCompositionId(assignment.id);
+                                                                }
+                                                            }}
+                                                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all text-sm shadow-sm hover:shadow"
+                                                        >
+                                                            {assignment.status === 'assigned' ? '✍️ Yazmaya Başla' :
+                                                                assignment.status === 'draft' ? '▶️ Devam Et' :
+                                                                    assignment.status === 'submitted' || assignment.status === 'ai_evaluated' ? '👁️ Görüntüle' :
+                                                                        '📊 Sonuçları Gör'}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                        <p className="text-xs text-gray-600">
-                                            {new Date(assignment.masteredAt || assignment.updatedAt).toLocaleDateString('tr-TR')}
-                                        </p>
                                     </div>
-                                ))}
+                                )}
+
+                                {/* Completed Compositions */}
+                                {completedCompositions.length > 0 && (
+                                    <div>
+                                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                            ✅ Tamamlanan Kompozisyonlar
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {completedCompositions.map((assignment) => (
+                                                <div
+                                                    key={assignment.id}
+                                                    className="border border-green-200 rounded-lg p-3 bg-green-50 cursor-pointer hover:shadow-md transition-shadow"
+                                                    onClick={() => setViewCompositionResults(assignment)}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-2xl">✍️</span>
+                                                            <div>
+                                                                <h4 className="font-semibold text-sm text-gray-900">
+                                                                    {assignment.composition?.title}
+                                                                </h4>
+                                                                <div className="flex gap-2 mt-1">
+                                                                    {assignment.aiScore !== undefined && (
+                                                                        <span className="text-xs text-purple-700 font-semibold">
+                                                                            🤖 {assignment.aiScore}
+                                                                        </span>
+                                                                    )}
+                                                                    {assignment.teacherScore !== undefined && (
+                                                                        <span className="text-xs text-green-700 font-semibold">
+                                                                            👨‍🏫 {assignment.teacherScore}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                            ✓ Tamamlandı
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
-                </div>
+                </>
             )}
         </div>
     );
 };
 
 export default StudentTurkishLearningPage;
+

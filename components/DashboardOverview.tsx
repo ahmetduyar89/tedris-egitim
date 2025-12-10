@@ -446,19 +446,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             </div>
 
             {/* Performance Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-                {/* Today's Lessons */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 hover:bg-blue-100 transition-colors">
-                    <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-lg">📚</span>
-                        {stats.todayLessons > 0 && (
-                            <span className="bg-blue-200 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium">BUGÜN</span>
-                        )}
-                    </div>
-                    <div className="text-xl md:text-2xl font-bold text-blue-900">{loadingStats ? '...' : stats.todayLessons}</div>
-                    <div className="text-xs text-blue-600 font-medium">Bugünkü Ders</div>
-                </div>
-
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
                 {/* Week's Lessons */}
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 hover:bg-purple-100 transition-colors">
                     <div className="mb-1.5">

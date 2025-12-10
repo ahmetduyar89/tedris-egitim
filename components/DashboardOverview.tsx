@@ -224,17 +224,38 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             }
 
             const now = new Date();
-            const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-            // Week's lessons count
+            // Calculate week start (Monday 00:00:00)
+            const weekStart = new Date(now);
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Monday
+            weekStart.setDate(diff);
+            weekStart.setHours(0, 0, 0, 0);
+
+            console.log('[DashboardOverview] Week start (Monday):', weekStart.toISOString());
+            console.log('[DashboardOverview] Current time:', now.toISOString());
+
+            // This week's lessons count (all lessons from Monday to now)
             const { count: weekCount } = await supabase
                 .from('private_lessons')
                 .select('*', { count: 'exact', head: true })
                 .eq('tutor_id', user.id)
-                .gte('start_time', weekStart)
+                .gte('start_time', weekStart.toISOString())
+                .lte('start_time', now.toISOString())
                 .neq('status', 'cancelled');
 
-            // Completed tests
+            // Completed lessons this week (status = 'completed')
+            const { count: completedLessonsCount } = await supabase
+                .from('private_lessons')
+                .select('*', { count: 'exact', head: true })
+                .eq('tutor_id', user.id)
+                .eq('status', 'completed')
+                .gte('start_time', weekStart.toISOString())
+                .lte('start_time', now.toISOString());
+
+            console.log('[DashboardOverview] Completed lessons this week:', completedLessonsCount);
+
+            // Completed tests (for average score calculation)
             const { data: completedTests } = await supabase
                 .from('diagnosis_test_assignments')
                 .select('score')
@@ -295,7 +316,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             setStats({
                 todayLessons: 0, // Will be updated from todayLessons array
                 weekLessons: weekCount || 0,
-                completedTests: totalTests,
+                completedTests: completedLessonsCount || 0, // Changed to completed lessons
                 pendingHomework: pendingCount || 0,
                 averageScore: avgScore,
                 activeStudents: activeCount

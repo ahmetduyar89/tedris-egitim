@@ -5,6 +5,7 @@ import { createNotification } from '../services/notificationService';
 import { db } from '../services/dbAdapter';
 import { masteryScoreService } from '../services/masteryScoreService';
 import { adaptivePlanService } from '../services/adaptivePlanService';
+import { testProgressStorage } from '../utils/secureStorage';
 
 
 // A custom confirmation modal to replace window.confirm
@@ -133,9 +134,9 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
         setTestResult(test.analysis.summary);
       }
     } else {
-      const savedProgress = localStorage.getItem(`test-progress-${test.id}`);
+      const savedProgress = testProgressStorage.load(test.id);
       if (savedProgress) {
-        setAnswers(JSON.parse(savedProgress));
+        setAnswers(savedProgress);
       }
     }
   }, [test.id, isTestCompleted]);
@@ -143,7 +144,7 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
   useEffect(() => {
     const interval = setInterval(() => {
       if (Object.keys(answers).length > 0 && !testResult) {
-        localStorage.setItem(`test-progress-${test.id}`, JSON.stringify(answers));
+        testProgressStorage.save(test.id, answers);
       }
     }, 15000);
     return () => clearInterval(interval);
@@ -226,7 +227,7 @@ const TestTakingPage: React.FC<TestTakingPageProps> = ({ test, onComplete }) => 
       // Update testResult with AI-evaluated score if available
       const finalTestResult = submittedTest.analysis?.summary || studentSummary;
       setTestResult(finalTestResult);
-      localStorage.removeItem(`test-progress-${test.id}`);
+      testProgressStorage.clear(test.id);
 
       if (submittedTest.analysis?.topicBreakdown) {
         try {

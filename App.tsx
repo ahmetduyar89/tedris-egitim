@@ -167,9 +167,29 @@ const App: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
 
+    // Auth state change listener with debounce to prevent race conditions
+    let authChangeTimeout: NodeJS.Timeout | null = null;
+    let isProcessingAuthChange = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      (async () => {
+      // Cancel previous timeout if exists (debounce)
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
+      }
+
+      // Debounce auth changes (100ms)
+      authChangeTimeout = setTimeout(async () => {
+        // Prevent concurrent processing
+        if (isProcessingAuthChange) {
+          console.log('[Auth] Skipping concurrent auth change');
+          return;
+        }
+
+        isProcessingAuthChange = true;
+
         try {
+          console.log('[Auth] Processing auth state change:', event);
+
           if (event === 'SIGNED_OUT') {
             setCurrentUser(null);
             setView('website');
@@ -185,9 +205,7 @@ const App: React.FC = () => {
                 .maybeSingle();
 
               if (error) {
-                console.error('Error fetching user data:', error);
-                // Don't call signOut here - it can cause infinite loops
-                // Just clear local state
+                console.error('[Auth] Error fetching user data:', error);
                 setCurrentUser(null);
                 setView('website');
                 return;
@@ -195,7 +213,7 @@ const App: React.FC = () => {
 
               if (userData) {
                 if (userData.role === 'tutor' && userData.status !== 'approved') {
-                  // Clear session locally without calling signOut
+                  console.log('[Auth] Tutor not approved');
                   setCurrentUser(null);
                   setView('website');
                   return;
@@ -203,14 +221,12 @@ const App: React.FC = () => {
                 setCurrentUser(userData as User);
                 setView('dashboard');
               } else {
-                console.error('User data not found in database!');
-                // Clear session locally
+                console.error('[Auth] User data not found in database!');
                 setCurrentUser(null);
                 setView('website');
               }
             } catch (error) {
-              console.error('Error fetching user data:', error);
-              // Clear session locally without calling signOut
+              console.error('[Auth] Error fetching user data:', error);
               setCurrentUser(null);
               setView('website');
             }
@@ -219,13 +235,23 @@ const App: React.FC = () => {
             setView('website');
           }
         } catch (error) {
-          console.error('Error in auth state change:', error);
+          console.error('[Auth] Error in auth state change:', error);
+          setCurrentUser(null);
+          setView('auth');
+        } finally {
+          isProcessingAuthChange = false;
         }
-      })();
+      }, 100); // 100ms debounce
     });
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
+
+      // Clear timeout on cleanup
+      if (authChangeTimeout) {
+        clearTimeout(authChangeTimeout);
+      }
+
       subscription.unsubscribe();
     };
   }, []); // Empty dependency - only run once on mount
@@ -237,22 +263,38 @@ const App: React.FC = () => {
 
   const handleLogout = useCallback(async () => {
     try {
-      // Try to sign out from Supabase
-      await supabase.auth.signOut();
+      console.log('[Security] Logging out user...');
+
+      // 1. Supabase session'ını global olarak temizle
+      await supabase.auth.signOut({ scope: 'global' });
+
+      // 2. Tüm local storage ve session storage'ı temizle
+      localStorage.clear();
+      sessionStorage.clear();
+
+      console.log('[Security] Storage cleared');
     } catch (error) {
-      // Even if Supabase signOut fails (403 in Safari private mode), 
-      // we still want to clear local state
-      console.warn('Supabase signOut failed (this is OK in private mode):', error);
+      // Hata olsa bile devam et (Safari private mode vb.)
+      console.warn('[Security] Supabase signOut error (continuing anyway):', error);
+
+      // Yine de storage'ı temizle
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (storageError) {
+        console.warn('[Security] Storage clear error:', storageError);
+      }
+    } finally {
+      // Her durumda local state'i temizle
+      setCurrentUser(null);
+      setView('website');
+
+      console.log('[Security] Redirecting to home...');
+
+      // Cache'i temizlemek için replace kullan (history'ye ekleme)
+      // Bu sayede geri tuşu ile dashboard'a dönülemez
+      window.location.replace('/');
     }
-
-    // Always clear local state and redirect
-    setCurrentUser(null);
-    setView('website');
-
-    // Force reload to clear any cached state
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 100);
   }, []);
 
   const handleNavigateToAuth = useCallback(() => {

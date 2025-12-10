@@ -76,7 +76,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       </nav>
 
       {/* --- Hero Section --- */}
-      <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <div className="relative pt-24 pb-16 lg:pt-36 lg:pb-24 overflow-hidden">
         {/* Abstract Background Shapes */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[1000px] overflow-hidden -z-10 bg-white">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-200/30 blur-[100px] animate-pulse"></div>
@@ -85,51 +85,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-8 border border-indigo-100 shadow-sm animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-6 border border-indigo-100 shadow-sm animate-fade-in-up">
             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
             Yeni Nesil Eğitim Platformu
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8 font-poppins max-w-5xl mx-auto">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6 font-poppins max-w-4xl mx-auto">
             Özel Derslerinizi <br />
             <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-transparent bg-clip-text">Yapay Zeka ile Yönetin</span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-slate-500 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
             Öğrenci takibi, otomatik ders programlama ve kişiselleştirilmiş analizler.
             Eğitimciler için tasarlanmış profesyonel asistanınız.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12">
             <button
               onClick={() => onNavigateToAuth('register')}
-              className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-indigo-600/20 hover:shadow-2xl hover:shadow-indigo-600/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 min-w-[200px] justify-center"
+              className="px-6 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-base shadow-lg shadow-indigo-600/20 hover:shadow-xl hover:shadow-indigo-600/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 min-w-[180px] justify-center"
             >
               Hemen Başla
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
             </button>
             <button
               onClick={() => onNavigateToAuth('login')}
-              className="px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 min-w-[200px]"
+              className="px-6 py-3.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold text-base hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 min-w-[180px]"
             >
               Giriş Yap
             </button>
           </div>
 
           {/* Hero Image / Dashboard Mockup */}
-          <div className="relative max-w-6xl mx-auto mt-8 perspective-1000">
-            {/* Glow Effect */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-[2rem] blur-xl opacity-30 animate-pulse"></div>
+          <div className="relative max-w-4xl mx-auto mt-8 perspective-2000 group">
+            {/* Glow Effect - Smaller & Subtler */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-[2rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
 
-            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200/60 overflow-hidden transform rotate-x-12 transition-transform duration-700 hover:rotate-0">
+            <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200/60 overflow-hidden transform rotate-x-6 transition-transform duration-700 hover:rotate-x-0 group-hover:scale-[1.02]">
               {/* Browser Status Bar */}
-              <div className="h-10 bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <div className="ml-4 bg-white px-3 py-1 rounded text-[10px] text-slate-400 font-mono flex-1 text-center">texdrisedu.com/dashboard</div>
+              <div className="h-8 bg-slate-100 border-b border-slate-200 flex items-center px-4 gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                <div className="ml-4 bg-white px-3 py-0.5 rounded text-[10px] text-slate-400 font-mono flex-1 text-center">texdrisedu.com/dashboard</div>
               </div>
 
               {/* Image Content */}
@@ -145,31 +145,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
                     target.parentElement!.innerHTML = `
                       <div class="flex items-center justify-center p-20 h-full w-full bg-slate-50 text-slate-300">
                         <div class="text-center">
-                           <div class="text-6xl mb-4">📊</div>
-                           <div class="text-2xl font-bold text-slate-400">Dashboard Önizlemesi</div>
+                           <div class="text-5xl mb-4">📊</div>
+                           <div class="text-xl font-bold text-slate-400">Dashboard Önizlemesi</div>
                         </div>
                       </div>
                      `;
                   }}
                 />
 
-                {/* Floating Badges */}
-                <div className="absolute top-10 left-10 bg-white/90 backdrop-blur shadow-lg p-3 rounded-xl border border-white/50 animate-bounce cursor-default hidden md:block" style={{ animationDuration: '3s' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">🚀</div>
+                {/* Floating Badges - Repositioned */}
+                <div className="absolute top-6 left-6 bg-white/90 backdrop-blur shadow-lg p-2.5 rounded-lg border border-white/50 animate-bounce cursor-default hidden md:block" style={{ animationDuration: '3s' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-lg">🚀</div>
                     <div>
-                      <div className="text-xs text-slate-500 font-bold uppercase">Başarı</div>
-                      <div className="text-sm font-bold text-slate-800">%35 Artış</div>
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">Başarı</div>
+                      <div className="text-xs font-bold text-slate-800">%35 Artış</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="absolute bottom-20 right-10 bg-white/90 backdrop-blur shadow-lg p-3 rounded-xl border border-white/50 animate-bounce cursor-default hidden md:block" style={{ animationDuration: '4s' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-xl">🤖</div>
+                <div className="absolute bottom-12 right-6 bg-white/90 backdrop-blur shadow-lg p-2.5 rounded-lg border border-white/50 animate-bounce cursor-default hidden md:block" style={{ animationDuration: '4s' }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-lg">🤖</div>
                     <div>
-                      <div className="text-xs text-slate-500 font-bold uppercase">AI Analiz</div>
-                      <div className="text-sm font-bold text-slate-800">Aktif</div>
+                      <div className="text-[10px] text-slate-500 font-bold uppercase">AI Analiz</div>
+                      <div className="text-xs font-bold text-slate-800">Aktif</div>
                     </div>
                   </div>
                 </div>

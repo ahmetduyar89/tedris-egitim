@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface LandingPageProps {
-  onNavigateToAuth: () => void;
+  onNavigateToAuth: (mode?: 'login' | 'register') => void;
 }
 
 const TedrisLogo = () => (
@@ -51,13 +51,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           <TedrisLogo />
           <div className="flex items-center gap-2 sm:gap-4">
             <button
-              onClick={onNavigateToAuth}
+              onClick={() => onNavigateToAuth('login')}
               className="text-sm sm:text-base text-gray-600 hover:text-primary font-medium transition-colors"
             >
               Giriş Yap
             </button>
             <button
-              onClick={onNavigateToAuth}
+              onClick={() => onNavigateToAuth('register')}
               className="bg-primary hover:bg-primary-dark text-white font-semibold px-4 py-2 sm:px-6 sm:py-2.5 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 transform hover:-translate-y-0.5 text-sm sm:text-base"
             >
               <span className="sm:hidden">Başla</span>
@@ -105,7 +105,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={onNavigateToAuth}
+                  onClick={() => onNavigateToAuth('register')}
                   className="group px-8 py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <span>Hemen Başla</span>
@@ -449,7 +449,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             Hemen ücretsiz hesabınızı oluşturun ve TedrisEDU'nun ayrıcalıklı dünyasına katılın.
           </p>
           <button
-            onClick={onNavigateToAuth}
+            onClick={() => onNavigateToAuth('register')}
             className="px-10 py-4 bg-white text-primary font-bold rounded-xl shadow-xl hover:shadow-2xl hover:bg-gray-50 transform hover:-translate-y-1 transition-all duration-300 text-lg"
           >
             Ücretsiz Kayıt Olun

@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('loading');
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [contentId, setContentId] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   useEffect(() => {
     const checkForPublicShare = () => {
@@ -297,7 +298,8 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleNavigateToAuth = useCallback(() => {
+  const handleNavigateToAuth = useCallback((mode: 'login' | 'register' = 'login') => {
+    setAuthMode(mode);
     setView('auth');
   }, []);
 
@@ -346,7 +348,7 @@ const App: React.FC = () => {
       case 'website':
         return <LandingPage onNavigateToAuth={handleNavigateToAuth} />;
       case 'auth':
-        return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} />;
+        return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
       case 'dashboard':
         if (!currentUser) {
           setView('auth'); // Should not happen due to auth listener, but as a fallback

@@ -60,8 +60,6 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
     const fetchUpcomingLessons = async () => {
         try {
             const now = new Date();
-
-            // Get today's date in YYYY-MM-DD format (local timezone)
             const todayDateStr = now.toLocaleDateString('en-CA');
 
             // Calculate week boundaries (Monday to Sunday)
@@ -71,11 +69,10 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             weekStart.setDate(diff);
             weekStart.setHours(0, 0, 0, 0);
 
-            console.log('[DashboardOverview] Today date string:', todayDateStr);
             console.log('[DashboardOverview] Week start:', weekStart.toISOString());
             console.log('[DashboardOverview] User/Tutor ID:', user.id);
 
-            // Fetch ALL lessons for this tutor (same as PrivateLessonSchedule)
+            // Fetch ALL lessons for this tutor
             const { data: allLessonsData, error } = await supabase
                 .from('private_lessons')
                 .select('*')
@@ -86,10 +83,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 throw error;
             }
 
-            console.log('[DashboardOverview] Fetched all lessons from DB:', allLessonsData?.length || 0);
-
             if (!allLessonsData || allLessonsData.length === 0) {
-                console.log('[DashboardOverview] No lessons found in database');
+                console.log('[DashboardOverview] No lessons found');
                 setTodayLessons([]);
                 setUpcomingLessons([]);
                 return;
@@ -114,7 +109,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 homework: row.homework
             } as PrivateLesson));
 
-            // Create lesson templates (same logic as PrivateLessonSchedule)
+            // Create lesson templates
             const lessonTemplates = new Map<string, PrivateLesson>();
 
             allLessons.forEach(lesson => {
@@ -124,13 +119,10 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 const minutes = lessonDate.getMinutes();
                 const key = `${dayOfWeek}-${hours}-${minutes}-${lesson.studentId}`;
 
-                // Keep the most recent lesson for this slot
                 if (!lessonTemplates.has(key) || new Date(lesson.startTime) > new Date(lessonTemplates.get(key)!.startTime)) {
                     lessonTemplates.set(key, lesson);
                 }
             });
-
-            console.log('[DashboardOverview] Created templates:', lessonTemplates.size);
 
             // Project lessons onto current week
             const currentWeekLessons: PrivateLesson[] = [];
@@ -141,28 +133,27 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 const hours = templateDate.getHours();
                 const minutes = templateDate.getMinutes();
 
-                // Calculate the date for this day in the current week
                 const currentWeekDate = new Date(weekStart);
-                const daysToAdd = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Adjust for Monday start
+                const daysToAdd = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                 currentWeekDate.setDate(currentWeekDate.getDate() + daysToAdd);
                 currentWeekDate.setHours(hours, minutes, 0, 0);
 
                 const endDate = new Date(currentWeekDate);
                 endDate.setMinutes(endDate.getMinutes() + (template.duration || 60));
 
-                // Check if there's already a lesson in the database for this exact slot
+                // Find existing lesson with 1 minute tolerance
                 const existingLesson = allLessons.find(l => {
                     const lDate = new Date(l.startTime);
-                    return lDate.getTime() === currentWeekDate.getTime() && l.studentId === template.studentId;
+                    const timeDiff = Math.abs(lDate.getTime() - currentWeekDate.getTime());
+                    return timeDiff < 60000 && l.studentId === template.studentId;
                 });
 
                 if (existingLesson) {
-                    // Use the existing lesson from database
+                    // console.log('[DashboardOverview] Found existing lesson:', existingLesson.id, existingLesson.status);
                     if (existingLesson.status !== 'cancelled') {
                         currentWeekLessons.push(existingLesson);
                     }
                 } else {
-                    // Create a virtual lesson based on template (only for current week and future)
                     if (currentWeekDate >= weekStart) {
                         currentWeekLessons.push({
                             ...template,
@@ -179,43 +170,53 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 }
             });
 
-            console.log('[DashboardOverview] Projected lessons for current week:', currentWeekLessons.length);
-
-            // Filter today's lessons and upcoming lessons
+            // Filter today's lessons
             const today = currentWeekLessons.filter(l => {
                 const lessonDate = new Date(l.startTime);
                 const lessonDateStr = lessonDate.toLocaleDateString('en-CA');
                 return lessonDateStr === todayDateStr;
             });
-
-            // Sort today's lessons by time (earliest first - yakından uzağa)
             today.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-            // Get upcoming lessons (from now onwards, sorted by time)
+            // Upcoming lessons
             const upcoming = currentWeekLessons
                 .filter(l => new Date(l.startTime) >= now)
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
                 .slice(0, 5);
 
+            // Calculate week end (Sunday 23:59:59)
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+
             console.log('[DashboardOverview] Today lessons:', today.length);
             console.log('[DashboardOverview] Upcoming lessons:', upcoming.length);
 
             // Count completed lessons for "Tamamlanan" card
-            // We need to count lessons that are explicitly completed
-            const completedLessonsCount = currentWeekLessons.filter(l => l.status === 'completed').length;
+            // SAFEST WAY: Count explicitly from raw DB data within this week range
+            // Virtual lessons cannot be 'completed' anyway, so we check allLessons
+            const completedLessonsCount = allLessons.filter(l => {
+                const lDate = new Date(l.startTime);
+                return l.status === 'completed' && lDate >= weekStart && lDate <= weekEnd;
+            }).length;
 
-            console.log('[DashboardOverview] Total projected lessons for week:', currentWeekLessons.length);
-            console.log('[DashboardOverview] Total completed lessons for week:', completedLessonsCount);
+            console.log('[DashboardOverview] Week stats:', {
+                totalProjected: currentWeekLessons.length,
+                completed: completedLessonsCount,
+                today: today.length,
+                weekStart: weekStart.toISOString(),
+                weekEnd: weekEnd.toISOString()
+            });
 
             setTodayLessons(today);
             setUpcomingLessons(upcoming);
 
-            // Update stats with week's projected lessons and completed lessons
+            // Update stats
             setStats(prev => ({
                 ...prev,
                 todayLessons: today.length,
-                weekLessons: currentWeekLessons.length, // Include virtual lessons
-                completedTests: completedLessonsCount // Use completed lessons count instead of tests
+                weekLessons: currentWeekLessons.length,
+                completedTests: completedLessonsCount
             }));
         } catch (error) {
             console.error('Error fetching upcoming lessons:', error);

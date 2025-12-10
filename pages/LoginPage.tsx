@@ -5,6 +5,7 @@ import { supabase } from '../services/dbAdapter';
 interface LoginPageProps {
   onLogin: (user: User) => void;
   onNavigateToWebsite: () => void;
+  initialMode?: 'login' | 'register';
 }
 
 
@@ -19,8 +20,8 @@ const TedrisLogo = () => (
   </svg>
 );
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) => {
-  const [isRegisterView, setIsRegisterView] = useState(false);
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, initialMode = 'login' }) => {
+  const [isRegisterView, setIsRegisterView] = useState(initialMode === 'register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -282,7 +283,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite }) =
 
               <p className="text-text-secondary mb-6 leading-relaxed">
                 Hesabınız başarıyla oluşturuldu ve yönetici onayı bekliyor.
-                Hesabınız onaylandıktan sonra e-posta adresiniz ile giriş yapabileceksiniz.
+                Hesabınız onaylandıktan sonra kullanıcı adı ve şifre ile giriş yapabileceksiniz.
               </p>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 w-full">

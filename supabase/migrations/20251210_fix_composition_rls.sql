@@ -1,8 +1,10 @@
 -- Fix for Composition Assignment "Not Found" Error
 -- This migration adds a policy to allow students to view compositions assigned to them
 
--- Add policy for students to view assigned compositions
-CREATE POLICY IF NOT EXISTS "Students can view assigned compositions"
+-- Drop the policy if it exists, then create it
+DROP POLICY IF EXISTS "Students can view assigned compositions" ON compositions;
+
+CREATE POLICY "Students can view assigned compositions"
   ON compositions FOR SELECT
   USING (
     EXISTS (

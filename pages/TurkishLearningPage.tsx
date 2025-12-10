@@ -90,152 +90,151 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
 
     return (
         <div className="p-4 md:p-6 max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-4 md:mb-6">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Türkçe Öğrenimi</h1>
-                <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">
+            {/* Compact Header */}
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    📚 Türkçe Öğrenimi
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
                     Kelime, deyim ve atasözü kütüphanenizi yönetin
                 </p>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-6">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <div className="flex items-center justify-between">
+            {/* Compact Stats Cards */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">📖</span>
                         <div>
-                            <span className="text-xs md:text-sm font-medium text-purple-700">Kelimeler</span>
-                            <p className="text-2xl md:text-3xl font-bold text-purple-900 mt-1">{vocabularyItems.length}</p>
+                            <p className="text-xs font-medium text-purple-700">Kelimeler</p>
+                            <p className="text-xl font-bold text-purple-900">{vocabularyItems.length}</p>
                         </div>
-                        <span className="text-3xl md:text-4xl">📖</span>
                     </div>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <div className="flex items-center justify-between">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">💬</span>
                         <div>
-                            <span className="text-xs md:text-sm font-medium text-blue-700">Deyimler</span>
-                            <p className="text-2xl md:text-3xl font-bold text-blue-900 mt-1">{idiomItems.length}</p>
+                            <p className="text-xs font-medium text-blue-700">Deyimler</p>
+                            <p className="text-xl font-bold text-blue-900">{idiomItems.length}</p>
                         </div>
-                        <span className="text-3xl md:text-4xl">💬</span>
                     </div>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <div className="flex items-center justify-between">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 p-3">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">🎯</span>
                         <div>
-                            <span className="text-xs md:text-sm font-medium text-green-700">Atasözleri</span>
-                            <p className="text-2xl md:text-3xl font-bold text-green-900 mt-1">{proverbItems.length}</p>
+                            <p className="text-xs font-medium text-green-700">Atasözleri</p>
+                            <p className="text-xl font-bold text-green-900">{proverbItems.length}</p>
                         </div>
-                        <span className="text-3xl md:text-4xl">🎯</span>
                     </div>
                 </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 md:gap-3 mb-4 md:mb-6">
+            {/* Compact Action Buttons */}
+            <div className="flex gap-2 mb-4">
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="bg-blue-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
-                    Tek Tek Ekle
+                    Tek Ekle
                 </button>
                 <button
                     onClick={() => setShowBulkImportModal(true)}
-                    className="bg-green-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                     </svg>
                     Toplu Ekle
                 </button>
                 <button
                     onClick={() => setShowNewAssignModal(true)}
-                    className="bg-purple-600 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
                     </svg>
-                    Yeni Atama Oluştur
+                    Yeni Atama
                 </button>
             </div>
 
-            {/* Content Tabs */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {/* Compact Content Tabs */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
                 <div className="border-b border-gray-200">
-                    <div className="flex overflow-x-auto">
+                    <div className="flex">
                         <button
                             onClick={() => setActiveTab('vocabulary')}
-                            className={`flex-1 min-w-[100px] px-3 md:px-6 py-3 md:py-4 text-xs md:text-base font-semibold transition-colors whitespace-nowrap ${activeTab === 'vocabulary'
-                                ? 'border-b-2 border-purple-500 text-purple-700'
-                                : 'text-gray-600 hover:text-gray-900'
+                            className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${activeTab === 'vocabulary'
+                                    ? 'border-b-2 border-purple-500 text-purple-700 bg-purple-50'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
-                            <span className="hidden sm:inline">📖 Kelimeler ({vocabularyItems.length})</span>
-                            <span className="sm:hidden">📖 ({vocabularyItems.length})</span>
+                            📖 Kelimeler ({vocabularyItems.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('idiom')}
-                            className={`flex-1 min-w-[100px] px-3 md:px-6 py-3 md:py-4 text-xs md:text-base font-semibold transition-colors whitespace-nowrap ${activeTab === 'idiom'
-                                ? 'border-b-2 border-blue-500 text-blue-700'
-                                : 'text-gray-600 hover:text-gray-900'
+                            className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${activeTab === 'idiom'
+                                    ? 'border-b-2 border-blue-500 text-blue-700 bg-blue-50'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
-                            <span className="hidden sm:inline">💬 Deyimler ({idiomItems.length})</span>
-                            <span className="sm:hidden">💬 ({idiomItems.length})</span>
+                            💬 Deyimler ({idiomItems.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('proverb')}
-                            className={`flex-1 min-w-[100px] px-3 md:px-6 py-3 md:py-4 text-xs md:text-base font-semibold transition-colors whitespace-nowrap ${activeTab === 'proverb'
-                                ? 'border-b-2 border-green-500 text-green-700'
-                                : 'text-gray-600 hover:text-gray-900'
+                            className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${activeTab === 'proverb'
+                                    ? 'border-b-2 border-green-500 text-green-700 bg-green-50'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                                 }`}
                         >
-                            <span className="hidden sm:inline">🎯 Atasözleri ({proverbItems.length})</span>
-                            <span className="sm:hidden">🎯 ({proverbItems.length})</span>
+                            🎯 Atasözleri ({proverbItems.length})
                         </button>
                     </div>
                 </div>
 
-                <div className="p-3 md:p-6">
+                <div className="p-4">
                     {isLoading ? (
-                        <div className="text-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="text-gray-600 mt-4">Yükleniyor...</p>
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="text-gray-600 mt-3 text-sm">Yükleniyor...</p>
                         </div>
                     ) : getCurrentItems().length === 0 ? (
-                        <div className="text-center py-12 bg-gray-50 rounded-lg">
-                            <div className="text-5xl mb-3">{getTabIcon()}</div>
-                            <p className="text-gray-600 font-medium mb-2">Henüz {getTabLabel().toLowerCase()} eklenmemiş</p>
-                            <p className="text-sm text-gray-500 mb-4">
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                            <div className="text-4xl mb-2">{getTabIcon()}</div>
+                            <p className="text-gray-600 font-medium mb-1 text-sm">Henüz {getTabLabel().toLowerCase()} eklenmemiş</p>
+                            <p className="text-xs text-gray-500">
                                 Yukarıdaki butonları kullanarak içerik ekleyebilirsiniz
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-2 md:space-y-3">
+                        <div className="space-y-2">
                             {getCurrentItems().map((item) => (
-                                <div key={item.id} className="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow">
+                                <div key={item.id} className="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow bg-white">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
-                                                <h3 className="font-semibold text-base md:text-lg text-gray-900 break-words">{item.frontContent}</h3>
-                                                <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600 w-fit">
-                                                    Seviye {item.difficultyLevel}
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-semibold text-sm text-gray-900 break-words">{item.frontContent}</h3>
+                                                <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-600 flex-shrink-0">
+                                                    Lv.{item.difficultyLevel}
                                                 </span>
                                             </div>
-                                            <p className="text-sm md:text-base text-gray-700 mb-2 break-words">{item.backContent}</p>
+                                            <p className="text-sm text-gray-700 mb-1 break-words">{item.backContent}</p>
                                             {item.exampleSentence && (
-                                                <p className="text-xs md:text-sm text-gray-600 italic break-words">
+                                                <p className="text-xs text-gray-600 italic break-words">
                                                     💡 {item.exampleSentence}
                                                 </p>
                                             )}
                                         </div>
                                         <button
                                             onClick={() => handleDelete(item.id)}
-                                            className="flex-shrink-0 text-red-600 hover:text-red-800 transition-colors p-1"
+                                            className="flex-shrink-0 text-red-600 hover:text-red-800 hover:bg-red-50 rounded p-1 transition-colors"
                                             title="Sil"
                                         >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                                             </svg>
                                         </button>
@@ -257,7 +256,7 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
             <TurkishAssignmentsManagement user={user} students={students} />
 
             {/* Composition Management */}
-            <div className="mt-8">
+            <div className="mt-6">
                 <CompositionManagement user={user} students={students} />
             </div>
 

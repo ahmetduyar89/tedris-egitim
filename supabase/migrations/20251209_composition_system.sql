@@ -87,6 +87,17 @@ CREATE POLICY "Teachers can manage own compositions"
   ON compositions FOR ALL
   USING (auth.uid() = teacher_id);
 
+-- Students can view compositions assigned to them
+CREATE POLICY "Students can view assigned compositions"
+  ON compositions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM composition_assignments
+      WHERE composition_assignments.composition_id = compositions.id
+      AND composition_assignments.student_id = auth.uid()
+    )
+  );
+
 -- Composition Assignments Policies
 -- Students can view their own assignments
 CREATE POLICY "Students can view own composition assignments"

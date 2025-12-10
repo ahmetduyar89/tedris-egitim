@@ -185,6 +185,8 @@ export async function getTeacherAssignments(teacherId: string): Promise<Composit
  * Get a specific assignment by ID
  */
 export async function getAssignmentById(assignmentId: string): Promise<CompositionAssignment | null> {
+    console.log('[getAssignmentById] Fetching assignment:', assignmentId);
+
     const { data, error } = await supabase
         .from('composition_assignments')
         .select(`
@@ -194,10 +196,18 @@ export async function getAssignmentById(assignmentId: string): Promise<Compositi
         .eq('id', assignmentId)
         .single();
 
+    console.log('[getAssignmentById] Result:', { data, error });
+
     if (error) {
+        console.error('[getAssignmentById] Error:', error);
         if (error.code === 'PGRST116') return null; // Not found
         throw error;
     }
+
+    if (!data.composition) {
+        console.error('[getAssignmentById] Warning: Assignment found but composition is null/undefined');
+    }
+
     return mapAssignmentFromDB(data);
 }
 

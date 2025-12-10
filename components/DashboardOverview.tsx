@@ -188,6 +188,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 return lessonDateStr === todayDateStr;
             });
 
+            // Sort today's lessons by time (earliest first - yakından uzağa)
+            today.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
             // Get upcoming lessons (from now onwards, sorted by time)
             const upcoming = currentWeekLessons
                 .filter(l => new Date(l.startTime) >= now)
@@ -199,6 +202,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
             setTodayLessons(today);
             setUpcomingLessons(upcoming);
+
+            // Update stats with today's lesson count
+            setStats(prev => ({
+                ...prev,
+                todayLessons: today.length
+            }));
         } catch (error) {
             console.error('Error fetching upcoming lessons:', error);
         } finally {
@@ -215,18 +224,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             }
 
             const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-            const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
             const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-            // Today's lessons count
-            const { count: todayCount } = await supabase
-                .from('private_lessons')
-                .select('*', { count: 'exact', head: true })
-                .eq('tutor_id', user.id)
-                .gte('start_time', todayStart)
-                .lte('start_time', todayEnd)
-                .neq('status', 'cancelled');
 
             // Week's lessons count
             const { count: weekCount } = await supabase
@@ -295,7 +293,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             const activeCount = students.filter(s => s.xp > 500).length;
 
             setStats({
-                todayLessons: todayCount || 0,
+                todayLessons: 0, // Will be updated from todayLessons array
                 weekLessons: weekCount || 0,
                 completedTests: totalTests,
                 pendingHomework: pendingCount || 0,

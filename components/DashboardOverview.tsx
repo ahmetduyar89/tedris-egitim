@@ -200,13 +200,22 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             console.log('[DashboardOverview] Today lessons:', today.length);
             console.log('[DashboardOverview] Upcoming lessons:', upcoming.length);
 
+            // Count completed lessons for "Tamamlanan" card
+            // We need to count lessons that are explicitly completed
+            const completedLessonsCount = currentWeekLessons.filter(l => l.status === 'completed').length;
+
+            console.log('[DashboardOverview] Total projected lessons for week:', currentWeekLessons.length);
+            console.log('[DashboardOverview] Total completed lessons for week:', completedLessonsCount);
+
             setTodayLessons(today);
             setUpcomingLessons(upcoming);
 
-            // Update stats with today's lesson count
+            // Update stats with week's projected lessons and completed lessons
             setStats(prev => ({
                 ...prev,
-                todayLessons: today.length
+                todayLessons: today.length,
+                weekLessons: currentWeekLessons.length, // Include virtual lessons
+                completedTests: completedLessonsCount // Use completed lessons count instead of tests
             }));
         } catch (error) {
             console.error('Error fetching upcoming lessons:', error);
@@ -223,46 +232,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 return;
             }
 
-            const now = new Date();
+            // Other stats (Average Score, Pending Homework, Active Students)
 
-            // Calculate week start (Monday 00:00:00)
-            const weekStart = new Date(now);
-            const day = weekStart.getDay();
-            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Monday
-            weekStart.setDate(diff);
-            weekStart.setHours(0, 0, 0, 0);
-
-            // Calculate week end (Sunday 23:59:59)
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6); // Sunday
-            weekEnd.setHours(23, 59, 59, 999);
-
-            console.log('[DashboardOverview] Week start (Monday):', weekStart.toISOString());
-            console.log('[DashboardOverview] Week end (Sunday):', weekEnd.toISOString());
-            console.log('[DashboardOverview] Current time:', now.toISOString());
-
-            // This week's lessons count (ALL lessons from Monday to Sunday - entire week)
-            const { count: weekCount } = await supabase
-                .from('private_lessons')
-                .select('*', { count: 'exact', head: true })
-                .eq('tutor_id', user.id)
-                .gte('start_time', weekStart.toISOString())
-                .lte('start_time', weekEnd.toISOString())
-                .neq('status', 'cancelled');
-
-            // Completed lessons this week (status = 'completed', from Monday to now)
-            const { count: completedLessonsCount } = await supabase
-                .from('private_lessons')
-                .select('*', { count: 'exact', head: true })
-                .eq('tutor_id', user.id)
-                .eq('status', 'completed')
-                .gte('start_time', weekStart.toISOString())
-                .lte('start_time', now.toISOString());
-
-            console.log('[DashboardOverview] Total lessons this week (Mon-Sun):', weekCount);
-            console.log('[DashboardOverview] Completed lessons this week (Mon-Now):', completedLessonsCount);
-
-            // Completed tests (for average score calculation)
+            // Completed tests (for average score calculation only)
             const { data: completedTests } = await supabase
                 .from('diagnosis_test_assignments')
                 .select('score')
@@ -320,14 +292,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             // Active students (students with XP > 500 or recent activity)
             const activeCount = students.filter(s => s.xp > 500).length;
 
-            setStats({
-                todayLessons: 0, // Will be updated from todayLessons array
-                weekLessons: weekCount || 0,
-                completedTests: completedLessonsCount || 0, // Changed to completed lessons
+            setStats(prev => ({
+                ...prev,
                 pendingHomework: pendingCount || 0,
                 averageScore: avgScore,
                 activeStudents: activeCount
-            });
+            }));
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
         } finally {

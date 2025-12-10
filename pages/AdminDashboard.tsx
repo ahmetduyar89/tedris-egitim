@@ -90,10 +90,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
         setProcessingId(tutorId);
         try {
             // 1. Update user status in public.users table
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ status: 'approved' })
-                .eq('id', tutorId);
+            // 1. Update user status via RPC to bypass RLS recursion issues
+            const { error: updateError } = await supabase.rpc('admin_update_user_status', {
+                target_user_id: tutorId,
+                new_status: 'approved'
+            });
 
             if (updateError) throw updateError;
 
@@ -117,10 +118,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
 
         setProcessingId(tutorId);
         try {
-            const { error } = await supabase
-                .from('users')
-                .update({ status: 'rejected' })
-                .eq('id', tutorId);
+            const { error } = await supabase.rpc('admin_update_user_status', {
+                target_user_id: tutorId,
+                new_status: 'rejected'
+            });
 
             if (error) throw error;
 
@@ -144,10 +145,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
             // Delete from public.users
             // Note: This won't delete from auth.users due to Supabase security limitations for client-side
             // But the user won't be able to login to the app effectively
-            const { error } = await supabase
-                .from('users')
-                .delete()
-                .eq('id', tutorId);
+            // Delete using RPC to bypass RLS recursion
+            const { error } = await supabase.rpc('admin_delete_user', {
+                target_user_id: tutorId
+            });
 
             if (error) throw error;
 
@@ -168,10 +169,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
     const handleSaveEdit = async (tutorId: string, name: string, email: string) => {
         try {
             // Only update name, email update in auth requires more complex flow
-            const { error } = await supabase
-                .from('users')
-                .update({ name: name })
-                .eq('id', tutorId);
+            // Update using RPC
+            const { error } = await supabase.rpc('admin_update_user_details', {
+                target_user_id: tutorId,
+                new_name: name
+            });
 
             if (error) throw error;
 
@@ -205,8 +207,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
                                 <button
                                     onClick={() => setActiveTab('pending')}
                                     className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${activeTab === 'pending'
-                                            ? 'text-primary border-b-2 border-primary bg-blue-50'
-                                            : 'text-gray-600 hover:text-primary hover:bg-gray-50'
+                                        ? 'text-primary border-b-2 border-primary bg-blue-50'
+                                        : 'text-gray-600 hover:text-primary hover:bg-gray-50'
                                         }`}
                                 >
                                     <div className="flex items-center justify-center gap-2">
@@ -224,8 +226,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminName }) 
                                 <button
                                     onClick={() => setActiveTab('approved')}
                                     className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${activeTab === 'approved'
-                                            ? 'text-primary border-b-2 border-primary bg-blue-50'
-                                            : 'text-gray-600 hover:text-primary hover:bg-gray-50'
+                                        ? 'text-primary border-b-2 border-primary bg-blue-50'
+                                        : 'text-gray-600 hover:text-primary hover:bg-gray-50'
                                         }`}
                                 >
                                     <div className="flex items-center justify-center gap-2">

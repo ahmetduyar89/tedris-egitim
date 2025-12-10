@@ -174,7 +174,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [selectedStudentId, setSelectedStudentId] = useState(initialStudentId || '');
     const [templateType, setTemplateType] = useState<MessageTemplateType>('general');
     const [messageBody, setMessageBody] = useState('');
-    const [targetPhone, setTargetPhone] = useState<'parent' | 'student'>('parent');
+    const [targetPhone, setTargetPhone] = useState<'parent' | 'student' | 'both'>('parent');
     const [honorific, setHonorific] = useState<Honorific>('Hanım');
     const [homeworkInfo, setHomeworkInfo] = useState<string>('');
     const [testResultInfo, setTestResultInfo] = useState<string>('');
@@ -557,12 +557,16 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         // For bulk send, show preview using first student
         if (isBulkSend && students.length > 0) {
             const previewStudent = students[0];
-            const previewMessage = TEMPLATES[templateType].body(previewStudent, targetPhone, honorific, homeworkInfo, testResultInfo);
+            // When bulk sending or 'both' is selected, we just need a valid preview target type
+            const previewTarget = targetPhone === 'both' ? 'parent' : targetPhone;
+            const previewMessage = TEMPLATES[templateType].body(previewStudent, previewTarget, honorific, homeworkInfo, testResultInfo);
             setMessageBody(`📝 ÖNIZLEME (${previewStudent.name} için):\n\n${previewMessage}\n\n---\n\nℹ️ Her öğrenci için mesaj kişiselleştirilecektir.`);
         } else {
             const student = students.find(s => s.id === selectedStudentId);
             if (student) {
-                setMessageBody(TEMPLATES[templateType].body(student, targetPhone, honorific, homeworkInfo, testResultInfo));
+                // When 'both' is selected for single student, show parent version as preview (or both? stick to parent for now to fix type)
+                const previewTarget = targetPhone === 'both' ? 'parent' : targetPhone;
+                setMessageBody(TEMPLATES[templateType].body(student, previewTarget, honorific, homeworkInfo, testResultInfo));
             } else {
                 setMessageBody('');
             }
@@ -780,18 +784,80 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                     }
                 }
 
-                // Generate personalized message
-                const personalizedMessage = TEMPLATES[templateType].body(
-                    student,
-                    targetPhone,
-                    honorific,
-                    personalizedHomework || homeworkInfo,
-                    testResultInfo
-                );
+                // Determines handling based on "Both" vs "Single Target"
+                const targets: ('parent' | 'student')[] = targetPhone === 'both' ? ['parent', 'student'] : [targetPhone as 'parent' | 'student'];
 
-                // Get phone number
+                for (const target of targets) {
+                    // Generate personalized message
+                    const personalizedMessage = TEMPLATES[templateType].body(
+                        student,
+                        target,
+                        honorific,
+                        personalizedHomework || homeworkInfo,
+                        testResultInfo
+                    );
+
+                    // Get phone number
+                    let rawPhone = '';
+                    if (target === 'parent') {
+                        rawPhone = student.parentPhone || student.contact || '';
+                    } else {
+                        const studentContact = student.contact?.replace(/\D/g, '') || '';
+                        if (studentContact.length < 10) {
+                            rawPhone = student.parentPhone || ''; // Fallback for student
+                        } else {
+                            rawPhone = student.contact || '';
+                        }
+                    }
+
+                    let phone = rawPhone.replace(/\D/g, '');
+                    if (phone.startsWith('00')) phone = phone.substring(2);
+                    if (phone.length === 10 && phone.startsWith('5')) {
+                        phone = '90' + phone;
+                    } else if (phone.length === 11 && phone.startsWith('0')) {
+                        phone = '9' + phone;
+                    }
+
+                    if (phone) {
+                        const encodedMessage = encodeURIComponent(personalizedMessage);
+                        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+                        window.open(whatsappUrl, '_blank');
+
+                        // Wait a bit before opening next window
+                        await new Promise(resolve => setTimeout(resolve, 800));
+                    }
+                }
+                // Wait a bit before processing next student in bulk list
+                if (i < validStudents.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            setBulkSendProgress(null);
+            alert('Toplu mesaj gönderimi tamamlandı!');
+            onClose();
+        } else {
+            // Single send (now simpler because "Both" for single student uses similar logic)
+            const student = students.find(s => s.id === selectedStudentId);
+            if (!student) return;
+
+            const targets: ('parent' | 'student')[] = targetPhone === 'both' ? ['parent', 'student'] : [targetPhone as 'parent' | 'student'];
+
+            if (targetPhone === 'both') {
+                if (!confirm(`Mesaj hem veliye hem öğrenciye ayrı ayrı gönderilecek. İki WhatsApp penceresi açılacak. Devam etmek istiyor musunuz?`)) return;
+            }
+
+            for (const target of targets) {
+                let messageToSend = messageBody; // Use manual edit for single send if not "both"
+
+                // If sending to "Both", we MUST regenerate the message for each target to ensure correct names/salutations
+                // Otherwise simpler edits might effectively send "Sayın Veli" to the student.
+                if (targetPhone === 'both') {
+                    messageToSend = TEMPLATES[templateType].body(student, target, honorific, homeworkInfo, testResultInfo);
+                }
+
                 let rawPhone = '';
-                if (targetPhone === 'parent') {
+                if (target === 'parent') {
                     rawPhone = student.parentPhone || student.contact || '';
                 } else {
                     const studentContact = student.contact?.replace(/\D/g, '') || '';
@@ -811,53 +877,15 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 }
 
                 if (phone) {
-                    const encodedMessage = encodeURIComponent(personalizedMessage);
+                    const encodedMessage = encodeURIComponent(messageToSend);
                     const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
                     window.open(whatsappUrl, '_blank');
-
-                    // Wait a bit before opening next window to prevent browser blocking
-                    if (i < validStudents.length - 1) {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
-            }
-
-            setBulkSendProgress(null);
-            alert('Toplu mesaj gönderimi tamamlandı!');
-            onClose();
-        } else {
-            // Single send
-            const student = students.find(s => s.id === selectedStudentId);
-            if (!student) return;
-
-            let rawPhone = '';
-            if (targetPhone === 'parent') {
-                rawPhone = student.parentPhone || student.contact || '';
-            } else {
-                const studentContact = student.contact?.replace(/\D/g, '') || '';
-                if (studentContact.length < 10) {
-                    rawPhone = student.parentPhone || '';
+                    if (targetPhone === 'both') await new Promise(resolve => setTimeout(resolve, 1000));
                 } else {
-                    rawPhone = student.contact || '';
+                    if (targetPhone !== 'both') alert('Seçilen kişi için geçerli bir telefon numarası bulunamadı.');
                 }
             }
 
-            let phone = rawPhone.replace(/\D/g, '');
-            if (phone.startsWith('00')) phone = phone.substring(2);
-            if (phone.length === 10 && phone.startsWith('5')) {
-                phone = '90' + phone;
-            } else if (phone.length === 11 && phone.startsWith('0')) {
-                phone = '9' + phone;
-            }
-
-            if (!phone) {
-                alert('Seçilen kişi için geçerli bir telefon numarası bulunamadı.');
-                return;
-            }
-
-            const encodedMessage = encodeURIComponent(messageBody);
-            const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
-            window.open(whatsappUrl, '_blank');
             onClose();
         }
     };
@@ -984,6 +1012,19 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                         {selectedStudent?.contact && <span className="text-xs text-gray-500 ml-1">({selectedStudent.contact})</span>}
                                     </span>
                                 </label>
+                                <label className="flex items-center cursor-pointer px-2 py-1 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors">
+                                    <input
+                                        type="radio"
+                                        checked={targetPhone === 'both'}
+                                        onChange={() => {
+                                            setTargetPhone('both');
+                                        }}
+                                        className="text-purple-600 focus:ring-purple-500 h-4 w-4"
+                                    />
+                                    <span className="ml-2 text-sm font-medium text-purple-700">
+                                        Hem Veli Hem Öğrenci
+                                    </span>
+                                </label>
                             </div>
 
                             {targetPhone === 'parent' && (
@@ -1017,6 +1058,12 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                             <p className="text-xs text-blue-600 mb-2 bg-blue-50 p-2 rounded-lg">
                                 ℹ️ Toplu gönderimde her öğrenci için mesaj kişiselleştirilecektir.
                                 {templateType === 'homework' && ' Her öğrencinin kendi ödevleri eklenecektir.'}
+                            </p>
+                        )}
+                        {!isBulkSend && targetPhone === 'both' && (
+                            <p className="text-xs text-purple-600 mb-2 bg-purple-50 p-2 rounded-lg">
+                                ℹ️ Mesaj hem veliye hem de öğrenciye <strong>ayrı ayrı</strong> ve <strong>kişiselleştirilerek</strong> gönderilecektir. (Örn: Veliye "Sayın Veli", Öğrenciye "Merhaba Ali").
+                                <br />Bu nedenle aşağıdaki metin üzerinde yapacağınız değişiklikler <strong>gönderilmeyecektir</strong>, her alıcı için şablon tekrar oluşturulacaktır.
                             </p>
                         )}
                         <textarea

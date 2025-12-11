@@ -8,7 +8,7 @@ interface WhatsAppMessageModalProps {
     initialStudentId?: string;
 }
 
-type MessageTemplateType = 'general' | 'homework' | 'payment' | 'exam_info' | 'absent';
+type MessageTemplateType = 'general' | 'homework' | 'payment' | 'exam_info' | 'absent' | 'test_reminder';
 
 const toTitleCase = (str: string) => {
     return str.toLocaleLowerCase('tr-TR').split(' ').map(word => word.charAt(0).toLocaleUpperCase('tr-TR') + word.slice(1)).join(' ');
@@ -51,7 +51,7 @@ type Honorific = 'Sayın' | 'Hanım' | 'Bey';
 
 import { supabase, db } from '../services/dbAdapter';
 
-const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string) => string }> = {
+const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string, latestTestInfo?: string) => string }> = {
     general: {
         label: 'Genel Bilgilendirme',
         subject: 'Bilgilendirme',
@@ -167,6 +167,44 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
 
             return `${prefix},\n\nBugünkü derse katılım ${target === 'parent' ? 'sağlanmadı' : 'sağlamadın'}. Bir sorun yoktur umarım?\n\nTelafi dersi veya sonraki programımız için haberleşebiliriz.\n\nİyi günler dilerim.`;
         }
+    },
+    test_reminder: {
+        label: 'Test Hatırlatma',
+        subject: 'Test Ataması',
+        body: (s, target, honorific, homeworkInfo, testResultInfo, latestTestInfo) => {
+            let prefix = '';
+            if (target === 'parent') {
+                const pName = s.parentName ? toTitleCase(s.parentName) : '';
+                if (honorific === 'Sayın') prefix = `Merhaba Sayın ${pName || 'Veli'}`;
+                else if (pName) prefix = `Merhaba ${getFirstName(pName)} ${honorific}`;
+                else prefix = `Merhaba Sayın Veli`;
+            } else {
+                prefix = `Merhaba ${getFirstName(s.name)}`;
+            }
+
+            const studentRef = target === 'parent' ? `${getFirstName(s.name)}${getStudentSuffix(s.name)}` : 'sana';
+
+            let message = `${prefix},\n\n`;
+
+            if (latestTestInfo) {
+                message += `${studentRef} atanan yeni bir test çalışması bulunmaktadır:\n${latestTestInfo}\n\n`;
+
+                if (target === 'parent') {
+                    message += `Öğrencimizin bu testi zamanında tamamlaması gelişim takibi için önemlidir. Kontrolünü rica ederim.`;
+                } else {
+                    message += `Testini en kısa sürede tamamlamanı bekliyorum. İyi çalışmalar!`;
+                }
+            } else {
+                if (target === 'parent') {
+                    message += `${studentRef} atanan testlerin takibi ve tamamlanması konusunda hatırlatma yapmak istedim. Düzenli çalışma başarımız için çok önemlidir.`;
+                } else {
+                    message += `Atanan testlerini tamamlaman konusunda hatırlatma yapmak istedim. Düzenli çalışma başarımız için çok önemlidir.`;
+                }
+            }
+
+            message += `\n\nİyi günler dilerim.`;
+            return message;
+        }
     }
 };
 
@@ -177,7 +215,9 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
     const [targetPhone, setTargetPhone] = useState<'parent' | 'student' | 'both'>('parent');
     const [honorific, setHonorific] = useState<Honorific>('Hanım');
     const [homeworkInfo, setHomeworkInfo] = useState<string>('');
+
     const [testResultInfo, setTestResultInfo] = useState<string>('');
+    const [latestTestInfo, setLatestTestInfo] = useState<string>('');
     const [isBulkSend, setIsBulkSend] = useState(false);
     const [bulkSendProgress, setBulkSendProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -543,6 +583,129 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         fetchLatestTestResult();
     }, [selectedStudentId, templateType]);
 
+    // Fetch latest assigned test when template is test_reminder
+    useEffect(() => {
+        const fetchLatestAssignedTest = async () => {
+            if (!selectedStudentId || templateType !== 'test_reminder') {
+                setLatestTestInfo('');
+                return;
+            }
+
+            try {
+                // Fetch from multiple sources to find the most recently created/assigned test
+                const [diagnosisTests, qbAssignments, pdfTests] = await Promise.all([
+                    // Diagnosis tests (using created_at or just order by id/created_at if available, assuming created_at exists or using ID desc as proxy)
+                    supabase
+                        .from('diagnosis_test_assignments')
+                        .select('*, diagnosis_test:diagnosis_tests(title)')
+                        .eq('student_id', selectedStudentId)
+                        .order('assigned_at', { ascending: false }) // Assuming assigned_at exists
+                        .limit(1),
+
+                    // Question bank assignments
+                    supabase
+                        .from('question_bank_assignments')
+                        .select('*, question_bank:question_banks(title)')
+                        .eq('student_id', selectedStudentId)
+                        .order('assigned_at', { ascending: false }) // Assuming assigned_at exists or assignedAt
+                        .limit(1),
+
+                    // PDF tests (fetching test definitions directly if strictly assigned, or submissions if they represent assignment)
+                    // Usually PDF tests are just files. Let's assume we check pdf_test_submissions which act as assignment/status tracker
+                    // OR check `tests` collection in Firestore if that's where AI tests are?
+                    // Previous code used `pdf_test_submissions`.
+                    supabase
+                        .from('pdf_test_submissions')
+                        .select('*, pdf_test:pdf_tests(title)')
+                        .eq('student_id', selectedStudentId)
+                        .order('created_at', { ascending: false }) // created_at of submission record = assignment time roughly
+                        .limit(1)
+                ]);
+
+                // Also fetch Firestore 'tests' (AI Tests)
+                let aiTest: { date: Date, title: string, type: string } | null = null;
+                try {
+                    const aiTestsSnapshot = await db.collection('tests')
+                        .where('studentId', '==', selectedStudentId)
+                        .orderBy('createdAt', 'desc')
+                        .limit(1)
+                        .get();
+
+                    if (!aiTestsSnapshot.empty) {
+                        const doc = aiTestsSnapshot.docs[0];
+                        const data = doc.data();
+                        // createdAt might be string or Timestamp
+                        let date = new Date();
+                        if (data.createdAt) {
+                            if (data.createdAt.toDate) date = data.createdAt.toDate();
+                            else if (typeof data.createdAt === 'string') date = new Date(data.createdAt);
+                        }
+                        aiTest = {
+                            date: date,
+                            title: data.title || 'AI Testi',
+                            type: 'AI Testi'
+                        };
+                    }
+                } catch (e) {
+                    console.error('Error fetching AI tests:', e);
+                }
+
+
+                const allTests: Array<{ date: Date, type: string, title: string }> = [];
+
+                // Diagnosis
+                if (diagnosisTests.data && diagnosisTests.data.length > 0) {
+                    const item = diagnosisTests.data[0];
+                    allTests.push({
+                        date: new Date(item.assigned_at || item.created_at || Date.now()),
+                        type: 'Tanı Testi',
+                        title: item.diagnosis_test?.title || 'Tanı Testi'
+                    });
+                }
+
+                // QB
+                if (qbAssignments.data && qbAssignments.data.length > 0) {
+                    const item = qbAssignments.data[0];
+                    allTests.push({
+                        date: new Date(item.assigned_at || item.assignedAt || Date.now()), // Handle casing if needed
+                        type: 'Soru Bankası',
+                        title: item.question_bank?.title || 'Soru Bankası'
+                    });
+                }
+
+                // PDF
+                if (pdfTests.data && pdfTests.data.length > 0) {
+                    const item = pdfTests.data[0];
+                    allTests.push({
+                        date: new Date(item.created_at),
+                        type: 'PDF Test',
+                        title: item.pdf_test?.title || 'PDF Testi'
+                    });
+                }
+
+                // AI Test
+                if (aiTest) {
+                    allTests.push(aiTest);
+                }
+
+                if (allTests.length > 0) {
+                    // Sort desc
+                    const latest = allTests.sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+                    const dateStr = latest.date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+                    setLatestTestInfo(`📝 *${latest.title}* (${latest.type})\n📅 Atanma Tarihi: ${dateStr}`);
+                } else {
+                    setLatestTestInfo('');
+                }
+
+            } catch (err) {
+                console.error('Error fetching latest assigned test:', err);
+                setLatestTestInfo('');
+            }
+        };
+
+        fetchLatestAssignedTest();
+    }, [selectedStudentId, templateType]);
+
 
     // Update message body whenever dependencies change
     useEffect(() => {
@@ -559,19 +722,19 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
             const previewStudent = students[0];
             // When bulk sending or 'both' is selected, we just need a valid preview target type
             const previewTarget = targetPhone === 'both' ? 'parent' : targetPhone;
-            const previewMessage = TEMPLATES[templateType].body(previewStudent, previewTarget, honorific, homeworkInfo, testResultInfo);
+            const previewMessage = TEMPLATES[templateType].body(previewStudent, previewTarget, honorific, homeworkInfo, testResultInfo, latestTestInfo);
             setMessageBody(`📝 ÖNIZLEME (${previewStudent.name} için):\n\n${previewMessage}\n\n---\n\nℹ️ Her öğrenci için mesaj kişiselleştirilecektir.`);
         } else {
             const student = students.find(s => s.id === selectedStudentId);
             if (student) {
                 // When 'both' is selected for single student, show parent version as preview (or both? stick to parent for now to fix type)
                 const previewTarget = targetPhone === 'both' ? 'parent' : targetPhone;
-                setMessageBody(TEMPLATES[templateType].body(student, previewTarget, honorific, homeworkInfo, testResultInfo));
+                setMessageBody(TEMPLATES[templateType].body(student, previewTarget, honorific, homeworkInfo, testResultInfo, latestTestInfo));
             } else {
                 setMessageBody('');
             }
         }
-    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, initialStudentId, students, isBulkSend]);
+    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, latestTestInfo, initialStudentId, students, isBulkSend]);
 
 
     const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -794,7 +957,8 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                         target,
                         honorific,
                         personalizedHomework || homeworkInfo,
-                        testResultInfo
+                        testResultInfo,
+                        latestTestInfo
                     );
 
                     // Get phone number

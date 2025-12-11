@@ -154,7 +154,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           <div className="relative max-w-6xl mx-auto mt-12 perspective-2000">
             <div className="relative bg-slate-900 rounded-2xl p-2 shadow-2xl border border-slate-700/50 overflow-hidden transform rotate-x-6 hover:rotate-x-0 transition-transform duration-1000">
               <div className="absolute top-0 left-0 w-full h-full bg-slate-900/50 z-10 backdrop-blur-sm flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-                <span className="text-white font-bold text-lg bg-indigo-600 px-6 py-2 rounded-full cursor-pointer hover:bg-indigo-700 transition">Arayüzü Keşfet</span>
+                <span
+                  onClick={() => onNavigateToAuth('login')}
+                  className="text-white font-bold text-lg bg-indigo-600 px-6 py-2 rounded-full cursor-pointer hover:bg-indigo-700 transition"
+                >
+                  Arayüzü Keşfet
+                </span>
               </div>
               <img src="/hero-dashboard.png" alt="Tedris Dashboard" onError={(e) => {
                 e.currentTarget.style.display = 'none';

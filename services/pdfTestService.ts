@@ -85,7 +85,7 @@ export const uploadPDFToStorage = async (file: File, teacherId: string): Promise
   return publicUrl;
 };
 
-export const createPDFTest = async (test: Omit<PDFTest, 'id' | 'createdAt'>): Promise<PDFTest> => {
+export const createPDFTest = async (test: Omit<PDFTest, 'id' | 'createdAt'> & { sendWhatsApp?: boolean }): Promise<PDFTest> => {
   try {
     const testData = {
       teacher_id: test.teacherId,
@@ -108,7 +108,8 @@ export const createPDFTest = async (test: Omit<PDFTest, 'id' | 'createdAt'>): Pr
       test.studentId,
       test.title,
       docRef.id,
-      'pdf'
+      'pdf',
+      test.sendWhatsApp
     );
 
     return {

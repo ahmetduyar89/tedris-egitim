@@ -24,6 +24,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
   const [hasTimeLimit, setHasTimeLimit] = useState(true);
   const [notes, setNotes] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
+  const [sendWhatsApp, setSendWhatsApp] = useState(true);
 
   const handleAssign = async () => {
     if (!selectedStudentId) {
@@ -107,7 +108,8 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
           selectedStudentId,
           questionBank.title,
           assignmentId,
-          'question_bank'
+          'question_bank',
+          sendWhatsApp
         );
         console.log('✅ Notification sent successfully!');
       } catch (notificationError) {
@@ -208,6 +210,24 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
               placeholder="Öğrenciye özel notlar..."
             />
+          </div>
+
+          <div>
+            <label className="flex items-center space-x-2 cursor-pointer bg-green-50 p-3 rounded-lg border border-green-100">
+              <input
+                type="checkbox"
+                checked={sendWhatsApp}
+                onChange={(e) => setSendWhatsApp(e.target.checked)}
+                className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+              />
+              <div className="flex flex-col">
+                <span className="text-gray-800 font-medium flex items-center">
+                  <span className="text-xl mr-2">📱</span>
+                  WhatsApp Bildirimi Gönder
+                </span>
+                <span className="text-xs text-gray-500">Öğrenciye ve veliye WhatsApp üzerinden bilgilendirme yapılır.</span>
+              </div>
+            </label>
           </div>
         </div>
 

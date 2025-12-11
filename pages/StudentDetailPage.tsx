@@ -893,13 +893,13 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         }
     };
 
-    const handleAssignmentCreated = async (newAssignment: Assignment) => {
+    const handleAssignmentCreated = async (newAssignment: Assignment, sendWhatsApp: boolean = true) => {
         try {
             const docRef = await db.collection('assignments').add(newAssignment);
             const assignmentWithId = { ...newAssignment, id: docRef.id };
             setAssignments(prev => [assignmentWithId, ...prev]);
             setIsCreatingAssignment(false);
-            await notifyAssignmentCreated(student.id, assignmentWithId.title, assignmentWithId.id, assignmentWithId.dueDate);
+            await notifyAssignmentCreated(student.id, assignmentWithId.title, assignmentWithId.id, assignmentWithId.dueDate, sendWhatsApp);
         } catch (error) {
             console.error("Error creating assignment:", error);
             alert("Ödev oluşturulurken bir hata oluştu.");

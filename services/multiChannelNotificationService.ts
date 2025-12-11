@@ -13,6 +13,7 @@ export interface NotificationPayload {
     entityId?: string;
     actionUrl?: string;
     channels?: NotificationChannel[]; // If not specified, uses student preferences
+    openWhatsappWindow?: boolean; // If true, opens WhatsApp Web in a new window
 }
 
 /**
@@ -84,12 +85,15 @@ export const sendParentNotification = async (payload: NotificationPayload): Prom
 
         if (!student?.parent_phone) {
             console.log('[Notification] No parent phone found for student:', payload.studentId);
+            if (payload.openWhatsappWindow) {
+                alert('Bu öğrencinin veli telefonu kayıtlı değil. WhatsApp açılamıyor.');
+            }
             return;
         }
 
         // Send WhatsApp to parent
         // NOTE: We currently only support WhatsApp for parents as that's the primary communication channel
-        await sendWhatsAppNotification(payload, student.parent_phone);
+        await sendWhatsAppNotification(payload, student.parent_phone, payload.openWhatsappWindow);
 
         console.log('[Notification] Parent notification sent successfully');
 
@@ -162,7 +166,8 @@ const sendPushNotification = async (payload: NotificationPayload): Promise<void>
  */
 const sendWhatsAppNotification = async (
     payload: NotificationPayload,
-    phoneNumber?: string
+    phoneNumber?: string,
+    openWindow: boolean = false
 ): Promise<void> => {
     try {
         if (!phoneNumber) {
@@ -173,9 +178,20 @@ const sendWhatsAppNotification = async (
         // Format message for WhatsApp
         const whatsappMessage = formatWhatsAppMessage(payload);
 
+        // Phone number formatting for Turkey/Global
+        let cleanPhone = phoneNumber.replace(/\D/g, '');
+
+        // If it starts with 0 (e.g., 0532...), remove the 0
+        if (cleanPhone.startsWith('0')) {
+            cleanPhone = cleanPhone.substring(1);
+        }
+
+        // If it's a 10-digit Turkish number (e.g., 532xxxxxxx), add 90
+        if (cleanPhone.length === 10) {
+            cleanPhone = '90' + cleanPhone;
+        }
+
         // Open WhatsApp with pre-filled message
-        // Note: This will open WhatsApp but won't auto-send (WhatsApp API limitation)
-        const cleanPhone = phoneNumber.replace(/\D/g, '');
         const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`;
 
         // For server-side sending, you would use WhatsApp Business API here
@@ -195,6 +211,16 @@ const sendWhatsAppNotification = async (
                 entity_id: payload.entityId,
                 status: 'pending'
             });
+
+        // If requested, open WhatsApp Web window
+        if (openWindow) {
+            console.log('[WhatsApp] Opening WhatsApp window:', whatsappUrl);
+            // Check for popup blocker
+            const newWindow = window.open(whatsappUrl, '_blank');
+            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                alert('WhatsApp penceresi açılamadı. Lütfen tarayıcınızın pop-up engelleyicisini kontrol edin.');
+            }
+        }
 
     } catch (error) {
         console.error('[WhatsApp] Error preparing WhatsApp notification:', error);
@@ -390,7 +416,8 @@ export const notifyAssignmentCreated = async (
     studentId: string,
     assignmentTitle: string,
     assignmentId: string,
-    dueDate?: string
+    dueDate?: string,
+    sendWhatsApp: boolean = true
 ) => {
     const dueDateText = dueDate
         ? ` Teslim tarihi: ${new Date(dueDate).toLocaleDateString('tr-TR')}`
@@ -403,7 +430,8 @@ export const notifyAssignmentCreated = async (
         message: `"${assignmentTitle}" adlı ödev size atandı.${dueDateText}`,
         entityType: 'assignment',
         entityId: assignmentId,
-        actionUrl: '/student-dashboard'
+        actionUrl: '/student-dashboard',
+        openWhatsappWindow: sendWhatsApp
     };
 
     await sendStudentNotification(payload);
@@ -414,7 +442,8 @@ export const notifyTestAssigned = async (
     studentId: string,
     testTitle: string,
     testId: string,
-    testType: 'diagnosis' | 'question_bank' | 'pdf' | 'test'
+    testType: 'diagnosis' | 'question_bank' | 'pdf' | 'test',
+    sendWhatsApp: boolean = true
 ) => {
     const payload: NotificationPayload = {
         studentId,
@@ -423,7 +452,8 @@ export const notifyTestAssigned = async (
         message: `"${testTitle}" adlı test size atandı. Testi çözmek için giriş yapın.`,
         entityType: testType,
         entityId: testId,
-        actionUrl: '/student-dashboard'
+        actionUrl: '/student-dashboard',
+        openWhatsappWindow: sendWhatsApp
     };
 
     await sendStudentNotification(payload);

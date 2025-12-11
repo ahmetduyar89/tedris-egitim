@@ -22,6 +22,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
     const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
     const [dueDate, setDueDate] = useState<string>('');
     const [isMandatory, setIsMandatory] = useState(true);
+    const [sendWhatsApp, setSendWhatsApp] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
     const [isAssigning, setIsAssigning] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -81,7 +82,8 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                 testId,
                 studentIds: Array.from(selectedStudents),
                 dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-                isMandatory
+                isMandatory,
+                sendWhatsApp
             }, teacherId);
 
             onAssigned();
@@ -133,6 +135,22 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                                     className="w-5 h-5 text-primary rounded focus:ring-primary"
                                 />
                                 <span className="text-gray-700 font-medium">Zorunlu Test</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label className="flex items-center space-x-2 cursor-pointer bg-green-50 p-2 rounded-lg border border-green-100 mt-6">
+                                <input
+                                    type="checkbox"
+                                    checked={sendWhatsApp}
+                                    onChange={(e) => setSendWhatsApp(e.target.checked)}
+                                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-gray-800 font-medium flex items-center">
+                                        <span className="text-lg mr-2">📱</span>
+                                        WhatsApp Bildirimi
+                                    </span>
+                                </div>
                             </label>
                         </div>
                     </div>

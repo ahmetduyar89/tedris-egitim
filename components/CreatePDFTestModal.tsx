@@ -22,6 +22,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
   const [answerKey, setAnswerKey] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [sendWhatsApp, setSendWhatsApp] = useState(true);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -98,6 +99,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
         dueDate: dueDate || undefined,
         subject,
         unit,
+        sendWhatsApp // Yeni parametre
       });
 
       onCreated();
@@ -269,6 +271,24 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                 />
               </div>
 
+              <div>
+                <label className="flex items-center space-x-2 cursor-pointer bg-green-50 p-3 rounded-xl border border-green-100">
+                  <input
+                    type="checkbox"
+                    checked={sendWhatsApp}
+                    onChange={(e) => setSendWhatsApp(e.target.checked)}
+                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-gray-800 font-medium flex items-center">
+                      <span className="text-xl mr-2">📱</span>
+                      WhatsApp Bildirimi Gönder
+                    </span>
+                    <span className="text-xs text-gray-500">Öğrenciye ve veliye WhatsApp üzerinden bilgilendirme yapılır.</span>
+                  </div>
+                </label>
+              </div>
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={onClose}
@@ -301,11 +321,10 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                         <button
                           key={option}
                           onClick={() => handleAnswerChange(questionNum, option)}
-                          className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${
-                            answerKey[questionNum.toString()] === option
+                          className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${answerKey[questionNum.toString()] === option
                               ? 'bg-blue-600 text-white shadow-lg'
                               : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
-                          }`}
+                            }`}
                         >
                           {option}
                         </button>

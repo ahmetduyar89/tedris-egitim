@@ -457,6 +457,52 @@ export const notifyTestAssigned = async (
     await sendParentNotification(payload);
 };
 
+export const sendWhatsAppToRecipient = async (
+    studentId: string,
+    recipient: 'student' | 'parent',
+    title: string,
+    content: string,
+    windowRef?: any
+) => {
+    try {
+        let phoneNumber: string | undefined;
+
+        const { data: student } = await supabase
+            .from('students')
+            .select('*')
+            .eq('id', studentId)
+            .single();
+
+        if (!student) throw new Error('Student not found');
+
+        if (recipient === 'student') {
+            const preferences = await getNotificationPreferences(studentId);
+            phoneNumber = preferences?.whatsapp_number;
+        } else {
+            phoneNumber = student.parent_phone;
+        }
+
+        if (!phoneNumber) {
+            alert(`${recipient === 'student' ? 'Öğrenci' : 'Veli'} telefon numarası kayıtlı değil.`);
+            if (windowRef) windowRef.close();
+            return;
+        }
+
+        await sendWhatsAppNotification({
+            studentId,
+            type: 'general',
+            title,
+            message: content,
+            whatsappWindow: windowRef
+        }, phoneNumber, windowRef);
+
+    } catch (error) {
+        console.error('Error sending WhatsApp:', error);
+        if (windowRef) windowRef.close();
+        throw error;
+    }
+};
+
 export const notifyHomeworkReminder = async (
     studentId: string,
     homeworkDetails: string

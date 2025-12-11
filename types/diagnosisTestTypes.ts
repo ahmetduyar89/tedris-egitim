@@ -124,7 +124,7 @@ export interface AssignDiagnosisTestConfig {
     studentIds: string[];
     dueDate?: string;
     isMandatory: boolean;
-    sendWhatsApp?: boolean;
+    whatsappWindow?: any;
 }
 
 // Modül Bazlı Sonuç

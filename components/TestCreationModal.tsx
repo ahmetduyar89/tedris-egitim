@@ -119,6 +119,12 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
     const [sendWhatsApp, setSendWhatsApp] = useState(true);
 
     const handleAssignTest = async () => {
+        // Open WhatsApp window immediately if enabled (synchronous)
+        let waWindow: Window | null = null;
+        if (sendWhatsApp) {
+            waWindow = window.open('', '_blank');
+        }
+
         const testData: Omit<Test, 'id'> = {
             studentId: student.id,
             teacherId: teacherId,
@@ -134,13 +140,13 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
         try {
             const docRef = await db.collection('tests').add(testData);
 
-            // Send notification
+            // Send notification with window ref
             await notifyTestAssigned(
                 student.id,
                 testData.title,
                 docRef.id,
                 'test',
-                sendWhatsApp
+                waWindow
             );
 
             onTestCreated({ ...testData, id: docRef.id });
@@ -148,6 +154,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
         } catch (error) {
             console.error("Error creating test in Firestore:", error);
             setError("Test oluşturulurken bir veritabanı hatası oluştu.");
+            if (waWindow) waWindow.close();
         }
     };
 

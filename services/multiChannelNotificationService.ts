@@ -13,7 +13,7 @@ export interface NotificationPayload {
     entityId?: string;
     actionUrl?: string;
     channels?: NotificationChannel[]; // If not specified, uses student preferences
-    openWhatsappWindow?: boolean; // If true, opens WhatsApp Web in a new window
+    whatsappWindow?: any; // Reference to window opened synchronously
 }
 
 /**
@@ -85,15 +85,16 @@ export const sendParentNotification = async (payload: NotificationPayload): Prom
 
         if (!student?.parent_phone) {
             console.log('[Notification] No parent phone found for student:', payload.studentId);
-            if (payload.openWhatsappWindow) {
+            if (payload.whatsappWindow) {
                 alert('Bu öğrencinin veli telefonu kayıtlı değil. WhatsApp açılamıyor.');
+                payload.whatsappWindow.close();
             }
             return;
         }
 
         // Send WhatsApp to parent
         // NOTE: We currently only support WhatsApp for parents as that's the primary communication channel
-        await sendWhatsAppNotification(payload, student.parent_phone, payload.openWhatsappWindow);
+        await sendWhatsAppNotification(payload, student.parent_phone, payload.whatsappWindow);
 
         console.log('[Notification] Parent notification sent successfully');
 
@@ -167,11 +168,12 @@ const sendPushNotification = async (payload: NotificationPayload): Promise<void>
 const sendWhatsAppNotification = async (
     payload: NotificationPayload,
     phoneNumber?: string,
-    openWindow: boolean = false
+    windowRef?: any
 ): Promise<void> => {
     try {
         if (!phoneNumber) {
             console.warn('[WhatsApp] No phone number provided');
+            if (windowRef) windowRef.close();
             return;
         }
 
@@ -213,13 +215,9 @@ const sendWhatsAppNotification = async (
             });
 
         // If requested, open WhatsApp Web window
-        if (openWindow) {
-            console.log('[WhatsApp] Opening WhatsApp window:', whatsappUrl);
-            // Check for popup blocker
-            const newWindow = window.open(whatsappUrl, '_blank');
-            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-                alert('WhatsApp penceresi açılamadı. Lütfen tarayıcınızın pop-up engelleyicisini kontrol edin.');
-            }
+        if (windowRef) {
+            console.log('[WhatsApp] Redirecting WhatsApp window:', whatsappUrl);
+            windowRef.location.href = whatsappUrl;
         }
 
     } catch (error) {
@@ -411,13 +409,12 @@ export const sendBulkNotifications = async (
 /**
  * Helper functions for common notification scenarios
  */
-
 export const notifyAssignmentCreated = async (
     studentId: string,
     assignmentTitle: string,
     assignmentId: string,
     dueDate?: string,
-    sendWhatsApp: boolean = true
+    whatsappWindow?: any
 ) => {
     const dueDateText = dueDate
         ? ` Teslim tarihi: ${new Date(dueDate).toLocaleDateString('tr-TR')}`
@@ -431,7 +428,7 @@ export const notifyAssignmentCreated = async (
         entityType: 'assignment',
         entityId: assignmentId,
         actionUrl: '/student-dashboard',
-        openWhatsappWindow: sendWhatsApp
+        whatsappWindow
     };
 
     await sendStudentNotification(payload);
@@ -443,7 +440,7 @@ export const notifyTestAssigned = async (
     testTitle: string,
     testId: string,
     testType: 'diagnosis' | 'question_bank' | 'pdf' | 'test',
-    sendWhatsApp: boolean = true
+    whatsappWindow?: any
 ) => {
     const payload: NotificationPayload = {
         studentId,
@@ -453,7 +450,7 @@ export const notifyTestAssigned = async (
         entityType: testType,
         entityId: testId,
         actionUrl: '/student-dashboard',
-        openWhatsappWindow: sendWhatsApp
+        whatsappWindow
     };
 
     await sendStudentNotification(payload);

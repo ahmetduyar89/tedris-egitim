@@ -74,6 +74,12 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
             return;
         }
 
+        // Open WhatsApp window immediately if enabled
+        let waWindow: Window | null = null;
+        if (sendWhatsApp) {
+            waWindow = window.open('', '_blank');
+        }
+
         setIsAssigning(true);
         setError(null);
 
@@ -83,7 +89,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                 studentIds: Array.from(selectedStudents),
                 dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
                 isMandatory,
-                sendWhatsApp
+                whatsappWindow: waWindow
             }, teacherId);
 
             onAssigned();
@@ -92,6 +98,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
         } catch (err: any) {
             console.error('Error assigning test:', err);
             setError(err.message || 'Test atanırken hata oluştu');
+            if (waWindow) waWindow.close();
         } finally {
             setIsAssigning(false);
         }

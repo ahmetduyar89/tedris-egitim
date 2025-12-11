@@ -82,6 +82,11 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
       }
     }
 
+    let waWindow: Window | null = null;
+    if (sendWhatsApp) {
+      waWindow = window.open('', '_blank'); // Open synchronously
+    }
+
     setIsUploading(true);
     try {
       const pdfUrl = await uploadPDFToStorage(pdfFile!, teacherId);
@@ -99,13 +104,14 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
         dueDate: dueDate || undefined,
         subject,
         unit,
-        sendWhatsApp // Yeni parametre
+        whatsappWindow: waWindow // Pass the window object
       });
 
       onCreated();
       onClose();
     } catch (error) {
       console.error('PDF test oluşturma hatası:', error);
+      if (waWindow) waWindow.close(); // Close window on error
       alert('Test oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setIsUploading(false);
@@ -322,8 +328,8 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                           key={option}
                           onClick={() => handleAnswerChange(questionNum, option)}
                           className={`flex-1 py-2 rounded-lg font-bold text-sm transition-all ${answerKey[questionNum.toString()] === option
-                              ? 'bg-blue-600 text-white shadow-lg'
-                              : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-100'
                             }`}
                         >
                           {option}

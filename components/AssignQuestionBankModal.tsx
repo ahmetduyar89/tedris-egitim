@@ -103,17 +103,22 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
         });
       }
 
-      try {
-        await notifyTestAssigned(
-          selectedStudentId,
-          questionBank.title,
-          assignmentId,
-          'question_bank',
-          sendWhatsApp
-        );
-        console.log('✅ Notification sent successfully!');
-      } catch (notificationError) {
-        console.error('❌ Failed to send notification:', notificationError);
+      // 5. Send Notification
+      if (sendWhatsApp) { // Only attempt to send if checkbox is checked
+        try {
+          waWindow = await notifyTestAssigned( // Assign the window object to waWindow
+            selectedStudentId,
+            questionBank.title,
+            assignmentId,
+            'question_bank'
+          );
+          console.log('✅ Notification sent successfully!');
+        } catch (notificationError) {
+          console.error('❌ Failed to send notification:', notificationError);
+          if (waWindow) waWindow.close(); // Close window on notification error
+        }
+      } else {
+        console.log('WhatsApp notification skipped by user.');
       }
 
       alert(`✅ Test başarıyla ${selectedStudent?.name}'e atandı!`);
@@ -122,8 +127,10 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
     } catch (error) {
       console.error('Error assigning question bank:', error);
       alert('Test atanamadı. Lütfen tekrar deneyin.');
+      if (waWindow) waWindow.close(); // Close window on general error
     } finally {
       setIsAssigning(false);
+      if (waWindow) waWindow.close(); // Ensure window is closed in finally block
     }
   };
 

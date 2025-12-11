@@ -165,7 +165,7 @@ export const diagnosisTestManagementService = {
                     testData.title,
                     config.testId,
                     'diagnosis',
-                    config.sendWhatsApp ?? true
+                    config.whatsappWindow
                 ).catch(err => {
                     console.error('Failed to send notification to student:', studentId, err);
                 })

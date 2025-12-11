@@ -174,7 +174,10 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             const today = currentWeekLessons.filter(l => {
                 const lessonDate = new Date(l.startTime);
                 const lessonDateStr = lessonDate.toLocaleDateString('en-CA');
-                return lessonDateStr === todayDateStr;
+
+                // Show lesson if it matches today AND hasn't ended yet relative to now
+                const endTime = new Date(l.endTime);
+                return lessonDateStr === todayDateStr && endTime > now;
             });
             today.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 

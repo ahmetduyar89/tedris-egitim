@@ -494,7 +494,14 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                             </div>
                             <div className="p-3 space-y-2">
                                 {todayLessons.map(lesson => (
-                                    <div key={lesson.id} className="flex items-center p-2.5 rounded-lg bg-white border border-blue-100 hover:border-blue-300 transition-colors">
+                                    <div
+                                        key={lesson.id}
+                                        onClick={() => {
+                                            const student = students.find(s => s.id === lesson.studentId);
+                                            if (student) onViewStudent(student);
+                                        }}
+                                        className="flex items-center p-2.5 rounded-lg bg-white border border-blue-100 hover:border-blue-300 transition-colors cursor-pointer"
+                                    >
                                         <div
                                             className="w-1 h-10 rounded-full mr-2.5"
                                             style={{ backgroundColor: lesson.color || '#3B82F6' }}
@@ -539,7 +546,14 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                             ) : upcomingLessons.length > 0 ? (
                                 <div className="space-y-1.5">
                                     {upcomingLessons.map(lesson => (
-                                        <div key={lesson.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100 hover:border-gray-200">
+                                        <div
+                                            key={lesson.id}
+                                            onClick={() => {
+                                                const student = students.find(s => s.id === lesson.studentId);
+                                                if (student) onViewStudent(student);
+                                            }}
+                                            className="flex items-center p-2 rounded-lg hover:bg-gray-50 transition-colors border border-gray-100 hover:border-gray-200 cursor-pointer"
+                                        >
                                             <div
                                                 className="w-0.5 h-8 rounded-full mr-2"
                                                 style={{ backgroundColor: lesson.color || '#3B82F6' }}

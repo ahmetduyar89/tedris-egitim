@@ -121,7 +121,8 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
         id: `task_${Date.now()}`,
         type: addForm.type as string,
         title: addForm.title,
-        subject: addForm.subject as string,
+        description: addForm.title || '',
+        subject: addForm.subject as Subject,
         duration: addForm.duration || 30,
         status: 'Atandı' as any,
         metadata: addForm.metadata || {}
@@ -178,7 +179,7 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
                 <input
                   type="text"
                   value={editForm.subject || ''}
-                  onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
+                  onChange={(e) => setEditForm({ ...editForm, subject: e.target.value as Subject })}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -253,44 +254,50 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   };
 
   return (
-    <div className="bg-card-background p-6 rounded-2xl shadow-lg">
-      <div className="flex justify-between items-start mb-6">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold font-poppins text-primary">Haftalık Plan</h2>
-          <p className="text-text-secondary">{completedCount} / {weeklyTotal} görev tamamlandı.</p>
+          <h2 className="text-2xl font-bold font-poppins text-white flex items-center gap-2">
+            <span className="bg-white/20 p-1.5 rounded-lg text-white">📅</span>
+            Haftalık Plan
+          </h2>
+          <p className="text-blue-100 mt-1">{completedCount} / {weeklyTotal} görev tamamlandı.</p>
         </div>
         <div className="text-center">
-          <div className="relative w-28 h-28">
+          <div className="relative w-24 h-24">
             <svg className="w-full h-full" viewBox="0 0 36 36">
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-              <path className="transition-all duration-500 ease-in-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={progressColor} strokeWidth="3" strokeDasharray={`${completionPercentage}, 100`} strokeLinecap="round" />
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="3" />
+              <path className="transition-all duration-500 ease-in-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="white" strokeWidth="3" strokeDasharray={`${completionPercentage}, 100`} strokeLinecap="round" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold font-poppins text-text-primary" style={{ color: progressColor }}>{completionPercentage}%</span>
-              <span className="text-xs text-text-secondary">Tamamlandı</span>
+              <span className="text-2xl font-bold font-poppins text-white">{completionPercentage}%</span>
+              <span className="text-[10px] text-blue-100 uppercase tracking-wider">Tamamlandı</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="p-6 space-y-6 bg-card-background">
         {program.days.map((day, dayIndex) => (
           <div key={dayIndex}>
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800">{dayNames[dayIndex]}</h3>
+              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <span className="w-2 h-8 rounded-full bg-blue-500"></span>
+                {dayNames[dayIndex]}
+              </h3>
               <button
                 onClick={() => {
                   setSelectedDayForAdd(dayIndex);
                   setShowAddModal(true);
                 }}
-                className="text-sm px-3 py-1 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors"
+                className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
               >
                 + Ekle
               </button>
             </div>
             <div className="space-y-2">
               {day.tasks.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">Bu gün için görev yok</p>
+                <p className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">Bu gün için görev yok</p>
               ) : (
                 day.tasks.map((task, taskIndex) => (
                   <TaskCard key={taskIndex} task={task} dayIndex={dayIndex} taskIndex={taskIndex} />
@@ -339,7 +346,7 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
                   <input
                     type="text"
                     value={addForm.subject || ''}
-                    onChange={(e) => setAddForm({ ...addForm, subject: e.target.value })}
+                    onChange={(e) => setAddForm({ ...addForm, subject: e.target.value as Subject })}
                     className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Örn: Matematik"
                   />

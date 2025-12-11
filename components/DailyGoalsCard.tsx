@@ -105,22 +105,22 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
             {/* Header */}
-            <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div className="p-5 border-b border-blue-500/30 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="bg-blue-600 p-2.5 rounded-xl">
+                        <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
                             <span className="text-2xl">🎯</span>
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900">Bugünün Hedefleri</h3>
-                            <p className="text-sm text-gray-600">
+                            <h3 className="text-lg font-bold text-white">Bugünün Hedefleri</h3>
+                            <p className="text-sm text-blue-100">
                                 {dailyGoals.completedGoals}/{dailyGoals.totalGoals} tamamlandı
                             </p>
                         </div>
                     </div>
 
                     {isFullyCompleted && (
-                        <div className="bg-green-100 text-green-700 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2">
+                        <div className="bg-green-500 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm border border-green-400">
                             <span>✅</span>
                             <span>Tamamlandı!</span>
                         </div>
@@ -130,12 +130,12 @@ const DailyGoalsCard: React.FC<DailyGoalsCardProps> = ({ studentId }) => {
                 {/* Progress Bar */}
                 <div className="mt-4">
                     <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-gray-600">İlerleme</span>
-                        <span className="font-bold text-blue-600">{completionPercentage}%</span>
+                        <span className="text-blue-100">İlerleme</span>
+                        <span className="font-bold text-white">{completionPercentage}%</span>
                     </div>
-                    <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div className="bg-black/20 rounded-full h-3 overflow-hidden border border-white/10">
                         <div
-                            className={`h-full rounded-full transition-all duration-500 ${isFullyCompleted ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                            className={`h-full rounded-full transition-all duration-500 ${isFullyCompleted ? 'bg-green-400' : 'bg-white'
                                 }`}
                             style={{ width: `${completionPercentage}%` }}
                         ></div>

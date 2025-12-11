@@ -142,15 +142,15 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
     return (
         <div className="space-y-4">
             {/* Compact Performance Analytics */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <span className="text-xl">📊</span>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="p-4 bg-gradient-to-r from-cyan-600 to-blue-600 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="bg-white/20 p-1.5 rounded-lg text-white">📊</span>
                         Performans Özeti
                     </h3>
                     <button
                         onClick={onExportAnalysisToPDF}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm"
+                        className="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors text-sm backdrop-blur-sm"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -158,274 +158,292 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                         <span>PDF</span>
                     </button>
                 </div>
-                <OverallAnalytics
-                    tests={assignedTests}
-                    assignments={assignments}
-                    flashcards={flashcards}
-                    spacedRepetitionSchedules={spacedRepetitionSchedules}
-                    questionBankAssignments={questionBankAssignments}
-                    pdfTestSubmissions={pdfTestSubmissions}
-                    studentName={student.name}
-                />
+                <div className="p-4">
+                    <OverallAnalytics
+                        tests={assignedTests}
+                        assignments={assignments}
+                        flashcards={flashcards}
+                        spacedRepetitionSchedules={spacedRepetitionSchedules}
+                        questionBankAssignments={questionBankAssignments}
+                        pdfTestSubmissions={pdfTestSubmissions}
+                        studentName={student.name}
+                    />
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Left Column - Tests & Lessons */}
                 <div className="lg:col-span-2 space-y-4">
                     {/* Compact Tests List */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                        <h3 className="text-base font-semibold text-gray-900 mb-3">Atanmış Testler</h3>
-                        {(assignedTests.length > 0 || questionBankAssignments.length > 0 || pdfTests.length > 0 || diagnosisTestAssignments.length > 0) ? (
-                            <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
-                                {diagnosisTestAssignments.map(assignment => (
-                                    <li key={assignment.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
-                                                <span className="text-orange-500">🩺</span>
-                                                {assignment.test?.title || 'Tanı Testi'}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                {assignment.status === 'completed' ? `✓ ${assignment.score}% ` : 'Devam ediyor'}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-
-                                            <button
-                                                onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
-                                                className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
-                                {assignedTests.map(test => (
-                                    <li key={test.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate">{test.title}</p>
-                                            <p className="text-xs text-gray-500">
-                                                {test.completed ? `✓ ${test.score}% ` : 'Beklemede'}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-
-                                            {test.completed && (
-                                                <button
-                                                    onClick={() => onShowAnalysis(test)}
-                                                    className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
-                                                >
-                                                    Rapor
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => onDeleteTest(test.id)}
-                                                className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
-                                {questionBankAssignments.map(qbAssignment => (
-                                    <li key={qbAssignment.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
-                                                <span className="text-purple-500">📝</span>
-                                                {qbAssignment.questionBank?.title || 'Soru Bankası'}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                {qbAssignment.status === 'Tamamlandı' ? `✓ ${qbAssignment.score}/100` : qbAssignment.status}
-                                            </p >
-                                        </div >
-                                        <div className="flex items-center gap-1">
-
-                                            {qbAssignment.status === 'Tamamlandı' && (
-                                                <button
-                                                    onClick={() => onViewQBAssignment(qbAssignment)}
-                                                    className="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100"
-                                                >
-                                                    Sonuç
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => onDeleteQBAssignment(qbAssignment.id)}
-                                                className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </li >
-                                ))}
-                                {
-                                    pdfTests.map(pdfTest => {
-                                        const submission = pdfTestSubmissions.find(s => s.pdfTestId === pdfTest.id);
-                                        const isCompleted = submission && (submission.status === 'completed' || submission.status === 'time_expired');
-                                        return (
-                                            <li key={pdfTest.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
-                                                        <span className="text-blue-500">📄</span>
-                                                        {pdfTest.title}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {isCompleted ? `✓ ${submission.scorePercentage?.toFixed(1)}%` : (submission ? 'Devam ediyor' : 'Başlanmadı')}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-
-                                                    {isCompleted && submission && (
-                                                        <button
-                                                            onClick={() => onViewPDFTestResult(pdfTest, submission)}
-                                                            className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
-                                                        >
-                                                            Sonuç
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => onDeletePDFTest(pdfTest.id)}
-                                                        className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </li>
-                                        );
-                                    })
-                                }
-                            </ul >
-                        ) : <p className="text-sm text-gray-500 text-center py-6">Henüz test atanmamış</p>}
-                    </div >
-
-                    {/* Compact Lessons */}
-                    < div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4" >
-                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <span className="text-xl">📚</span>
-                            Yapılan Dersler
-                        </h3>
-                        {
-                            completedLessons.length > 0 ? (
-                                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                                    {completedLessons.map((lesson) => (
-                                        <div
-                                            key={lesson.id}
-                                            onClick={() => onViewLesson(lesson)}
-                                            className="p-2.5 hover:bg-gray-50 rounded-md cursor-pointer group flex items-center justify-between"
-                                        >
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-4 bg-gradient-to-r from-violet-600 to-purple-600 border-b border-purple-500/30">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <span className="bg-white/20 p-1.5 rounded-lg text-white">📝</span>
+                                Atanmış Testler
+                            </h3>
+                        </div>
+                        <div className="p-4">
+                            {(assignedTests.length > 0 || questionBankAssignments.length > 0 || pdfTests.length > 0 || diagnosisTestAssignments.length > 0) ? (
+                                <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
+                                    {diagnosisTestAssignments.map(assignment => (
+                                        <li key={assignment.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 truncate">{lesson.subject}</p>
-                                                <p className="text-xs text-gray-500 truncate">
-                                                    {lesson.topic || 'Konu belirtilmemiş'} • {new Date(lesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                                                <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
+                                                    <span className="text-orange-500">🩺</span>
+                                                    {assignment.test?.title || 'Tanı Testi'}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {assignment.status === 'completed' ? `✓ ${assignment.score}% ` : 'Devam ediyor'}
                                                 </p>
                                             </div>
-                                            {lesson.homework && (
-                                                <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">✏️</span>
-                                            )}
-                                        </div>
+                                            <div className="flex items-center gap-1">
+
+                                                <button
+                                                    onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
+                                                    className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </li>
                                     ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500 text-center py-6">Henüz ders kaydı yok</p>
-                            )
-                        }
-                    </div >
+                                    {assignedTests.map(test => (
+                                        <li key={test.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate">{test.title}</p>
+                                                <p className="text-xs text-gray-500">
+                                                    {test.completed ? `✓ ${test.score}% ` : 'Beklemede'}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+
+                                                {test.completed && (
+                                                    <button
+                                                        onClick={() => onShowAnalysis(test)}
+                                                        className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
+                                                    >
+                                                        Rapor
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => onDeleteTest(test.id)}
+                                                    className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                    {questionBankAssignments.map(qbAssignment => (
+                                        <li key={qbAssignment.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
+                                                    <span className="text-purple-500">📝</span>
+                                                    {qbAssignment.questionBank?.title || 'Soru Bankası'}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {qbAssignment.status === 'Tamamlandı' ? `✓ ${qbAssignment.score}/100` : qbAssignment.status}
+                                                </p >
+                                            </div >
+                                            <div className="flex items-center gap-1">
+
+                                                {qbAssignment.status === 'Tamamlandı' && (
+                                                    <button
+                                                        onClick={() => onViewQBAssignment(qbAssignment)}
+                                                        className="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100"
+                                                    >
+                                                        Sonuç
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={() => onDeleteQBAssignment(qbAssignment.id)}
+                                                    className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </li >
+                                    ))}
+                                    {
+                                        pdfTests.map(pdfTest => {
+                                            const submission = pdfTestSubmissions.find(s => s.pdfTestId === pdfTest.id);
+                                            const isCompleted = submission && (submission.status === 'completed' || submission.status === 'time_expired');
+                                            return (
+                                                <li key={pdfTest.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
+                                                            <span className="text-blue-500">📄</span>
+                                                            {pdfTest.title}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {isCompleted ? `✓ ${submission.scorePercentage?.toFixed(1)}%` : (submission ? 'Devam ediyor' : 'Başlanmadı')}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+
+                                                        {isCompleted && submission && (
+                                                            <button
+                                                                onClick={() => onViewPDFTestResult(pdfTest, submission)}
+                                                                className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
+                                                            >
+                                                                Sonuç
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => onDeletePDFTest(pdfTest.id)}
+                                                            className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })
+                                    }
+                                </ul >
+                            ) : <p className="text-sm text-gray-500 text-center py-6">Henüz test atanmamış</p>}
+                        </div>
+                    </div>
+
+                    {/* Compact Lessons */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-4 bg-gradient-to-r from-emerald-600 to-teal-600 border-b border-emerald-500/30">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <span className="bg-white/20 p-1.5 rounded-lg text-white">📚</span>
+                                Yapılan Dersler
+                            </h3>
+                        </div>
+                        <div className="p-4">
+                            {
+                                completedLessons.length > 0 ? (
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                                        {completedLessons.map((lesson) => (
+                                            <div
+                                                key={lesson.id}
+                                                onClick={() => onViewLesson(lesson)}
+                                                className="p-2.5 hover:bg-gray-50 rounded-md cursor-pointer group flex items-center justify-between"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900 truncate">{lesson.subject}</p>
+                                                    <p className="text-xs text-gray-500 truncate">
+                                                        {lesson.topic || 'Konu belirtilmemiş'} • {new Date(lesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                                                    </p>
+                                                </div>
+                                                {lesson.homework && (
+                                                    <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">✏️</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500 text-center py-6">Henüz ders kaydı yok</p>
+                                )
+                            }
+                        </div>
+                    </div>
 
                     {/* Compact Flashcards */}
-                    < div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4" >
-                        <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <span className="text-xl">🔄</span>
-                            Flashcard'lar ({flashcards.length})
-                        </h3>
-                        {
-                            Object.keys(groupedFlashcards).length > 0 ? (
-                                <div className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
-                                    {Object.entries(groupedFlashcards).map(([topic, cards]) => (
-                                        <div key={topic} className="bg-gray-50 rounded-md overflow-hidden">
-                                            <div className="flex items-center justify-between p-2.5 hover:bg-gray-100 transition-colors">
-                                                <button
-                                                    onClick={() => onToggleTopic(topic)}
-                                                    className="flex-1 flex items-center gap-2 text-left"
-                                                >
-                                                    <span className="text-sm">{expandedTopics.has(topic) ? '📖' : '📕'}</span>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-gray-900 truncate">{topic}</p>
-                                                        <p className="text-xs text-gray-500">{(cards as any[]).length} kart</p>
-                                                    </div>
-                                                </button>
-                                                <div className="flex items-center gap-1">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-4 bg-gradient-to-r from-orange-500 to-pink-500 border-b border-orange-500/30">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <span className="bg-white/20 p-1.5 rounded-lg text-white">🔄</span>
+                                Flashcard'lar ({flashcards.length})
+                            </h3>
+                        </div>
+                        <div className="p-4">
+                            {
+                                Object.keys(groupedFlashcards).length > 0 ? (
+                                    <div className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
+                                        {Object.entries(groupedFlashcards).map(([topic, cards]) => (
+                                            <div key={topic} className="bg-gray-50 rounded-md overflow-hidden">
+                                                <div className="flex items-center justify-between p-2.5 hover:bg-gray-100 transition-colors">
                                                     <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onDeleteTopicFlashcards(topic);
-                                                        }}
-                                                        className="text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded"
+                                                        onClick={() => onToggleTopic(topic)}
+                                                        className="flex-1 flex items-center gap-2 text-left"
                                                     >
-                                                        Sil
+                                                        <span className="text-sm">{expandedTopics.has(topic) ? '📖' : '📕'}</span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 truncate">{topic}</p>
+                                                            <p className="text-xs text-gray-500">{(cards as any[]).length} kart</p>
+                                                        </div>
                                                     </button>
-                                                    <button onClick={() => onToggleTopic(topic)} className="p-1">
-                                                        <svg
-                                                            className={`w-4 h-4 text-gray-500 transition-transform ${expandedTopics.has(topic) ? 'rotate-180' : ''}`}
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            stroke="currentColor"
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onDeleteTopicFlashcards(topic);
+                                                            }}
+                                                            className="text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                                                         >
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                        </svg>
-                                                    </button>
+                                                            Sil
+                                                        </button>
+                                                        <button onClick={() => onToggleTopic(topic)} className="p-1">
+                                                            <svg
+                                                                className={`w-4 h-4 text-gray-500 transition-transform ${expandedTopics.has(topic) ? 'rotate-180' : ''}`}
+                                                                fill="none"
+                                                                viewBox="0 0 24 24"
+                                                                stroke="currentColor"
+                                                            >
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            {expandedTopics.has(topic) && (
-                                                <div className="border-t border-gray-200 bg-white p-2 space-y-1.5">
-                                                    {(cards as any[]).map((flashcard: any, index: number) => (
-                                                        <div key={flashcard.id} className="bg-gray-50 p-2 rounded text-xs">
-                                                            <div className="flex justify-between items-start gap-2">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="font-medium text-gray-900 mb-0.5">
-                                                                        #{index + 1} • Seviye {flashcard.difficulty_level}
-                                                                    </p>
-                                                                    <p className="text-gray-600 truncate">Ön: {flashcard.front_content}</p>
-                                                                    <p className="text-gray-500 truncate">Arka: {flashcard.back_content}</p>
-                                                                </div>
-                                                                <div className="flex gap-0.5">
-                                                                    <button
-                                                                        onClick={() => onEditFlashcard(flashcard)}
-                                                                        className="text-blue-500 hover:text-blue-700 p-0.5"
-                                                                    >
-                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                                        </svg>
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => onDeleteFlashcard(flashcard.id!, flashcard.scheduleId)}
-                                                                        className="text-red-500 hover:text-red-700 p-0.5"
-                                                                    >
-                                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                        </svg>
-                                                                    </button>
+                                                {expandedTopics.has(topic) && (
+                                                    <div className="border-t border-gray-200 bg-white p-2 space-y-1.5">
+                                                        {(cards as any[]).map((flashcard: any, index: number) => (
+                                                            <div key={flashcard.id} className="bg-gray-50 p-2 rounded text-xs">
+                                                                <div className="flex justify-between items-start gap-2">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-medium text-gray-900 mb-0.5">
+                                                                            #{index + 1} • Seviye {flashcard.difficulty_level}
+                                                                        </p>
+                                                                        <p className="text-gray-600 truncate">Ön: {flashcard.front_content}</p>
+                                                                        <p className="text-gray-500 truncate">Arka: {flashcard.back_content}</p>
+                                                                    </div>
+                                                                    <div className="flex gap-0.5">
+                                                                        <button
+                                                                            onClick={() => onEditFlashcard(flashcard)}
+                                                                            className="text-blue-500 hover:text-blue-700 p-0.5"
+                                                                        >
+                                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => onDeleteFlashcard(flashcard.id!, flashcard.scheduleId)}
+                                                                            className="text-red-500 hover:text-red-700 p-0.5"
+                                                                        >
+                                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500 text-center py-6">Henüz flashcard yok</p>
-                            )
-                        }
-                    </div >
-                </div >
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500 text-center py-6">Henüz flashcard yok</p>
+                                )
+                            }
+                        </div>
+                    </div>
+
+                </div>
                 {/* Right Column - Weekly Program & Motivation */}
                 <div className="space-y-4">
                     {

@@ -149,15 +149,13 @@ const RiskAlertsPanel: React.FC<RiskAlertsPanelProps> = ({ students, onViewStude
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col max-h-[400px] min-h-[200px]">
       {/* Minimal Header */}
-      <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
-        <h3 className="text-sm font-bold font-poppins text-gray-800 flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-          </span>
+      {/* Minimal Header */}
+      <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gradient-to-r from-red-500 to-rose-600 text-white">
+        <h3 className="text-sm font-bold font-poppins flex items-center gap-2">
+          <span className="text-base bg-white/20 p-1 rounded-md">⚠️</span>
           Risk Analizi
         </h3>
-        <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+        <span className="text-[9px] font-bold px-2 py-0.5 bg-white/20 text-white rounded-full border border-white/10">
           G. Ort: %{systemAverage}
         </span>
       </div>

@@ -557,14 +557,14 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                     )}
 
                     {/* Upcoming Lessons Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                        <div className="p-3 border-b border-gray-200 flex justify-between items-center">
-                            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
-                                <span className="text-base">⏰</span> Yaklaşan Dersler
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center">
+                            <h2 className="text-sm font-semibold flex items-center gap-2">
+                                <span className="text-base bg-white/20 p-1 rounded-md">⏰</span> Yaklaşan Dersler
                             </h2>
                             <button
                                 onClick={onNavigateToSchedule}
-                                className="text-xs text-blue-600 font-medium hover:text-blue-700 flex items-center gap-0.5"
+                                className="text-xs text-white/90 font-medium hover:text-white hover:bg-white/10 px-2 py-1 rounded-full transition-all flex items-center gap-0.5"
                             >
                                 Tümünü Gör
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,9 +622,9 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
                     {/* Recent Activities */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                            <h2 className="text-lg font-bold font-poppins text-gray-800 flex items-center gap-2">
-                                <span className="text-2xl">🔔</span> Son Aktiviteler
+                        <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-orange-400 to-pink-500 text-white">
+                            <h2 className="text-sm font-bold font-poppins flex items-center gap-2">
+                                <span className="text-base bg-white/20 p-1 rounded-md">🔔</span> Son Aktiviteler
                             </h2>
                         </div>
                         <div className="p-4">

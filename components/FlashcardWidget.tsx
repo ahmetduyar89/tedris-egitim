@@ -46,58 +46,60 @@ const FlashcardWidget: React.FC<FlashcardWidgetProps> = ({ studentId, onOpenFlas
   }
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-2xl shadow-lg border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center">
-          <span className="text-3xl mr-3">🔄</span>
-          <h2 className="text-xl font-bold font-poppins text-gray-800">Aralıklı Tekrar</h2>
-        </div>
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      <div className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white flex items-center gap-2">
+        <span className="bg-white/20 p-1.5 rounded-lg text-white backdrop-blur-sm">🔄</span>
+        <h2 className="text-lg font-bold">Aralıklı Tekrar</h2>
       </div>
 
-      {dueCount > 0 ? (
-        <div className="space-y-3">
-          <div className="bg-white rounded-xl p-4 border-2 border-purple-200">
-            <div className="flex items-center justify-between">
+      <div className="p-4">
+        {dueCount > 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100">
               <div>
-                <div className="text-3xl font-bold text-purple-600">{dueCount}</div>
-                <div className="text-sm text-gray-600">Bugün Tekrar Et</div>
+                <span className="text-3xl font-bold text-purple-600 block">{dueCount}</span>
+                <span className="text-xs font-semibold text-purple-400 uppercase tracking-wide">Kart Bekliyor</span>
               </div>
-              <div className="text-4xl">📚</div>
+              <div className="bg-white p-2 rounded-full shadow-sm">
+                <span className="text-2xl">📚</span>
+              </div>
+            </div>
+
+            <button
+              onClick={onOpenFlashcards}
+              className="w-full bg-purple-600 text-white py-3 rounded-lg font-bold hover:bg-purple-700 transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>Hemen Başla</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 font-medium">Toplam {totalCount} kart</p>
             </div>
           </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 text-center bg-green-50 rounded-xl border border-green-100">
+              <span className="text-3xl block mb-2">🎉</span>
+              <h3 className="text-green-700 font-bold text-sm">Harika!</h3>
+              <p className="text-green-600 text-xs mt-1">Bugünkü tekrarların bitti.</p>
+            </div>
 
-          <button
-            onClick={onOpenFlashcards}
-            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-600 transition-all transform hover:scale-105 shadow-md"
-          >
-            Hemen Başla
-          </button>
-
-          <div className="text-xs text-gray-500 text-center">
-            Toplam {totalCount} kart
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="bg-white rounded-xl p-4 border-2 border-green-200">
-            <div className="flex items-center justify-center space-x-2 text-green-600">
-              <span className="text-2xl">✅</span>
-              <span className="font-semibold">Bugün için tamamlandı!</span>
+            <button
+              onClick={onOpenFlashcards}
+              className="w-full bg-gray-100 text-gray-600 py-2.5 rounded-lg font-bold hover:bg-gray-200 transition-all text-xs"
+            >
+              Tüm Kartları Gör
+            </button>
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 font-medium">Toplam {totalCount} kart • Hepsi güncel</p>
             </div>
           </div>
-
-          <button
-            onClick={onOpenFlashcards}
-            className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all"
-          >
-            Detayları Gör
-          </button>
-
-          <div className="text-xs text-gray-500 text-center">
-            Toplam {totalCount} kart • Hepsi güncel
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -64,54 +64,54 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({ studentId, compact = false 
     }
 
     return (
-        <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${streakLevel.color} p-4 text-white shadow-sm hover:shadow-md transition-all`}>
-            {/* Simplified Background */}
-            <div className="absolute inset-0 opacity-5">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full blur-2xl -mr-10 -mt-10"></div>
-            </div>
-
-            <div className="relative z-10">
-                {/* Compact Header */}
-                <div className="flex items-center justify-between mb-3">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden relative">
+            {/* Header with Gradient */}
+            <div className={`p-4 bg-gradient-to-r ${streakLevel.color} text-white`}>
+                <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                        <span className="text-2xl">{streakLevel.emoji}</span>
+                        <div className="bg-white/20 p-1.5 rounded-lg backdrop-blur-sm shadow-sm ring-1 ring-white/30">
+                            <span className="text-xl">{streakLevel.emoji}</span>
+                        </div>
                         <div>
-                            <h3 className="text-xs font-semibold text-white/90">Ardışık Gün</h3>
-                            <p className="text-[10px] text-white/60">{streakLevel.level} Seviye</p>
+                            <h3 className="text-sm font-bold">Zaman Serisi</h3>
+                            <p className="text-white/80 text-[10px] font-medium bg-white/20 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                                {streakLevel.level} Seviye
+                            </p>
                         </div>
                     </div>
                     {streakFreezeCount > 0 && (
-                        <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1">
-                            <span className="text-sm">🛡️</span>
+                        <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 ring-1 ring-white/30">
+                            <span className="text-xs">🛡️</span>
                             <span className="text-xs font-bold">{streakFreezeCount}</span>
                         </div>
                     )}
                 </div>
 
-                {/* Compact Main Number */}
-                <div className="mb-3">
-                    <div className="text-3xl font-bold mb-0.5">{currentStreak}</div>
-                    <p className="text-xs text-white/80">gün üst üste çalıştın! 🔥</p>
+                <div className="mt-3 text-center">
+                    <div className="text-3xl font-bold">{currentStreak}</div>
+                    <p className="text-xs text-white/90 font-medium">Gün Üst Üste!</p>
                 </div>
+            </div>
 
-                {/* Compact Stats */}
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                        <div className="text-[10px] text-white/70 mb-0.5">En Uzun Streak</div>
-                        <div className="text-lg font-bold">{longestStreak}</div>
-                    </div>
-                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20">
-                        <div className="text-[10px] text-white/70 mb-0.5">Toplam Aktivite</div>
-                        <div className="text-lg font-bold">{streak.totalActivities}</div>
-                    </div>
+            {/* Body */}
+            <div className="p-4 grid grid-cols-2 gap-3 bg-white">
+                <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100 text-center hover:bg-gray-100 transition-colors">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-0.5">En Uzun</div>
+                    <div className="text-lg font-bold text-gray-800">{longestStreak} Gün</div>
                 </div>
+                <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100 text-center hover:bg-gray-100 transition-colors">
+                    <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-0.5">Aktivite</div>
+                    <div className="text-lg font-bold text-gray-800">{streak.totalActivities}</div>
+                </div>
+            </div>
 
-                {/* Simplified Next Milestone */}
-                {currentStreak < 365 && (
-                    <div className="mt-3 pt-3 border-t border-white/20">
+            {/* Footer / Next Milestone */}
+            {currentStreak < 365 && (
+                <div className="px-4 pb-4 bg-white">
+                    <div className="pt-3 border-t border-gray-100">
                         <div className="flex items-center justify-between text-xs mb-1.5">
-                            <span className="text-white/70">Sonraki Hedef:</span>
-                            <span className="font-bold">
+                            <span className="text-gray-500 font-medium">Sonraki Hedef</span>
+                            <span className="font-bold text-indigo-600">
                                 {currentStreak < 7 ? '7 Gün 🌟' :
                                     currentStreak < 14 ? '14 Gün ⭐' :
                                         currentStreak < 30 ? '30 Gün 🏆' :
@@ -119,17 +119,17 @@ const StreakWidget: React.FC<StreakWidgetProps> = ({ studentId, compact = false 
                                                 '365 Gün 💎'}
                             </span>
                         </div>
-                        <div className="bg-white/20 rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-gray-200 rounded-full h-1.5 overflow-hidden">
                             <div
-                                className="bg-white h-full rounded-full transition-all duration-500"
+                                className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${streakLevel.color}`}
                                 style={{
                                     width: `${(currentStreak % (currentStreak < 7 ? 7 : currentStreak < 14 ? 14 : currentStreak < 30 ? 30 : currentStreak < 100 ? 100 : 365)) / (currentStreak < 7 ? 7 : currentStreak < 14 ? 14 : currentStreak < 30 ? 30 : currentStreak < 100 ? 100 : 365) * 100}%`
                                 }}
                             ></div>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

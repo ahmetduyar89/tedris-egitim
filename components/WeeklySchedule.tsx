@@ -139,39 +139,40 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
   const dailyProgressColor = dailyCompletionPercentage > 80 ? '#10b981' : dailyCompletionPercentage > 40 ? '#F5C542' : '#F05039';
 
   return (
-    <div className="bg-card-background p-6 rounded-2xl shadow-lg">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold font-poppins text-primary mb-4">Haftalık Plan</h2>
-        <p className="text-text-secondary mb-4">{isInteractive ? `Bugün ${todaysTasks.length} görevin var.` : `${completedCount} / ${weeklyTotal} görev tamamlandı.`}</p>
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 text-white">
+        <h2 className="text-2xl font-bold font-poppins mb-1 flex items-center gap-2">
+          <span className="bg-white/20 p-1.5 rounded-lg text-white">📅</span>
+          Haftalık Plan
+        </h2>
+        <p className="text-blue-100 text-sm mb-4">{isInteractive ? `Bugün ${todaysTasks.length} görevin var.` : `${completedCount} / ${weeklyTotal} görev tamamlandı.`}</p>
 
         <div className="space-y-4">
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-gray-700">Günlük İlerleme</span>
-              <span className="text-sm font-bold" style={{ color: dailyProgressColor }}>{todayCompletedCount}/{todayTotalCount} ({dailyCompletionPercentage}%)</span>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-semibold text-blue-100">Günlük İlerleme</span>
+              <span className="text-xs font-bold text-white">{todayCompletedCount}/{todayTotalCount} ({dailyCompletionPercentage}%)</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden border border-white/10">
               <div
-                className="h-full rounded-full transition-all duration-500 ease-out"
+                className="h-full rounded-full transition-all duration-500 ease-out bg-white"
                 style={{
                   width: `${dailyCompletionPercentage}%`,
-                  backgroundColor: dailyProgressColor
                 }}
               />
             </div>
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-gray-700">Haftalık İlerleme</span>
-              <span className="text-sm font-bold" style={{ color: progressColor }}>{completedCount}/{weeklyTotal} ({completionPercentage}%)</span>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-semibold text-blue-100">Haftalık İlerleme</span>
+              <span className="text-xs font-bold text-white">{completedCount}/{weeklyTotal} ({completionPercentage}%)</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-black/20 rounded-full h-2 overflow-hidden border border-white/10">
               <div
-                className="h-full rounded-full transition-all duration-500 ease-out"
+                className="h-full rounded-full transition-all duration-500 ease-out bg-green-400"
                 style={{
                   width: `${completionPercentage}%`,
-                  backgroundColor: progressColor
                 }}
               />
             </div>
@@ -179,66 +180,90 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
         </div>
       </div>
 
-      <div className="mb-6">
-        <div className="flex bg-gray-100 rounded-full p-1">
-          <button onClick={() => setViewMode('today')} className={`w-1/2 py-2 rounded-full font-semibold transition-colors ${viewMode === 'today' ? 'bg-primary text-white shadow' : 'text-text-secondary'}`}>Bugünün Görevleri</button>
-          <button onClick={() => setViewMode('weekly')} className={`w-1/2 py-2 rounded-full font-semibold transition-colors ${viewMode === 'weekly' ? 'bg-primary text-white shadow' : 'text-text-secondary'}`}>Haftalık Bakış</button>
+      <div className="p-6 bg-card-background">
+        <div className="mb-6">
+          <div className="flex bg-gray-100 rounded-xl p-1 shadow-inner">
+            <button
+              onClick={() => setViewMode('today')}
+              className={`w-1/2 py-2 rounded-lg font-bold text-sm transition-all ${viewMode === 'today' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Bugünün Görevleri
+            </button>
+            <button
+              onClick={() => setViewMode('weekly')}
+              className={`w-1/2 py-2 rounded-lg font-bold text-sm transition-all ${viewMode === 'weekly' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Haftalık Bakış
+            </button>
+          </div>
         </div>
-      </div>
 
-      {viewMode === 'today' && (
-        <div className="space-y-3 animate-fade-in">
-          <h3 className="font-bold font-poppins text-lg text-gray-800">Bugün</h3>
-          {todaysTasks.length > 0 ? (
-            todaysTasks.map(task => <TaskCard key={task.id} task={task} onClick={() => isInteractive && onTaskClick?.(task)} />)
-          ) : (
-            <p className="text-text-secondary p-4 bg-gray-50 rounded-lg text-center">Bugün için planlanmış bir görevin yok. Harika bir gün!</p>
-          )}
-        </div>
-      )}
+        {viewMode === 'today' && (
+          <div className="space-y-3 animate-fade-in">
+            <h3 className="font-bold font-poppins text-lg text-gray-800 flex items-center gap-2 mb-3">
+              <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+              Bugün
+            </h3>
+            {todaysTasks.length > 0 ? (
+              todaysTasks.map(task => <TaskCard key={task.id} task={task} onClick={() => isInteractive && onTaskClick?.(task)} />)
+            ) : (
+              <p className="text-gray-500 p-8 bg-gray-50 rounded-xl text-center border border-dashed border-gray-200">
+                <span className="block text-4xl mb-2">🎉</span>
+                Bugün için planlanmış bir görevin yok. Harika bir gün!
+              </p>
+            )}
+          </div>
+        )}
 
-      {viewMode === 'weekly' && (
-        <div className="space-y-4 animate-fade-in">
-          {program.days.map((day) => {
-            const tasks = day.tasks || [];
-            return (
-              <div key={day.day}>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold font-poppins text-lg text-gray-800">{day.day}</h3>
-                  {dailyTotals[day.day]?.total > 0 && (
-                    <span className="text-sm font-semibold text-text-secondary bg-gray-100 px-2 py-1 rounded-md">
-                      {dailyTotals[day.day].completed} / {dailyTotals[day.day].total} dk
-                    </span>
+        {viewMode === 'weekly' && (
+          <div className="space-y-6 animate-fade-in">
+            {program.days.map((day) => {
+              const tasks = day.tasks || [];
+              return (
+                <div key={day.day}>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-bold font-poppins text-md text-gray-700">{day.day}</h3>
+                    {dailyTotals[day.day]?.total > 0 && (
+                      <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                        {dailyTotals[day.day].completed} / {dailyTotals[day.day].total} Görev
+                      </span>
+                    )}
+                  </div>
+                  {tasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {tasks.map(task => {
+                        const isCompleted = task.status === TaskStatus.Completed;
+                        const config = subjectConfig[task.subject as Subject] || defaultConfig;
+                        const displayTitle = task.title || task.description || 'Başlıksız Görev';
+                        const displayType = task.type || '';
+                        return (
+                          <div key={task.id} onClick={() => isInteractive && onTaskClick?.(task)} className={`flex items-center justify-between p-3 rounded-lg border border-transparent hover:border-blue-200 hover:shadow-sm transition-all ${isCompleted ? 'bg-gray-50' : 'bg-white border-gray-100 shadow-sm'} ${isInteractive ? 'cursor-pointer' : ''}`}>
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-2 h-2 rounded-full ${isCompleted ? 'bg-gray-400' : 'bg-blue-500'}`}></div>
+                              <div>
+                                <span className={`block font-medium text-sm ${isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                  {displayType && `${displayType}: `}{displayTitle}
+                                </span>
+                                <span className="text-xs text-gray-400">{task.duration} dk · {task.subject}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {task.isCompletionTask && <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">AI</span>}
+                              {isCompleted && <span className="text-green-500 text-lg">✓</span>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400 italic">Görev yok.</p>
                   )}
                 </div>
-                {tasks.length > 0 ? (
-                  <div className="space-y-2">
-                    {tasks.map(task => {
-                      const isCompleted = task.status === TaskStatus.Completed;
-                      const config = subjectConfig[task.subject as Subject] || defaultConfig;
-                      const displayTitle = task.title || task.description || 'Başlıksız Görev';
-                      const displayType = task.type || '';
-                      return (
-                        <div key={task.id} onClick={() => isInteractive && onTaskClick?.(task)} className={`flex items-center justify-between p-3 rounded-lg ${isCompleted ? 'bg-gray-100' : config.bgColor} ${isInteractive ? 'cursor-pointer' : ''}`}>
-                          <div className="flex items-center space-x-2">
-                            <span className={`font-medium text-sm ${isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-                              {displayType && `${displayType}: `}'{displayTitle}' ({task.duration} dk)
-                            </span>
-                            {task.isCompletionTask && <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">AI Görevi</span>}
-                          </div>
-                          {isCompleted && <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-success" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">Görev yok.</p>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -54,13 +54,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           <div className="flex items-center gap-3 sm:gap-6">
             <button
               onClick={() => onNavigateToAuth('login')}
-              className="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors"
+              className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
             >
               Giriş Yap
             </button>
             <button
               onClick={() => onNavigateToAuth('register')}
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+              className="hidden sm:block bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
             >
               Öğretmen Başvurusu
             </button>
@@ -93,10 +93,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             Eğitimciler için tasarlanmış profesyonel asistanınız.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12 px-4 sm:px-0">
             <button
               onClick={() => onNavigateToAuth('register')}
-              className="px-6 py-3.5 bg-[#2BB4A9] text-white rounded-xl font-bold text-base shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 min-w-[180px] justify-center"
+              className="w-full sm:w-auto px-6 py-3.5 bg-[#2BB4A9] text-white rounded-xl font-bold text-base shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 min-w-[180px] justify-center"
             >
               Hemen Başla
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
@@ -105,7 +105,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             </button>
             <button
               onClick={() => onNavigateToAuth('login')}
-              className="px-6 py-3.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold text-base hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 min-w-[180px]"
+              className="w-full sm:w-auto px-6 py-3.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold text-base hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 min-w-[180px]"
             >
               Giriş Yap
             </button>

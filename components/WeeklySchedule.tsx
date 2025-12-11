@@ -56,31 +56,31 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
   return (
     <div
       onClick={onClick}
-      className={`p-4 rounded-xl flex items-center justify-between transition-all duration-300 transform hover:scale-105 cursor-pointer shadow-sm hover:shadow-md border-l-[5px] ${bgColorClass} ${borderClass}`}
+      className={`p-3 md:p-4 rounded-xl flex items-center justify-between transition-all duration-300 transform hover:scale-105 cursor-pointer shadow-sm hover:shadow-md border-l-[5px] ${bgColorClass} ${borderClass}`}
     >
-      <div className="flex items-center space-x-4">
-        <div className={iconColorClass}>{isTest ? testIcon : config.icon}</div>
-        <div>
-          <p className={`font-semibold ${isCompleted ? 'line-through text-gray-500' : 'text-text-primary'}`}>
+      <div className="flex items-center space-x-3 md:space-x-4 min-w-0 flex-1">
+        <div className={`flex-shrink-0 ${iconColorClass}`}>{isTest ? testIcon : config.icon}</div>
+        <div className="min-w-0 flex-1">
+          <p className={`font-semibold truncate ${isCompleted ? 'line-through text-gray-500' : 'text-text-primary'}`}>
             {displayType && `${displayType}: `}'{displayTitle}'
           </p>
-          <div className="flex items-center space-x-2 mt-1">
+          <div className="flex flex-wrap items-center gap-2 mt-1">
             {isTest && task.metadata?.totalQuestions && (
-              <span className="text-xs font-medium text-gray-700">{task.metadata.totalQuestions} Soru</span>
+              <span className="text-xs font-medium text-gray-700 whitespace-nowrap">{task.metadata.totalQuestions} Soru</span>
             )}
-            {isTest && !isCompleted && <span className="text-xs font-bold text-blue-600 px-2 py-0.5 rounded-full bg-blue-50">Test</span>}
-            {task.isCompletionTask && <span className="text-xs font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">AI Görevi</span>}
-            {task.ai_recommended && !task.isCompletionTask && <span className="text-xs font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">AI Önerisi</span>}
+            {isTest && !isCompleted && <span className="text-xs font-bold text-blue-600 px-2 py-0.5 rounded-full bg-blue-50 whitespace-nowrap">Test</span>}
+            {task.isCompletionTask && <span className="text-xs font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10 whitespace-nowrap">AI Görevi</span>}
+            {task.ai_recommended && !task.isCompletionTask && <span className="text-xs font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10 whitespace-nowrap">AI Önerisi</span>}
           </div>
         </div>
       </div>
       {isTest && !isCompleted ? (
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors">
-          Sınava Başla
+        <button className="ml-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg font-semibold text-xs md:text-sm hover:bg-blue-700 transition-colors whitespace-nowrap flex-shrink-0">
+          Başla
         </button>
       ) : (
-        <button className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isCompleted ? 'bg-success text-white' : 'border-2 border-gray-300 text-gray-300 hover:border-success hover:text-success'}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+        <button className={`ml-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isCompleted ? 'bg-success text-white' : 'border-2 border-gray-300 text-gray-300 hover:border-success hover:text-success'}`}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
         </button>
       )}
     </div>

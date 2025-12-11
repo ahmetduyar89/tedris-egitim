@@ -116,8 +116,8 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
               {pendingTests.map(test => (
                 <li key={test.id} className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{test.title}</h4>
-                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-medium">Test</span>
+                    <h4 className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate pr-2">{test.title}</h4>
+                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-medium flex-shrink-0">Test</span>
                   </div>
                   <p className="text-xs text-gray-500 mb-3">{test.questions.length} soru · {test.duration} dk</p>
                   <button
@@ -130,11 +130,11 @@ const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onSta
               ))}
               {pendingPDFTests.map(test => (
                 <li key={test.id} className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="bg-red-50 text-red-600 p-1 rounded-md text-xs">
+                  <div className="flex items-center gap-1.5 mb-2 max-w-full">
+                    <span className="bg-red-50 text-red-600 p-1 rounded-md text-xs flex-shrink-0">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                     </span>
-                    <h4 className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{test.title}</h4>
+                    <h4 className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate flex-1 min-w-0">{test.title}</h4>
                   </div>
                   <p className="text-xs text-gray-500 mb-3 ml-1">{test.totalQuestions} soru · {test.durationMinutes} dk</p>
                   <button
@@ -224,22 +224,22 @@ const HomeworkWidget: React.FC<HomeworkWidgetProps> = ({ assignments, onOpenAssi
               className="p-3 rounded-xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pr-2">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-violet-600 transition-colors">
                       {assignment.title}
                     </h4>
                     {isNew && (
-                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold shadow-sm animate-pulse">
+                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold shadow-sm animate-pulse flex-shrink-0">
                         YENİ
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 font-medium">
+                  <p className="text-xs text-gray-500 font-medium truncate">
                     {assignment.subject} · {new Date(assignment.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                   </p>
                 </div>
-                <div className="bg-gray-50 p-1.5 rounded-full group-hover:bg-violet-50 transition-colors">
+                <div className="bg-gray-50 p-1.5 rounded-full group-hover:bg-violet-50 transition-colors flex-shrink-0">
                   <svg className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -312,15 +312,15 @@ const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId
 
           return (
             <div key={lesson.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-red-200 hover:shadow-md transition-all group">
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-center justify-center bg-gray-50 w-12 h-12 rounded-xl border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex flex-col items-center justify-center bg-gray-50 w-12 h-12 rounded-xl border border-gray-200 shadow-sm group-hover:scale-105 transition-transform flex-shrink-0">
                   <span className="text-[10px] font-bold text-red-500 uppercase">{startTime.toLocaleDateString('tr-TR', { month: 'short' })}</span>
                   <span className="text-lg font-bold text-gray-800">{startTime.getDate()}</span>
                 </div>
-                <div>
-                  <h4 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors text-sm">{lesson.subject}</h4>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors text-sm truncate">{lesson.subject}</h4>
                   <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
                     {startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
@@ -331,7 +331,7 @@ const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId
               {joinable ? (
                 <button
                   onClick={() => handleJoinClick(lesson)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md animate-pulse hover:scale-105 active:scale-95 flex items-center gap-1"
+                  className="ml-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md animate-pulse hover:scale-105 active:scale-95 flex items-center gap-1 flex-shrink-0"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
@@ -339,7 +339,7 @@ const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId
                   Katıl
                 </button>
               ) : (
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${lesson.status === 'completed' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                <span className={`ml-2 text-[10px] font-bold px-2 py-1 rounded-full border flex-shrink-0 whitespace-nowrap ${lesson.status === 'completed' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
                   {lesson.status === 'completed' ? 'Tamamlandı' : 'Bekleniyor'}
                 </span>
               )}

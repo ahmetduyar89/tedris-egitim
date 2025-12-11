@@ -7,14 +7,7 @@ interface LandingPageProps {
 // --- Components ---
 
 const TedrisLogo = ({ light = false }) => (
-  <svg width="150" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g style={{ mixBlendMode: light ? 'normal' : 'multiply' }}>
-      <circle cx="15" cy="24" r="12" fill="#F05039" />
-      <circle cx="33" cy="24" r="12" fill="#F5C542" />
-      <circle cx="24" cy="12" r="12" fill="#2BB4A9" />
-    </g>
-    <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="26" fontWeight="800" fill={light ? "#FFFFFF" : "#1e293b"}>TedrisEDU</text>
-  </svg>
+  <img src="/logo-full.png" alt="TedrisEDU" className="h-10 w-auto" style={{ filter: light ? 'brightness(0) invert(1)' : 'none' }} />
 );
 
 const FeatureCard = ({ icon, title, description, color }: { icon: string, title: string, description: string, color: string }) => (
@@ -85,14 +78,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-6 border border-indigo-100 shadow-sm animate-fade-in-up">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-50 text-teal-700 text-xs font-bold uppercase tracking-wider mb-6 border border-teal-100 shadow-sm animate-fade-in-up">
+            <span className="w-2 h-2 rounded-full bg-[#2BB4A9] animate-ping"></span>
             Yeni Nesil Eğitim Platformu
           </div>
 
           <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6 font-poppins max-w-4xl mx-auto">
             Özel Derslerinizi <br />
-            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-transparent bg-clip-text">Yapay Zeka ile Yönetin</span>
+            <span className="bg-gradient-to-r from-[#2BB4A9] via-[#F5C542] to-[#F05039] text-transparent bg-clip-text">Yapay Zeka ile Yönetin</span>
           </h1>
 
           <p className="text-lg md:text-xl text-slate-500 mb-8 max-w-2xl mx-auto leading-relaxed">
@@ -103,7 +96,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12">
             <button
               onClick={() => onNavigateToAuth('register')}
-              className="px-6 py-3.5 bg-indigo-600 text-white rounded-xl font-bold text-base shadow-lg shadow-indigo-600/20 hover:shadow-xl hover:shadow-indigo-600/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 min-w-[180px] justify-center"
+              className="px-6 py-3.5 bg-[#2BB4A9] text-white rounded-xl font-bold text-base shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 min-w-[180px] justify-center"
             >
               Hemen Başla
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
@@ -121,7 +114,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           {/* Hero Image / Dashboard Mockup */}
           <div className="relative max-w-4xl mx-auto mt-8 perspective-2000 group">
             {/* Glow Effect - Smaller & Subtler */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-[2rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-[#2BB4A9] via-[#F5C542] to-[#F05039] rounded-[2rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
 
             <div className="relative bg-white rounded-xl shadow-2xl border border-slate-200/60 overflow-hidden transform rotate-x-6 transition-transform duration-700 hover:rotate-x-0 group-hover:scale-[1.02]">
               {/* Browser Status Bar */}
@@ -235,7 +228,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6 font-poppins leading-tight">
                 Tüm Süreçleriniz İçin <br />
-                <span className="text-indigo-600">Tek Bir Kontrol Paneli</span>
+                <span className="text-[#2BB4A9]">Tek Bir Kontrol Paneli</span>
               </h2>
               <div className="space-y-6">
                 {[
@@ -305,8 +298,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       {/* --- Stats Section --- */}
       <div className="py-20 bg-slate-900 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/30 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/30 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#2BB4A9]/30 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#F05039]/30 blur-[120px] rounded-full pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
@@ -320,7 +313,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
 
       {/* --- CTA Section --- */}
       <div className="py-32 bg-white text-center px-4 relative">
-        <div className="max-w-4xl mx-auto bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[3rem] p-12 md:p-24 shadow-2xl relative overflow-hidden">
+        <div className="max-w-4xl mx-auto bg-gradient-to-r from-[#2BB4A9] to-[#2563EB] rounded-[3rem] p-12 md:p-24 shadow-2xl relative overflow-hidden">
           {/* Background pattern */}
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 
@@ -335,7 +328,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
 
             <button
               onClick={() => onNavigateToAuth('register')}
-              className="bg-white text-indigo-600 cursor-pointer px-10 py-5 rounded-full font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 transform"
+              className="bg-white text-[#2BB4A9] cursor-pointer px-10 py-5 rounded-full font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 transform"
             >
               Ücretsiz Başlayın
             </button>

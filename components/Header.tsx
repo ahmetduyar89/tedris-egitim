@@ -11,14 +11,7 @@ interface HeaderProps {
 }
 
 const TedrisLogo = () => (
-  <svg width="140" height="35" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g style={{ mixBlendMode: 'multiply' }}>
-      <circle cx="15" cy="24" r="12" fill="#F05039" />
-      <circle cx="33" cy="24" r="12" fill="#F5C542" />
-      <circle cx="24" cy="12" r="12" fill="#2BB4A9" />
-    </g>
-    <text x="50" y="30" fontFamily="Poppins, sans-serif" fontSize="28" fontWeight="800" fill="#000000">TedrisEDU</text>
-  </svg>
+  <img src="/logo-full.png" alt="TedrisEDU" className="h-10 w-auto" />
 );
 
 const Header: React.FC<HeaderProps> = ({ user, userName, role, onLogout, onMenuButtonClick }) => {

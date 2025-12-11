@@ -10,14 +10,7 @@ interface LoginPageProps {
 
 
 const TedrisLogo = () => (
-  <svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <g style={{ mixBlendMode: 'multiply' }}>
-      <circle cx="20" cy="30" r="15" fill="#F05039" />
-      <circle cx="42" cy="30" r="15" fill="#F5C542" />
-      <circle cx="31" cy="15" r="15" fill="#2BB4A9" />
-    </g>
-    <text x="60" y="38" fontFamily="Poppins, sans-serif" fontSize="36" fontWeight="800" fill="#000000">TedrisEDU</text>
-  </svg>
+  <img src="/logo-full.png" alt="TedrisEDU" className="h-12 w-auto" />
 );
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, initialMode = 'login' }) => {

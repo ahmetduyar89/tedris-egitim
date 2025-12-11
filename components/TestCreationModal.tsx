@@ -115,16 +115,9 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
         }
     }, [student.grade, topics, questionType, difficulty, totalQuestions]);
 
-    // Yarı otomatik WhatsApp bildirimi için state
-    const [sendWhatsApp, setSendWhatsApp] = useState(true);
+
 
     const handleAssignTest = async () => {
-        // Open WhatsApp window immediately if enabled (synchronous)
-        let waWindow: Window | null = null;
-        if (sendWhatsApp) {
-            waWindow = window.open('', '_blank');
-        }
-
         const testData: Omit<Test, 'id'> = {
             studentId: student.id,
             teacherId: teacherId,
@@ -140,13 +133,12 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
         try {
             const docRef = await db.collection('tests').add(testData);
 
-            // Send notification with window ref
+            // Send notification (internal only)
             await notifyTestAssigned(
                 student.id,
                 testData.title,
                 docRef.id,
-                'test',
-                waWindow
+                'test'
             );
 
             onTestCreated({ ...testData, id: docRef.id });
@@ -154,7 +146,6 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
         } catch (error) {
             console.error("Error creating test in Firestore:", error);
             setError("Test oluşturulurken bir veritabanı hatası oluştu.");
-            if (waWindow) waWindow.close();
         }
     };
 
@@ -312,15 +303,7 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
             <div className="mt-6 flex justify-between items-center">
                 <button onClick={() => setStep(1)} className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600">Geri Dön</button>
                 <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                            type="checkbox"
-                            checked={sendWhatsApp}
-                            onChange={(e) => setSendWhatsApp(e.target.checked)}
-                            className="w-5 h-5 text-primary rounded focus:ring-primary"
-                        />
-                        <span className="text-gray-700 font-medium">WhatsApp Bildirimi Gönder</span>
-                    </label>
+
                     <button onClick={handleAssignTest} className="bg-success text-white px-4 py-2 rounded-xl hover:bg-green-700">Testi Ata</button>
                 </div>
             </div>

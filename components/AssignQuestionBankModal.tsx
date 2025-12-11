@@ -24,7 +24,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
   const [hasTimeLimit, setHasTimeLimit] = useState(true);
   const [notes, setNotes] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
-  const [sendWhatsApp, setSendWhatsApp] = useState(true);
+
 
   const handleAssign = async () => {
     if (!selectedStudentId) {
@@ -104,21 +104,16 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
       }
 
       // 5. Send Notification
-      if (sendWhatsApp) { // Only attempt to send if checkbox is checked
-        try {
-          waWindow = await notifyTestAssigned( // Assign the window object to waWindow
-            selectedStudentId,
-            questionBank.title,
-            assignmentId,
-            'question_bank'
-          );
-          console.log('✅ Notification sent successfully!');
-        } catch (notificationError) {
-          console.error('❌ Failed to send notification:', notificationError);
-          if (waWindow) waWindow.close(); // Close window on notification error
-        }
-      } else {
-        console.log('WhatsApp notification skipped by user.');
+      try {
+        await notifyTestAssigned(
+          selectedStudentId,
+          questionBank.title,
+          assignmentId,
+          'question_bank'
+        );
+        console.log('✅ Notification sent successfully!');
+      } catch (notificationError) {
+        console.error('❌ Failed to send notification:', notificationError);
       }
 
       alert(`✅ Test başarıyla ${selectedStudent?.name}'e atandı!`);
@@ -127,10 +122,8 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
     } catch (error) {
       console.error('Error assigning question bank:', error);
       alert('Test atanamadı. Lütfen tekrar deneyin.');
-      if (waWindow) waWindow.close(); // Close window on general error
     } finally {
       setIsAssigning(false);
-      if (waWindow) waWindow.close(); // Ensure window is closed in finally block
     }
   };
 
@@ -219,23 +212,7 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
             />
           </div>
 
-          <div>
-            <label className="flex items-center space-x-2 cursor-pointer bg-green-50 p-3 rounded-lg border border-green-100">
-              <input
-                type="checkbox"
-                checked={sendWhatsApp}
-                onChange={(e) => setSendWhatsApp(e.target.checked)}
-                className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-              />
-              <div className="flex flex-col">
-                <span className="text-gray-800 font-medium flex items-center">
-                  <span className="text-xl mr-2">📱</span>
-                  WhatsApp Bildirimi Gönder
-                </span>
-                <span className="text-xs text-gray-500">Öğrenciye ve veliye WhatsApp üzerinden bilgilendirme yapılır.</span>
-              </div>
-            </label>
-          </div>
+
         </div>
 
         <div className="p-6 border-t border-gray-200 flex justify-end gap-3">

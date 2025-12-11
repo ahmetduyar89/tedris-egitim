@@ -2,6 +2,7 @@ import React from 'react';
 import { Student, Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment, QuestionBank, PrivateLesson, LessonStats, PaymentSummary, StudentPaymentConfig, WeeklyProgram } from '../../types';
 import { PDFTest, PDFTestSubmission } from '../../services/pdfTestService';
 import { DiagnosisTestAssignment } from '../../types/diagnosisTestTypes';
+import { notifyTestAssigned } from '../../services/multiChannelNotificationService';
 import OverallAnalytics from '../OverallAnalytics';
 import EditableWeeklySchedule from '../EditableWeeklySchedule';
 import StudentPaymentSettings from '../StudentPaymentSettings';
@@ -83,6 +84,24 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
     onDeleteDiagnosisTestAssignment,
     studentId
 }) => {
+    const handleSendWhatsApp = async (
+        studentId: string,
+        title: string,
+        entityId: string,
+        type: 'diagnosis' | 'question_bank' | 'pdf' | 'test'
+    ) => {
+        try {
+            const waWindow = window.open('', '_blank');
+            if (waWindow) {
+                waWindow.document.write('WhatsApp hazırlanıyor...');
+            }
+            await notifyTestAssigned(studentId, title, entityId, type, waWindow);
+        } catch (error) {
+            console.error('WhatsApp notification error:', error);
+            alert('WhatsApp bildirimi gönderilemedi.');
+        }
+    };
+
     return (
         <div className="space-y-4">
             {/* Compact Performance Analytics */}
@@ -132,14 +151,23 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                 {assignment.status === 'completed' ? `✓ ${assignment.score}%` : 'Devam ediyor'}
                                             </p>
                                         </div>
-                                        <button
-                                            onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
-                                            className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => handleSendWhatsApp(student.id, assignment.test?.title || 'Tanı Testi', assignment.testId, 'diagnosis')}
+                                                className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
+                                                title="WhatsApp Bildirimi Gönder"
+                                            >
+                                                <span className="text-lg">📱</span>
+                                            </button>
+                                            <button
+                                                onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
+                                                className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
                                     </li>
                                 ))}
                                 {assignedTests.map(test => (
@@ -151,6 +179,13 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => handleSendWhatsApp(student.id, test.title, test.id, 'test')}
+                                                className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
+                                                title="WhatsApp Bildirimi Gönder"
+                                            >
+                                                <span className="text-lg">📱</span>
+                                            </button>
                                             {test.completed && (
                                                 <button
                                                     onClick={() => onShowAnalysis(test)}
@@ -182,6 +217,13 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => handleSendWhatsApp(student.id, qbAssignment.questionBank?.title || 'Soru Bankası', qbAssignment.questionBankId || '', 'question_bank')}
+                                                className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
+                                                title="WhatsApp Bildirimi Gönder"
+                                            >
+                                                <span className="text-lg">📱</span>
+                                            </button>
                                             {qbAssignment.status === 'Tamamlandı' && (
                                                 <button
                                                     onClick={() => onViewQBAssignment(qbAssignment)}
@@ -216,6 +258,13 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleSendWhatsApp(student.id, pdfTest.title, pdfTest.id, 'pdf')}
+                                                    className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
+                                                    title="WhatsApp Bildirimi Gönder"
+                                                >
+                                                    <span className="text-lg">📱</span>
+                                                </button>
                                                 {isCompleted && submission && (
                                                     <button
                                                         onClick={() => onViewPDFTestResult(pdfTest, submission)}
@@ -385,177 +434,179 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
             </div>
 
             {/* Lesson Tracking and Payment Section */}
-            {(lessonStats || paymentSummary || completedLessons.length > 0) && (
-                <div className="mt-8 space-y-6">
-                    <h3 className="text-2xl font-bold font-poppins text-text-primary flex items-center">
-                        <span className="text-3xl mr-3">📚</span>
-                        Özel Ders Takibi
-                    </h3>
+            {
+                (lessonStats || paymentSummary || completedLessons.length > 0) && (
+                    <div className="mt-8 space-y-6">
+                        <h3 className="text-2xl font-bold font-poppins text-text-primary flex items-center">
+                            <span className="text-3xl mr-3">📚</span>
+                            Özel Ders Takibi
+                        </h3>
 
-                    {/* Stats and Payment Summary Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Lesson Statistics */}
-                        {lessonStats && (
-                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl shadow-md border border-blue-200">
-                                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                                    <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                    Ders İstatistikleri
-                                </h4>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Toplam Planlanan:</span>
-                                        <span className="font-bold text-gray-900">{lessonStats.totalScheduled} ders</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Tamamlanan:</span>
-                                        <span className="font-bold text-green-600">{lessonStats.totalCompleted} ders</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Kaçırılan:</span>
-                                        <span className="font-bold text-red-600">{lessonStats.totalMissed} ders</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">İptal:</span>
-                                        <span className="font-bold text-orange-600">{lessonStats.totalCancelled} ders</span>
-                                    </div>
-                                    <div className="pt-3 border-t border-blue-200">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-gray-700 font-medium">Tamamlanma Oranı:</span>
-                                            <span className="font-bold text-blue-600">{lessonStats.completionRate}%</span>
-                                        </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-3">
-                                            <div
-                                                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500"
-                                                style={{ width: `${lessonStats.completionRate}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Payment Summary */}
-                        {paymentSummary && (
-                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl shadow-md border border-green-200">
-                                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                                    <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Ödeme Özeti
-                                </h4>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Toplam Kazanılan:</span>
-                                        <span className="font-bold text-green-600">{paymentSummary.totalEarned.toFixed(2)} {paymentSummary.currency}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-gray-700">Bekleyen Ödemeler:</span>
-                                        <span className="font-bold text-orange-600">{paymentSummary.totalPending.toFixed(2)} {paymentSummary.currency}</span>
-                                    </div>
-                                    <div className="pt-3 border-t border-green-200 space-y-2">
+                        {/* Stats and Payment Summary Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Lesson Statistics */}
+                            {lessonStats && (
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl shadow-md border border-blue-200">
+                                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                                        <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                        </svg>
+                                        Ders İstatistikleri
+                                    </h4>
+                                    <div className="space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-gray-700">Ödenen Dersler:</span>
-                                            <span className="font-bold text-gray-900">{paymentSummary.paidLessons}/{paymentSummary.totalLessons}</span>
+                                            <span className="text-gray-700">Toplam Planlanan:</span>
+                                            <span className="font-bold text-gray-900">{lessonStats.totalScheduled} ders</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <span className="text-gray-700">Ödenmemiş:</span>
-                                            <span className="font-bold text-red-600">{paymentSummary.unpaidLessons} ders</span>
+                                            <span className="text-gray-700">Tamamlanan:</span>
+                                            <span className="font-bold text-green-600">{lessonStats.totalCompleted} ders</span>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Completed Lessons History */}
-                    {completedLessons.length > 0 && (
-                        <div className="bg-card-background p-6 rounded-xl shadow-md">
-                            <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                                <svg className="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                                Yapılan Dersler
-                            </h4>
-                            <div className="space-y-3 max-h-96 overflow-y-auto">
-                                {completedLessons.map(lesson => (
-                                    <div key={lesson.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
-                                                    <span className="font-semibold text-gray-900">{lesson.subject}</span>
-                                                    <span className="text-sm text-gray-500">
-                                                        {new Date(lesson.startTime).toLocaleDateString('tr-TR', {
-                                                            day: 'numeric',
-                                                            month: 'long',
-                                                            year: 'numeric'
-                                                        })}
-                                                    </span>
-
-                                                    {/* Attendance Status Badge */}
-                                                    {lesson.attendance && (
-                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.attendanceStatus === 'completed'
-                                                            ? 'bg-green-100 text-green-700'
-                                                            : lesson.attendance.attendanceStatus === 'missed'
-                                                                ? 'bg-red-100 text-red-700'
-                                                                : 'bg-orange-100 text-orange-700'
-                                                            }`}>
-                                                            {lesson.attendance.attendanceStatus === 'completed'
-                                                                ? '✓ Yapıldı'
-                                                                : lesson.attendance.attendanceStatus === 'missed'
-                                                                    ? '✗ Yapılmadı'
-                                                                    : '⊘ İptal'}
-                                                        </span>
-                                                    )}
-
-                                                    {/* Payment Status Badge */}
-                                                    {lesson.attendance?.attendanceStatus === 'completed' && lesson.attendance.paymentStatus && (
-                                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.paymentStatus === 'paid'
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : lesson.attendance.paymentStatus === 'partial'
-                                                                ? 'bg-yellow-100 text-yellow-700'
-                                                                : 'bg-gray-100 text-gray-700'
-                                                            }`}>
-                                                            {lesson.attendance.paymentStatus === 'paid'
-                                                                ? `💰 ${lesson.attendance.paymentAmount || 0} TL`
-                                                                : lesson.attendance.paymentStatus === 'partial'
-                                                                    ? `◐ ${lesson.attendance.paymentAmount || 0} TL (Kısmi)`
-                                                                    : 'Ödenmedi'}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {lesson.topic && (
-                                                    <p className="text-sm text-gray-700 mb-1">
-                                                        <span className="font-medium">Konu:</span> {lesson.topic}
-                                                    </p>
-                                                )}
-                                                {lesson.lessonNotes && (
-                                                    <p className="text-sm text-gray-600 line-clamp-2">{lesson.lessonNotes}</p>
-                                                )}
-                                                {lesson.attendance?.paymentNotes && (
-                                                    <p className="text-xs text-gray-500 mt-1 italic">
-                                                        💬 {lesson.attendance.paymentNotes}
-                                                    </p>
-                                                )}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-700">Kaçırılan:</span>
+                                            <span className="font-bold text-red-600">{lessonStats.totalMissed} ders</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-700">İptal:</span>
+                                            <span className="font-bold text-orange-600">{lessonStats.totalCancelled} ders</span>
+                                        </div>
+                                        <div className="pt-3 border-t border-blue-200">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-gray-700 font-medium">Tamamlanma Oranı:</span>
+                                                <span className="font-bold text-blue-600">{lessonStats.completionRate}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-200 rounded-full h-3">
+                                                <div
+                                                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-3 rounded-full transition-all duration-500"
+                                                    style={{ width: `${lessonStats.completionRate}%` }}
+                                                ></div>
                                             </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                                </div>
+                            )}
 
-                    {/* Payment Configuration */}
-                    <StudentPaymentSettings
-                        studentId={student.id}
-                        teacherId={user.id}
-                        initialConfig={paymentConfig}
-                        onUpdate={onUpdatePaymentConfig}
-                    />
-                </div>
-            )}
-        </div>
+                            {/* Payment Summary */}
+                            {paymentSummary && (
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl shadow-md border border-green-200">
+                                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                                        <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Ödeme Özeti
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-700">Toplam Kazanılan:</span>
+                                            <span className="font-bold text-green-600">{paymentSummary.totalEarned.toFixed(2)} {paymentSummary.currency}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-gray-700">Bekleyen Ödemeler:</span>
+                                            <span className="font-bold text-orange-600">{paymentSummary.totalPending.toFixed(2)} {paymentSummary.currency}</span>
+                                        </div>
+                                        <div className="pt-3 border-t border-green-200 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-700">Ödenen Dersler:</span>
+                                                <span className="font-bold text-gray-900">{paymentSummary.paidLessons}/{paymentSummary.totalLessons}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-gray-700">Ödenmemiş:</span>
+                                                <span className="font-bold text-red-600">{paymentSummary.unpaidLessons} ders</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Completed Lessons History */}
+                        {completedLessons.length > 0 && (
+                            <div className="bg-card-background p-6 rounded-xl shadow-md">
+                                <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                                    <svg className="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                    Yapılan Dersler
+                                </h4>
+                                <div className="space-y-3 max-h-96 overflow-y-auto">
+                                    {completedLessons.map(lesson => (
+                                        <div key={lesson.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
+                                                        <span className="font-semibold text-gray-900">{lesson.subject}</span>
+                                                        <span className="text-sm text-gray-500">
+                                                            {new Date(lesson.startTime).toLocaleDateString('tr-TR', {
+                                                                day: 'numeric',
+                                                                month: 'long',
+                                                                year: 'numeric'
+                                                            })}
+                                                        </span>
+
+                                                        {/* Attendance Status Badge */}
+                                                        {lesson.attendance && (
+                                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.attendanceStatus === 'completed'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : lesson.attendance.attendanceStatus === 'missed'
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : 'bg-orange-100 text-orange-700'
+                                                                }`}>
+                                                                {lesson.attendance.attendanceStatus === 'completed'
+                                                                    ? '✓ Yapıldı'
+                                                                    : lesson.attendance.attendanceStatus === 'missed'
+                                                                        ? '✗ Yapılmadı'
+                                                                        : '⊘ İptal'}
+                                                            </span>
+                                                        )}
+
+                                                        {/* Payment Status Badge */}
+                                                        {lesson.attendance?.attendanceStatus === 'completed' && lesson.attendance.paymentStatus && (
+                                                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${lesson.attendance.paymentStatus === 'paid'
+                                                                ? 'bg-blue-100 text-blue-700'
+                                                                : lesson.attendance.paymentStatus === 'partial'
+                                                                    ? 'bg-yellow-100 text-yellow-700'
+                                                                    : 'bg-gray-100 text-gray-700'
+                                                                }`}>
+                                                                {lesson.attendance.paymentStatus === 'paid'
+                                                                    ? `💰 ${lesson.attendance.paymentAmount || 0} TL`
+                                                                    : lesson.attendance.paymentStatus === 'partial'
+                                                                        ? `◐ ${lesson.attendance.paymentAmount || 0} TL (Kısmi)`
+                                                                        : 'Ödenmedi'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {lesson.topic && (
+                                                        <p className="text-sm text-gray-700 mb-1">
+                                                            <span className="font-medium">Konu:</span> {lesson.topic}
+                                                        </p>
+                                                    )}
+                                                    {lesson.lessonNotes && (
+                                                        <p className="text-sm text-gray-600 line-clamp-2">{lesson.lessonNotes}</p>
+                                                    )}
+                                                    {lesson.attendance?.paymentNotes && (
+                                                        <p className="text-xs text-gray-500 mt-1 italic">
+                                                            💬 {lesson.attendance.paymentNotes}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Payment Configuration */}
+                        <StudentPaymentSettings
+                            studentId={student.id}
+                            teacherId={user.id}
+                            initialConfig={paymentConfig}
+                            onUpdate={onUpdatePaymentConfig}
+                        />
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -22,7 +22,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
     const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
     const [dueDate, setDueDate] = useState<string>('');
     const [isMandatory, setIsMandatory] = useState(true);
-    const [sendWhatsApp, setSendWhatsApp] = useState(true);
+
     const [isLoading, setIsLoading] = useState(true);
     const [isAssigning, setIsAssigning] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -74,12 +74,6 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
             return;
         }
 
-        // Open WhatsApp window immediately if enabled
-        let waWindow: Window | null = null;
-        if (sendWhatsApp) {
-            waWindow = window.open('', '_blank');
-        }
-
         setIsAssigning(true);
         setError(null);
 
@@ -88,8 +82,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                 testId,
                 studentIds: Array.from(selectedStudents),
                 dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-                isMandatory,
-                whatsappWindow: waWindow
+                isMandatory
             }, teacherId);
 
             onAssigned();
@@ -98,7 +91,6 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
         } catch (err: any) {
             console.error('Error assigning test:', err);
             setError(err.message || 'Test atanırken hata oluştu');
-            if (waWindow) waWindow.close();
         } finally {
             setIsAssigning(false);
         }
@@ -144,22 +136,7 @@ const AssignDiagnosisTestModal: React.FC<AssignDiagnosisTestModalProps> = ({
                                 <span className="text-gray-700 font-medium">Zorunlu Test</span>
                             </label>
                         </div>
-                        <div>
-                            <label className="flex items-center space-x-2 cursor-pointer bg-green-50 p-2 rounded-lg border border-green-100 mt-6">
-                                <input
-                                    type="checkbox"
-                                    checked={sendWhatsApp}
-                                    onChange={(e) => setSendWhatsApp(e.target.checked)}
-                                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                                />
-                                <div className="flex flex-col">
-                                    <span className="text-gray-800 font-medium flex items-center">
-                                        <span className="text-lg mr-2">📱</span>
-                                        WhatsApp Bildirimi
-                                    </span>
-                                </div>
-                            </label>
-                        </div>
+
                     </div>
 
                     <div className="mb-4 flex justify-between items-center">

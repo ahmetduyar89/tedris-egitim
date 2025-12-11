@@ -19,7 +19,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
     const [contentType, setContentType] = useState<'pdf' | 'video' | 'image' | 'html' | ''>('');
     const [fileUrl, setFileUrl] = useState('');
     const [htmlContent, setHtmlContent] = useState('');
-    const [sendWhatsApp, setSendWhatsApp] = useState(true);
+
 
     useEffect(() => {
         const nextWeek = new Date();
@@ -64,12 +64,6 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Open WhatsApp window immediately if enabled
-        let waWindow: Window | null = null;
-        if (sendWhatsApp) {
-            waWindow = window.open('', '_blank');
-        }
-
         const newAssignment: Omit<Assignment, 'id'> & { id?: string } = {
             teacherId: user.id,
             studentId: student.id,
@@ -85,7 +79,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
             htmlContent: contentType === 'html' ? htmlContent : undefined,
         };
         // @ts-ignore - passing extra prop for notification handling
-        onAssign(newAssignment as Assignment, waWindow);
+        onAssign(newAssignment as Assignment);
     };
 
     return (
@@ -149,15 +143,6 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
                     </div>
                     <div className="flex justify-end space-x-3 pt-4">
                         <div className="flex-1 flex items-center mr-4">
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={sendWhatsApp}
-                                    onChange={(e) => setSendWhatsApp(e.target.checked)}
-                                    className="w-4 h-4 text-primary rounded focus:ring-primary"
-                                />
-                                <span className="text-sm text-gray-600">WhatsApp Bildirimi</span>
-                            </label>
                         </div>
                         <button type="button" onClick={onClose} className="bg-gray-500 text-white px-4 py-2 rounded-xl">İptal</button>
                         <button type="submit" className="bg-primary text-white px-4 py-2 rounded-xl">Ödevi Ata</button>

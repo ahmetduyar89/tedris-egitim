@@ -22,7 +22,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
   const [answerKey, setAnswerKey] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
-  const [sendWhatsApp, setSendWhatsApp] = useState(true);
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -82,11 +82,6 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
       }
     }
 
-    let waWindow: Window | null = null;
-    if (sendWhatsApp) {
-      waWindow = window.open('', '_blank'); // Open synchronously
-    }
-
     setIsUploading(true);
     try {
       const pdfUrl = await uploadPDFToStorage(pdfFile!, teacherId);
@@ -103,15 +98,13 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
         durationMinutes,
         dueDate: dueDate || undefined,
         subject,
-        unit,
-        whatsappWindow: waWindow // Pass the window object
+        unit
       });
 
       onCreated();
       onClose();
     } catch (error) {
       console.error('PDF test oluşturma hatası:', error);
-      if (waWindow) waWindow.close(); // Close window on error
       alert('Test oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setIsUploading(false);
@@ -277,23 +270,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                 />
               </div>
 
-              <div>
-                <label className="flex items-center space-x-2 cursor-pointer bg-green-50 p-3 rounded-xl border border-green-100">
-                  <input
-                    type="checkbox"
-                    checked={sendWhatsApp}
-                    onChange={(e) => setSendWhatsApp(e.target.checked)}
-                    className="w-5 h-5 text-green-600 rounded focus:ring-green-500"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-gray-800 font-medium flex items-center">
-                      <span className="text-xl mr-2">📱</span>
-                      WhatsApp Bildirimi Gönder
-                    </span>
-                    <span className="text-xs text-gray-500">Öğrenciye ve veliye WhatsApp üzerinden bilgilendirme yapılır.</span>
-                  </div>
-                </label>
-              </div>
+
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button

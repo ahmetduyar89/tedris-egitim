@@ -462,49 +462,49 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
             {/* Performance Metrics Cards */}
             {/* Performance Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Week's Lessons */}
-                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-200 transform hover:-translate-y-1 transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                            <span className="text-lg">📊</span>
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl p-3 text-white shadow-lg shadow-indigo-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-1.5">
+                        <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <span className="text-base">📊</span>
                         </div>
-                        <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-purple-50 border border-white/10">Bu Hafta</div>
+                        <div className="text-[9px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-purple-50 border border-white/10">Bu Hafta</div>
                     </div>
                     <div>
-                        <div className="text-3xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : stats.weekLessons}</div>
-                        <div className="text-xs text-purple-100 font-medium opacity-90">Toplam Ders Saati</div>
+                        <div className="text-2xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : stats.weekLessons}</div>
+                        <div className="text-[10px] text-purple-100 font-medium opacity-90">Toplam Ders Saati</div>
                     </div>
                 </div>
 
                 {/* Completed Lessons */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white shadow-lg shadow-teal-200 transform hover:-translate-y-1 transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                            <span className="text-lg">✅</span>
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-3 text-white shadow-lg shadow-teal-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-1.5">
+                        <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <span className="text-base">✅</span>
                         </div>
-                        <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-emerald-50 border border-white/10">Ders Durumu</div>
+                        <div className="text-[9px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-emerald-50 border border-white/10">Ders Durumu</div>
                     </div>
                     <div>
-                        <div className="flex items-baseline gap-2">
-                            <div className="text-3xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : stats.completedLessons}</div>
-                            {stats.cancelledLessons > 0 && <div className="text-xs text-red-200 font-bold">({stats.cancelledLessons} İptal)</div>}
+                        <div className="flex items-baseline gap-1.5">
+                            <div className="text-2xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : stats.completedLessons}</div>
+                            {stats.cancelledLessons > 0 && <div className="text-[10px] text-red-100 font-bold bg-white/20 px-1.5 py-0.5 rounded">({stats.cancelledLessons} İptal)</div>}
                         </div>
-                        <div className="text-xs text-emerald-100 font-medium opacity-90">Tamamlanan Ders</div>
+                        <div className="text-[10px] text-emerald-100 font-medium opacity-90">Tamamlanan Ders</div>
                     </div>
                 </div>
 
                 {/* Average Score */}
-                <div className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-200 transform hover:-translate-y-1 transition-all">
-                    <div className="flex justify-between items-start mb-2">
-                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                            <span className="text-lg">🎯</span>
+                <div className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-xl p-3 text-white shadow-lg shadow-orange-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-1.5">
+                        <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <span className="text-base">🎯</span>
                         </div>
-                        <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-orange-50 border border-white/10">Genel Başarı</div>
+                        <div className="text-[9px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-orange-50 border border-white/10">Genel Başarı</div>
                     </div>
                     <div>
-                        <div className="text-3xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : `%${stats.averageScore}`}</div>
-                        <div className="text-xs text-orange-100 font-medium opacity-90">Ortalama Puan</div>
+                        <div className="text-2xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : `%${stats.averageScore}`}</div>
+                        <div className="text-[10px] text-orange-100 font-medium opacity-90">Ortalama Puan</div>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import { db, supabase } from './dbAdapter';
-import { createNotification } from './notificationService';
+import { notifyTestAssigned } from './multiChannelNotificationService';
 import mistakeService from './mistakesService';
 
 export interface PDFTest {
@@ -104,11 +104,11 @@ export const createPDFTest = async (test: Omit<PDFTest, 'id' | 'createdAt'>): Pr
 
     const docRef = await db.collection('pdf_tests').add(testData);
 
-    await createNotification(
+    await notifyTestAssigned(
       test.studentId,
-      `'${test.title}' başlıklı yeni bir PDF test atandı.`,
-      'test',
-      docRef.id
+      test.title,
+      docRef.id,
+      'pdf'
     );
 
     return {

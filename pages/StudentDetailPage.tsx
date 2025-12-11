@@ -27,6 +27,7 @@ import StudentPaymentSettings from '../components/StudentPaymentSettings';
 import { diagnosisTestManagementService } from '../services/diagnosisTestManagementService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import * as privateLessonService from '../services/privateLessonService';
+import { notifyAssignmentCreated } from '../services/multiChannelNotificationService';
 import StreakWidget from '../components/StreakWidget';
 import DailyGoalsCard from '../components/DailyGoalsCard';
 
@@ -152,7 +153,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         setAssignedTests(prev => [newTest, ...prev]);
         const updatedStudent = { ...student, learningLoopStatus: LearningLoopStatus.TestAssigned };
         await updateStudentInFirestore(updatedStudent);
-        await createNotification(student.id, `'${newTest.title}' başlıklı yeni bir testin var.`, 'test', newTest.id);
+        // Notification is handled in TestCreationModal
     };
 
     const handleReportUpdated = async (updatedTest: Test) => {
@@ -898,7 +899,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             const assignmentWithId = { ...newAssignment, id: docRef.id };
             setAssignments(prev => [assignmentWithId, ...prev]);
             setIsCreatingAssignment(false);
-            await createNotification(student.id, `'${assignmentWithId.title}' başlıklı yeni bir ödevin var.`, 'assignment', assignmentWithId.id);
+            await notifyAssignmentCreated(student.id, assignmentWithId.title, assignmentWithId.id, assignmentWithId.dueDate);
         } catch (error) {
             console.error("Error creating assignment:", error);
             alert("Ödev oluşturulurken bir hata oluştu.");

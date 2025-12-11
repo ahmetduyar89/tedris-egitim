@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { QuestionBank, Student, User } from '../types';
 import { db, supabase } from '../services/dbAdapter';
+import { notifyTestAssigned } from '../services/multiChannelNotificationService';
 
 interface AssignQuestionBankModalProps {
   questionBank: QuestionBank;
@@ -102,33 +103,13 @@ const AssignQuestionBankModal: React.FC<AssignQuestionBankModalProps> = ({
       }
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session?.access_token) {
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-notification`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                recipient_id: selectedStudentId,
-                message: `Yeni test atandı: ${questionBank.title} (${new Date(applicationDate).toLocaleDateString('tr-TR')})`,
-                entity_type: 'question_bank_assignment',
-                entity_id: assignmentId
-              })
-            }
-          );
-
-          if (!response.ok) {
-            const error = await response.json();
-            console.error('❌ Failed to send notification:', error);
-          } else {
-            console.log('✅ Notification sent successfully!');
-          }
-        }
+        await notifyTestAssigned(
+          selectedStudentId,
+          questionBank.title,
+          assignmentId,
+          'question_bank'
+        );
+        console.log('✅ Notification sent successfully!');
       } catch (notificationError) {
         console.error('❌ Failed to send notification:', notificationError);
       }

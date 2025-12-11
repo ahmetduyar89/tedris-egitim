@@ -3,6 +3,7 @@ import { Student, Subject, QuestionType, Difficulty, Question, Test } from '../t
 import { CURRICULUM } from '../constants';
 import { generateTestQuestions } from '../services/optimizedAIService';
 import { db } from '../services/dbAdapter';
+import { notifyTestAssigned } from '../services/multiChannelNotificationService';
 
 interface TestCreationModalProps {
     student: Student;
@@ -129,6 +130,15 @@ const TestCreationModal: React.FC<TestCreationModalProps> = ({ student, teacherI
 
         try {
             const docRef = await db.collection('tests').add(testData);
+
+            // Send notification
+            await notifyTestAssigned(
+                student.id,
+                testData.title,
+                docRef.id,
+                'test'
+            );
+
             onTestCreated({ ...testData, id: docRef.id });
             onClose();
         } catch (error) {

@@ -69,6 +69,40 @@ export const sendStudentNotification = async (payload: NotificationPayload): Pro
 };
 
 /**
+ * Send notification to parent
+ */
+export const sendParentNotification = async (payload: NotificationPayload): Promise<void> => {
+    try {
+        console.log('[Notification] Sending parent notification:', payload);
+
+        // Get student's parent info
+        const { data: student } = await supabase
+            .from('students')
+            .select('parent_phone, parent_name')
+            .eq('id', payload.studentId)
+            .single();
+
+        if (!student?.parent_phone) {
+            console.log('[Notification] No parent phone found for student:', payload.studentId);
+            return;
+        }
+
+        // Send WhatsApp to parent
+        // NOTE: We currently only support WhatsApp for parents as that's the primary communication channel
+        await sendWhatsAppNotification(payload, student.parent_phone);
+
+        console.log('[Notification] Parent notification sent successfully');
+
+        // Log to history
+        await logNotificationHistory({ ...payload, title: `[Veli] ${payload.title}` }, ['whatsapp']);
+
+    } catch (error) {
+        console.error('[Notification] Error sending parent notification:', error);
+        // Don't throw, we don't want to break the flow if parent notification fails
+    }
+};
+
+/**
  * Send push notification
  */
 const sendPushNotification = async (payload: NotificationPayload): Promise<void> => {
@@ -362,7 +396,7 @@ export const notifyAssignmentCreated = async (
         ? ` Teslim tarihi: ${new Date(dueDate).toLocaleDateString('tr-TR')}`
         : '';
 
-    await sendStudentNotification({
+    const payload: NotificationPayload = {
         studentId,
         type: 'assignment',
         title: 'Yeni Ödev Atandı',
@@ -370,16 +404,19 @@ export const notifyAssignmentCreated = async (
         entityType: 'assignment',
         entityId: assignmentId,
         actionUrl: '/student-dashboard'
-    });
+    };
+
+    await sendStudentNotification(payload);
+    await sendParentNotification(payload);
 };
 
 export const notifyTestAssigned = async (
     studentId: string,
     testTitle: string,
     testId: string,
-    testType: 'diagnosis' | 'question_bank' | 'pdf'
+    testType: 'diagnosis' | 'question_bank' | 'pdf' | 'test'
 ) => {
-    await sendStudentNotification({
+    const payload: NotificationPayload = {
         studentId,
         type: 'test',
         title: 'Yeni Test Atandı',
@@ -387,20 +424,26 @@ export const notifyTestAssigned = async (
         entityType: testType,
         entityId: testId,
         actionUrl: '/student-dashboard'
-    });
+    };
+
+    await sendStudentNotification(payload);
+    await sendParentNotification(payload);
 };
 
 export const notifyHomeworkReminder = async (
     studentId: string,
     homeworkDetails: string
 ) => {
-    await sendStudentNotification({
+    const payload: NotificationPayload = {
         studentId,
         type: 'homework',
         title: 'Ödev Hatırlatması',
         message: homeworkDetails,
         actionUrl: '/student-dashboard'
-    });
+    };
+
+    await sendStudentNotification(payload);
+    await sendParentNotification(payload);
 };
 
 export const notifyLessonScheduled = async (
@@ -415,13 +458,16 @@ export const notifyLessonScheduled = async (
         minute: '2-digit'
     });
 
-    await sendStudentNotification({
+    const payload: NotificationPayload = {
         studentId,
         type: 'lesson',
         title: 'Ders Hatırlatması',
         message: `${subject} dersiniz ${dateStr} tarihinde başlayacak.`,
         actionUrl: '/student-dashboard'
-    });
+    };
+
+    await sendStudentNotification(payload);
+    await sendParentNotification(payload);
 };
 
 export const notifyAchievementUnlocked = async (

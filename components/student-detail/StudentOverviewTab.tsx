@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Student, Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment, QuestionBank, PrivateLesson, LessonStats, PaymentSummary, StudentPaymentConfig, WeeklyProgram } from '../../types';
 import { PDFTest, PDFTestSubmission } from '../../services/pdfTestService';
 import { DiagnosisTestAssignment } from '../../types/diagnosisTestTypes';
-import { notifyTestAssigned, sendWhatsAppToRecipient } from '../../services/multiChannelNotificationService';
+import { sendWhatsAppToRecipient } from '../../services/multiChannelNotificationService';
 import OverallAnalytics from '../OverallAnalytics';
 import EditableWeeklySchedule from '../EditableWeeklySchedule';
 import StudentPaymentSettings from '../StudentPaymentSettings';
@@ -652,7 +652,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
 
             {/* WhatsApp Selection Modal */}
             {waModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
                     <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="bg-green-500 p-4 flex justify-between items-center text-white">
                             <h3 className="font-bold flex items-center gap-2">

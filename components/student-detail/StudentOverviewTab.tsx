@@ -186,7 +186,10 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                             {(assignedTests.length > 0 || questionBankAssignments.length > 0 || pdfTests.length > 0 || diagnosisTestAssignments.length > 0) ? (
                                 <ul className="space-y-1.5 max-h-60 overflow-y-auto pr-2">
                                     {diagnosisTestAssignments.map(assignment => (
-                                        <li key={assignment.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                        <li
+                                            key={assignment.id}
+                                            className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                                        >
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
                                                     <span className="text-orange-500">🩺</span>
@@ -197,9 +200,11 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-1">
-
                                                 <button
-                                                    onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteDiagnosisTestAssignment(assignment.id);
+                                                    }}
                                                     className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,7 +215,11 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                         </li>
                                     ))}
                                     {assignedTests.map(test => (
-                                        <li key={test.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                        <li
+                                            key={test.id}
+                                            onClick={() => onShowAnalysis(test)}
+                                            className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                                        >
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-gray-900 truncate">{test.title}</p>
                                                 <p className="text-xs text-gray-500">
@@ -218,17 +227,22 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                 </p>
                                             </div>
                                             <div className="flex items-center gap-1">
-
                                                 {test.completed && (
                                                     <button
-                                                        onClick={() => onShowAnalysis(test)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onShowAnalysis(test);
+                                                        }}
                                                         className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
                                                     >
                                                         Rapor
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => onDeleteTest(test.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteTest(test.id);
+                                                    }}
                                                     className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +253,11 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                         </li>
                                     ))}
                                     {questionBankAssignments.map(qbAssignment => (
-                                        <li key={qbAssignment.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                        <li
+                                            key={qbAssignment.id}
+                                            onClick={() => onViewQBAssignment(qbAssignment)}
+                                            className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                                        >
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
                                                     <span className="text-purple-500">📝</span>
@@ -250,17 +268,22 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                 </p >
                                             </div >
                                             <div className="flex items-center gap-1">
-
                                                 {qbAssignment.status === 'Tamamlandı' && (
                                                     <button
-                                                        onClick={() => onViewQBAssignment(qbAssignment)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onViewQBAssignment(qbAssignment);
+                                                        }}
                                                         className="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded hover:bg-purple-100"
                                                     >
                                                         Sonuç
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => onDeleteQBAssignment(qbAssignment.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDeleteQBAssignment(qbAssignment.id);
+                                                    }}
                                                     className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,7 +298,13 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                             const submission = pdfTestSubmissions.find(s => s.pdfTestId === pdfTest.id);
                                             const isCompleted = submission && (submission.status === 'completed' || submission.status === 'time_expired');
                                             return (
-                                                <li key={pdfTest.id} className="p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2">
+                                                <li
+                                                    key={pdfTest.id}
+                                                    onClick={() => {
+                                                        if (submission) onViewPDFTestResult(pdfTest, submission);
+                                                    }}
+                                                    className={`p-2.5 hover:bg-gray-50 rounded-md group flex items-center justify-between gap-2 transition-colors ${submission ? 'cursor-pointer' : ''}`}
+                                                >
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm font-medium text-gray-900 truncate flex items-center gap-1.5">
                                                             <span className="text-blue-500">📄</span>
@@ -286,17 +315,22 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                         </p>
                                                     </div>
                                                     <div className="flex items-center gap-1">
-
                                                         {isCompleted && submission && (
                                                             <button
-                                                                onClick={() => onViewPDFTestResult(pdfTest, submission)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    onViewPDFTestResult(pdfTest, submission);
+                                                                }}
                                                                 className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
                                                             >
                                                                 Sonuç
                                                             </button>
                                                         )}
                                                         <button
-                                                            onClick={() => onDeletePDFTest(pdfTest.id)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onDeletePDFTest(pdfTest.id);
+                                                            }}
                                                             className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

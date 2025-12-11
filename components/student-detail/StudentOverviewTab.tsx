@@ -189,13 +189,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => handleSendWhatsApp(student.id, assignment.test?.title || 'Tanı Testi', assignment.testId, 'diagnosis')}
-                                                className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
-                                                title="WhatsApp Bildirimi Gönder"
-                                            >
-                                                <span className="text-lg">📱</span>
-                                            </button>
+
                                             <button
                                                 onClick={() => onDeleteDiagnosisTestAssignment(assignment.id)}
                                                 className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -216,13 +210,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => handleSendWhatsApp(student.id, test.title, test.id, 'test')}
-                                                className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
-                                                title="WhatsApp Bildirimi Gönder"
-                                            >
-                                                <span className="text-lg">📱</span>
-                                            </button>
+
                                             {test.completed && (
                                                 <button
                                                     onClick={() => onShowAnalysis(test)}
@@ -254,13 +242,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                             </p >
                                         </div >
                                         <div className="flex items-center gap-1">
-                                            <button
-                                                onClick={() => handleSendWhatsApp(student.id, qbAssignment.questionBank?.title || 'Soru Bankası', qbAssignment.questionBankId || '', 'question_bank')}
-                                                className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
-                                                title="WhatsApp Bildirimi Gönder"
-                                            >
-                                                <span className="text-lg">📱</span>
-                                            </button>
+
                                             {qbAssignment.status === 'Tamamlandı' && (
                                                 <button
                                                     onClick={() => onViewQBAssignment(qbAssignment)}
@@ -296,13 +278,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => handleSendWhatsApp(student.id, pdfTest.title, pdfTest.id, 'pdf')}
-                                                        className="text-green-500 hover:bg-green-50 p-1.5 rounded transition-colors"
-                                                        title="WhatsApp Bildirimi Gönder"
-                                                    >
-                                                        <span className="text-lg">📱</span>
-                                                    </button>
+
                                                     {isCompleted && submission && (
                                                         <button
                                                             onClick={() => onViewPDFTestResult(pdfTest, submission)}
@@ -451,7 +427,72 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                     </div >
                 </div >
                 {/* Right Column - Weekly Program & Motivation */}
-                < div className="space-y-4" >
+                <div className="space-y-4">
+                    {/* Message Center & Reminders */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                        <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <span className="text-xl">💬</span>
+                            Mesaj Merkezi
+                        </h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Hatırlatma / Bildirim Konusu
+                                </label>
+                                <select
+                                    className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border"
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            const [type, id, title] = e.target.value.split('|');
+                                            handleSendWhatsApp(student.id, title, id, type as any);
+                                            // Reset selection to allow re-selecting same item if needed, 
+                                            // but triggering immediately on change is UX pattern here.
+                                            // Ideally we might want a button "Seç ve Gönder" but this is "Quick Action".
+                                            // However, handleSendWhatsApp opens a modal, so it is safe.
+                                            e.target.value = "";
+                                        }
+                                    }}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>Seçiniz...</option>
+                                    <optgroup label="Tanı Testleri">
+                                        {diagnosisTestAssignments.map(t => (
+                                            <option key={t.id} value={`diagnosis|${t.testId}|${t.test?.title || 'Tanı Testi'}`}>
+                                                {t.test?.title || 'Tanı Testi'} ({t.status === 'completed' ? 'Tamamlandı' : 'Bekliyor'})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="Testler">
+                                        {assignedTests.map(t => (
+                                            <option key={t.id} value={`test|${t.id}|${t.title}`}>
+                                                {t.title} ({t.completed ? 'Tamamlandı' : 'Bekliyor'})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="Soru Bankaları">
+                                        {questionBankAssignments.map(qb => (
+                                            <option key={qb.id} value={`question_bank|${qb.questionBankId}|${qb.questionBank?.title || 'Soru Bankası'}`}>
+                                                {qb.questionBank?.title || 'Soru Bankası'} ({qb.status})
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                    <optgroup label="PDF Testler">
+                                        {pdfTests.map(t => (
+                                            <option key={t.id} value={`pdf|${t.id}|${t.title}`}>
+                                                {t.title}
+                                            </option>
+                                        ))}
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+                                ℹ️ Listeden bir ödev veya test seçerek Veli veya Öğrenciye WhatsApp üzerinden hatırlatma gönderebilirsiniz.
+                            </div>
+                        </div>
+                    </div>
+
                     {
                         weeklyProgram ? (
                             <EditableWeeklySchedule

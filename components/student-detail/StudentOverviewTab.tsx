@@ -118,9 +118,10 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
 
             let message = '';
             if (recipient === 'parent') {
-                message = `Sayın Veli, \n\nÖğrencinize "${waModal.title}" başlıklı yeni bir test atanmıştır.\n\nLütfen kontrol ediniz.`;
+                const parentName = student.parentName ? `Sayın ${student.parentName}` : 'Sayın Veli';
+                message = `${parentName},\n\nÖğrencinize "${waModal.title}" başlıklı yeni bir test atanmıştır.\n\nLütfen kontrol ediniz.`;
             } else {
-                message = `Sevgili Öğrenci, \n\n"${waModal.title}" başlıklı yeni bir testin var.\n\nBaşarılar dileriz.`;
+                message = `Sevgili Öğrenci,\n\n"${waModal.title}" başlıklı yeni bir testin var.\n\nBaşarılar dileriz.`;
             }
 
             await sendWhatsAppToRecipient(

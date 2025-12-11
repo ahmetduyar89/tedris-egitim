@@ -330,7 +330,8 @@ const getEnabledChannels = (preferences: any): NotificationChannel[] => {
  */
 const formatWhatsAppMessage = (payload: NotificationPayload): string => {
     const emoji = getNotificationEmoji(payload.type);
-    return `${emoji} *${payload.title}*\n\n${payload.message}\n\n_TedrisEDU Platform_`;
+    // Removed "_TedrisEDU Platform_" footer as requested
+    return `${emoji} *${payload.title}*\n\n${payload.message}`;
 };
 
 /**

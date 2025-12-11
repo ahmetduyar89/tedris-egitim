@@ -15,7 +15,8 @@ interface DashboardOverviewProps {
 interface DashboardStats {
     todayLessons: number;
     weekLessons: number;
-    completedTests: number;
+    completedLessons: number;
+    cancelledLessons: number;
     pendingHomework: number;
     averageScore: number;
     activeStudents: number;
@@ -37,7 +38,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
     const [stats, setStats] = useState<DashboardStats>({
         todayLessons: 0,
         weekLessons: 0,
-        completedTests: 0,
+        completedLessons: 0,
+        cancelledLessons: 0,
         pendingHomework: 0,
         averageScore: 0,
         activeStudents: 0
@@ -197,15 +199,25 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
             // Count completed lessons for "Tamamlanan" card
             // SAFEST WAY: Count explicitly from raw DB data within this week range
-            // Virtual lessons cannot be 'completed' anyway, so we check allLessons
             const completedLessonsCount = allLessons.filter(l => {
                 const lDate = new Date(l.startTime);
-                return l.status === 'completed' && lDate >= weekStart && lDate <= weekEnd;
+                // Check if it's completed AND date is within this week scope
+                // Also check if it's not in future (users wants "bugüne kadar")
+                return l.status === 'completed' && lDate >= weekStart && lDate <= now;
             }).length;
+
+            // Count cancelled or missed lessons (Yapılamayan)
+            const cancelledLessonsCount = allLessons.filter(l => {
+                const lDate = new Date(l.startTime);
+                // Explicitly cancelled within this week
+                return l.status === 'cancelled' && lDate >= weekStart && lDate <= weekEnd;
+            }).length;
+
 
             console.log('[DashboardOverview] Week stats:', {
                 totalProjected: currentWeekLessons.length,
                 completed: completedLessonsCount,
+                cancelled: cancelledLessonsCount,
                 today: today.length,
                 weekStart: weekStart.toISOString(),
                 weekEnd: weekEnd.toISOString()
@@ -219,7 +231,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                 ...prev,
                 todayLessons: today.length,
                 weekLessons: currentWeekLessons.length,
-                completedTests: completedLessonsCount
+                completedLessons: completedLessonsCount,
+                cancelledLessons: cancelledLessonsCount
             }));
         } catch (error) {
             console.error('Error fetching upcoming lessons:', error);
@@ -451,44 +464,47 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             {/* Performance Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Week's Lessons */}
-                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-200 transform hover:-translate-y-1 transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
-                            <span className="text-xl">📊</span>
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <span className="text-lg">📊</span>
                         </div>
-                        <div className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full text-purple-50 border border-white/10">Bu Hafta</div>
+                        <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-purple-50 border border-white/10">Bu Hafta</div>
                     </div>
                     <div>
-                        <div className="text-4xl font-bold mb-1 tracking-tight">{loadingStats ? '...' : stats.weekLessons}</div>
-                        <div className="text-sm text-purple-100 font-medium opacity-90">Toplam Ders Saati</div>
+                        <div className="text-3xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : stats.weekLessons}</div>
+                        <div className="text-xs text-purple-100 font-medium opacity-90">Toplam Ders Saati</div>
                     </div>
                 </div>
 
-                {/* Completed Tests */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-teal-200 transform hover:-translate-y-1 transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
-                            <span className="text-xl">✅</span>
+                {/* Completed Lessons */}
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 text-white shadow-lg shadow-teal-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <span className="text-lg">✅</span>
                         </div>
-                        <div className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full text-emerald-50 border border-white/10">Tanı Testleri</div>
+                        <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-emerald-50 border border-white/10">Ders Durumu</div>
                     </div>
                     <div>
-                        <div className="text-4xl font-bold mb-1 tracking-tight">{loadingStats ? '...' : stats.completedTests}</div>
-                        <div className="text-sm text-emerald-100 font-medium opacity-90">Tamamlanan Test</div>
+                        <div className="flex items-baseline gap-2">
+                            <div className="text-3xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : stats.completedLessons}</div>
+                            {stats.cancelledLessons > 0 && <div className="text-xs text-red-200 font-bold">({stats.cancelledLessons} İptal)</div>}
+                        </div>
+                        <div className="text-xs text-emerald-100 font-medium opacity-90">Tamamlanan Ders</div>
                     </div>
                 </div>
 
                 {/* Average Score */}
-                <div className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-5 text-white shadow-lg shadow-orange-200 transform hover:-translate-y-1 transition-all">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
-                            <span className="text-xl">🎯</span>
+                <div className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-4 text-white shadow-lg shadow-orange-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <span className="text-lg">🎯</span>
                         </div>
-                        <div className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full text-orange-50 border border-white/10">Genel Başarı</div>
+                        <div className="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full text-orange-50 border border-white/10">Genel Başarı</div>
                     </div>
                     <div>
-                        <div className="text-4xl font-bold mb-1 tracking-tight">{loadingStats ? '...' : `%${stats.averageScore}`}</div>
-                        <div className="text-sm text-orange-100 font-medium opacity-90">Ortalama Puan</div>
+                        <div className="text-3xl font-bold mb-0.5 tracking-tight">{loadingStats ? '...' : `%${stats.averageScore}`}</div>
+                        <div className="text-xs text-orange-100 font-medium opacity-90">Ortalama Puan</div>
                     </div>
                 </div>
             </div>

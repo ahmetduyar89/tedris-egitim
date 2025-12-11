@@ -676,13 +676,10 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
 
                     {/* Quick Stats / Students Summary */}
                     {/* Quick Stats / Students Summary */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
-                                <span className="text-xl">👥</span>
-                            </div>
-                            <h3 className="text-lg font-bold font-poppins text-gray-800">
-                                Öğrenci Durumu
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all">
+                        <div className="p-3 border-b border-gray-100 bg-gradient-to-r from-violet-600 to-indigo-600 text-white flex justify-between items-center">
+                            <h3 className="text-sm font-bold font-poppins flex items-center gap-2">
+                                <span className="text-base bg-white/20 p-1 rounded-md">👥</span> Öğrenci Durumu
                             </h3>
                         </div>
 

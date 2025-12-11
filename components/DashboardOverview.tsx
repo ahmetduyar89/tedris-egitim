@@ -448,32 +448,48 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
             </div>
 
             {/* Performance Metrics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+            {/* Performance Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Week's Lessons */}
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 hover:bg-purple-100 transition-colors">
-                    <div className="mb-1.5">
-                        <span className="text-lg">📊</span>
+                <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <span className="text-xl">📊</span>
+                        </div>
+                        <div className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full text-purple-50 border border-white/10">Bu Hafta</div>
                     </div>
-                    <div className="text-xl md:text-2xl font-bold text-purple-900">{loadingStats ? '...' : stats.weekLessons}</div>
-                    <div className="text-xs text-purple-600 font-medium">Bu Hafta</div>
+                    <div>
+                        <div className="text-4xl font-bold mb-1 tracking-tight">{loadingStats ? '...' : stats.weekLessons}</div>
+                        <div className="text-sm text-purple-100 font-medium opacity-90">Toplam Ders Saati</div>
+                    </div>
                 </div>
 
                 {/* Completed Tests */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 hover:bg-green-100 transition-colors">
-                    <div className="mb-1.5">
-                        <span className="text-lg">✅</span>
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-teal-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <span className="text-xl">✅</span>
+                        </div>
+                        <div className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full text-emerald-50 border border-white/10">Tanı Testleri</div>
                     </div>
-                    <div className="text-xl md:text-2xl font-bold text-green-900">{loadingStats ? '...' : stats.completedTests}</div>
-                    <div className="text-xs text-green-600 font-medium">Tamamlanan</div>
+                    <div>
+                        <div className="text-4xl font-bold mb-1 tracking-tight">{loadingStats ? '...' : stats.completedTests}</div>
+                        <div className="text-sm text-emerald-100 font-medium opacity-90">Tamamlanan Test</div>
+                    </div>
                 </div>
 
                 {/* Average Score */}
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 hover:bg-orange-100 transition-colors">
-                    <div className="mb-1.5">
-                        <span className="text-lg">🎯</span>
+                <div className="bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl p-5 text-white shadow-lg shadow-orange-200 transform hover:-translate-y-1 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <span className="text-xl">🎯</span>
+                        </div>
+                        <div className="text-xs font-bold bg-white/20 px-2.5 py-1 rounded-full text-orange-50 border border-white/10">Genel Başarı</div>
                     </div>
-                    <div className="text-xl md:text-2xl font-bold text-orange-900">{loadingStats ? '...' : `%${stats.averageScore}`}</div>
-                    <div className="text-xs text-orange-600 font-medium">Ortalama</div>
+                    <div>
+                        <div className="text-4xl font-bold mb-1 tracking-tight">{loadingStats ? '...' : `%${stats.averageScore}`}</div>
+                        <div className="text-sm text-orange-100 font-medium opacity-90">Ortalama Puan</div>
+                    </div>
                 </div>
             </div>
 
@@ -643,41 +659,60 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ user, students, o
                     </div>
 
                     {/* Quick Stats / Students Summary */}
-                    <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-gray-900 rounded-2xl shadow-xl text-white p-6 relative overflow-hidden hover:shadow-2xl transition-shadow">
-                        <div className="relative z-10">
-                            <h3 className="text-lg font-bold font-poppins mb-5 text-white flex items-center gap-2">
-                                <span className="text-xl">👥</span> Öğrenci Durumu
+                    {/* Quick Stats / Students Summary */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                                <span className="text-xl">👥</span>
+                            </div>
+                            <h3 className="text-lg font-bold font-poppins text-gray-800">
+                                Öğrenci Durumu
                             </h3>
-                            <div className="space-y-4">
-                                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs text-white/70 font-medium">Toplam Öğrenci</span>
-                                        <span className="text-2xl">🎓</span>
+                        </div>
+
+                        <div className="space-y-3">
+                            {/* Total Students */}
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 group hover:border-blue-200 hover:bg-blue-50/50 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform text-blue-500">
+                                        🎓
                                     </div>
-                                    <div className="text-4xl font-bold">{students.length}</div>
-                                </div>
-                                <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-xl p-4 border border-green-400/30 hover:from-green-500/30 hover:to-emerald-500/30 transition-all">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs text-green-200 font-medium">Aktif Çalışan</span>
-                                        <span className="text-2xl">⚡</span>
-                                    </div>
-                                    <div className="text-4xl font-bold text-green-300">{stats.activeStudents}</div>
-                                    <div className="mt-2 text-xs text-green-200">
-                                        %{students.length > 0 ? Math.round((stats.activeStudents / students.length) * 100) : 0} katılım
+                                    <div>
+                                        <div className="text-2xl font-bold text-gray-900">{students.length}</div>
+                                        <div className="text-xs text-gray-500 font-medium group-hover:text-blue-600 transition-colors">Toplam Öğrenci</div>
                                     </div>
                                 </div>
-                                <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs text-white/70 font-medium">Bekleyen Ödev</span>
-                                        <span className="text-2xl">📋</span>
+                            </div>
+
+                            {/* Active Students */}
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 group hover:border-emerald-200 hover:bg-emerald-50/50 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform text-emerald-500">
+                                        ⚡
                                     </div>
-                                    <div className="text-4xl font-bold text-orange-300">{stats.pendingHomework}</div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-gray-900">{stats.activeStudents}</div>
+                                        <div className="text-xs text-gray-500 font-medium group-hover:text-emerald-600 transition-colors">Aktif Çalışan</div>
+                                    </div>
+                                </div>
+                                <div className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                                    %{students.length > 0 ? Math.round((stats.activeStudents / students.length) * 100) : 0}
+                                </div>
+                            </div>
+
+                            {/* Pending Homework */}
+                            <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 group hover:border-orange-200 hover:bg-orange-50/50 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform text-orange-500">
+                                        📋
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-gray-900">{stats.pendingHomework}</div>
+                                        <div className="text-xs text-gray-500 font-medium group-hover:text-orange-600 transition-colors">Bekleyen Ödev</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        {/* Animated Decor */}
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 rounded-full blur-3xl -mr-20 -mt-20 animate-pulse"></div>
-                        <div className="absolute bottom-0 left-0 w-40 h-40 bg-accent/20 rounded-full blur-3xl -ml-20 -mb-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
                     </div>
                 </div>
             </div>

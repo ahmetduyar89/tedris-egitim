@@ -60,20 +60,37 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                 result.aiAnalysis
             );
 
-            // 2. Create Program Object (without ID initially)
-            const tempProgram = {
+            // 2. Check for existing program
+            const existingPrograms = await db.collection('weeklyPrograms')
+                .where('studentId', '==', result.assignment.studentId)
+                .limit(1)
+                .get();
+
+            let currentProgramId: string;
+
+            // 3. Create or Update Program
+            const programData = {
                 studentId: result.assignment.studentId,
                 week: getCurrentWeekNumber(),
                 days: generatedContent.days
             };
 
-            // 3. Save to Firestore immediately
-            // We use add() which lets the DB generate the ID
-            const { id } = await db.collection('weeklyPrograms').add(tempProgram);
+            if (!existingPrograms.empty) {
+                // Update existing
+                currentProgramId = existingPrograms.docs[0].id;
+                await db.collection('weeklyPrograms').doc(currentProgramId).update({
+                    days: generatedContent.days, // Update days
+                    week: getCurrentWeekNumber()
+                });
+            } else {
+                // Create new
+                const { id } = await db.collection('weeklyPrograms').add(programData);
+                currentProgramId = id;
+            }
 
             const newProgram: WeeklyProgram = {
-                ...tempProgram,
-                id: id
+                id: currentProgramId,
+                ...programData
             };
 
             // 4. Update State

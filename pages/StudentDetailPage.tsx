@@ -1230,7 +1230,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         />
     );
 
-    const tabClass = (tabName: string) => `px-4 py-2 font-semibold rounded-t-lg border-b-2 transition-colors ${activeTab === tabName ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-secondary/80 hover:border-gray-300'}`;
+
 
     return (
         <>
@@ -1284,11 +1284,46 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                             </div>
                         </div>
 
-                        <div className="border-b border-border mb-6 overflow-x-auto scrollbar-hide">
-                            <nav className="-mb-px flex space-x-4 min-w-max" aria-label="Tabs">
-                                <button onClick={() => setActiveTab('overview')} className={tabClass('overview')}>Genel Bakış</button>
-                                <button onClick={() => setActiveTab('homework')} className={tabClass('homework')}>Ödevler</button>
-                                <button onClick={() => setActiveTab('analytics')} className={tabClass('analytics')}>Analizler</button>
+                        <div className="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-100 mb-6 md:mb-8">
+                            <nav className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2" aria-label="Tabs">
+                                <button
+                                    onClick={() => setActiveTab('overview')}
+                                    className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'overview'
+                                        ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100 font-bold'
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 font-medium'
+                                        }`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${activeTab === 'overview' ? 'text-blue-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                    </svg>
+                                    <span>Genel Bakış</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setActiveTab('homework')}
+                                    className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'homework'
+                                        ? 'bg-purple-50 text-purple-700 shadow-sm ring-1 ring-purple-100 font-bold'
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 font-medium'
+                                        }`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${activeTab === 'homework' ? 'text-purple-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                    <span>Ödevler</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setActiveTab('analytics')}
+                                    className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === 'analytics'
+                                        ? 'bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100 font-bold'
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700 font-medium'
+                                        }`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className={`w-5 h-5 ${activeTab === 'analytics' ? 'text-emerald-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    <span>Analizler</span>
+                                </button>
                             </nav>
                         </div>
 

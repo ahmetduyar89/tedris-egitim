@@ -39,17 +39,17 @@ const CompactLessonTracking: React.FC<CompactLessonTrackingProps> = ({
         <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
             {/* Minimal Header */}
             <div
-                className="p-4 bg-gray-50 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
+                className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between cursor-pointer transition-colors"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex items-center gap-3">
-                    <div className="bg-white p-2 rounded-lg shadow-sm border border-gray-100">
+                    <div className="bg-white/20 p-2 rounded-lg shadow-sm border border-white/10 text-white">
                         <span className="text-xl">📚</span>
                     </div>
                     <div>
-                        <h3 className="font-bold text-gray-800">Özel Ders Takibi</h3>
-                        <p className="text-xs text-gray-500">
-                            {totalCompleted} ders tamamlandı • {totalPending > 0 ? <span className="text-orange-600 font-bold">{totalPending} {currency} bekliyor</span> : 'Ödeme bekleyen yok'}
+                        <h3 className="font-bold text-white">Özel Ders Takibi</h3>
+                        <p className="text-xs text-blue-100">
+                            {totalCompleted} ders tamamlandı • {totalPending > 0 ? <span className="text-orange-200 font-bold">{totalPending} {currency} bekliyor</span> : 'Ödeme bekleyen yok'}
                         </p>
                     </div>
                 </div>
@@ -59,20 +59,20 @@ const CompactLessonTracking: React.FC<CompactLessonTrackingProps> = ({
                             e.stopPropagation();
                             setShowSettings(!showSettings);
                         }}
-                        className={`p-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-1 ${showSettings ? 'bg-yellow-100 text-yellow-700' : 'text-gray-500 hover:bg-gray-200'
+                        className={`p-2 rounded-lg transition-colors text-sm font-medium flex items-center gap-1 ${showSettings ? 'bg-white text-blue-700' : 'text-blue-100 hover:bg-white/10'
                             }`}
                     >
                         <span>⚙️</span>
                         <span className="hidden sm:inline">Ayarlar</span>
                     </button>
-                    <button className="text-gray-400 hover:text-gray-600">
+                    <button className="text-blue-200 hover:text-white">
                         <svg
                             className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
                         >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7 7" />
                         </svg>
                     </button>
                 </div>
@@ -138,7 +138,7 @@ const CompactLessonTracking: React.FC<CompactLessonTrackingProps> = ({
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
                                         <div className={`w-2 h-2 rounded-full ${lesson.attendance?.attendanceStatus === 'completed' ? 'bg-green-500' :
-                                                lesson.attendance?.attendanceStatus === 'missed' ? 'bg-red-500' : 'bg-orange-500'
+                                            lesson.attendance?.attendanceStatus === 'missed' ? 'bg-red-500' : 'bg-orange-500'
                                             } flex-shrink-0`}></div>
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2">
@@ -157,8 +157,8 @@ const CompactLessonTracking: React.FC<CompactLessonTrackingProps> = ({
                                         {/* Payment Status Pill */}
                                         {lesson.attendance?.attendanceStatus === 'completed' && (
                                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap ${lesson.attendance.paymentStatus === 'paid' ? 'bg-green-50 text-green-600' :
-                                                    lesson.attendance.paymentStatus === 'partial' ? 'bg-yellow-50 text-yellow-600' :
-                                                        'bg-red-50 text-red-600'
+                                                lesson.attendance.paymentStatus === 'partial' ? 'bg-yellow-50 text-yellow-600' :
+                                                    'bg-red-50 text-red-600'
                                                 }`}>
                                                 {lesson.attendance.paymentStatus === 'paid' ? 'Ödendi' :
                                                     lesson.attendance.paymentStatus === 'partial' ? 'Kısmi' : 'Ödenmedi'}

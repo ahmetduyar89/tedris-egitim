@@ -356,269 +356,241 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     return { label: 'Destek Gerekli', color: 'text-red-600', bg: 'bg-red-100' };
   }, [overallStats]);
 
+  // Calculate weighted average for realistic data
+  const weightedAverage = useMemo(() => {
+    let totalScore = 0;
+    let totalCount = 0;
+
+    // Tests
+    if (completedTests.length > 0) {
+      totalScore += completedTests.reduce((sum, t) => sum + (t.score || 0), 0);
+      totalCount += completedTests.length;
+    }
+
+    // Assignments
+    if (completedAssignments.length > 0) {
+      totalScore += completedAssignments.reduce((sum, a) => sum + (a.submission?.teacherScore ?? a.submission?.aiScore ?? 0), 0);
+      totalCount += completedAssignments.length;
+    }
+
+    // QB Tests
+    if (completedQBTests.length > 0) {
+      totalScore += completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0);
+      totalCount += completedQBTests.length;
+    }
+
+    // PDF Tests
+    if (completedPDFTests.length > 0) {
+      totalScore += completedPDFTests.reduce((sum, pdf) => sum + (pdf.scorePercentage || 0), 0);
+      totalCount += completedPDFTests.length;
+    }
+
+    // Diagnosis Tests
+    if (completedDiagnosisTests.length > 0) {
+      totalScore += completedDiagnosisTests.reduce((sum, d) => sum + (d.score || 0), 0);
+      totalCount += completedDiagnosisTests.length;
+    }
+
+    return totalCount > 0 ? Math.round(totalScore / totalCount) : 0;
+  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
+
   if (completedTests.length === 0 && completedAssignments.length === 0 && completedDiagnosisTests.length === 0 && completedPDFTests.length === 0 && completedQBTests.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-        <div className="text-6xl mb-4">📊</div>
-        <h3 className="text-xl font-bold text-gray-800 mb-2">Henüz Analiz Verisi Yok</h3>
-        <p className="text-gray-600">
-          {studentName} için tamamlanmış test veya ödev bulunmuyor.
-          <br />
-          Öğrenci aktivite tamamladıkça burada kapsamlı analiz göreceksiniz.
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+        <div className="text-4xl mb-3">📊</div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Henüz Analiz Verisi Yok</h3>
+        <p className="text-sm text-gray-500">
+          {studentName} için tamamlanmış aktivite bulunmuyor.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-8 text-white">
-        <div className="flex justify-between items-start">
+    <div className="space-y-4">
+      {/* Header Section - Minimal & Modern */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
+        <div className="flex items-center gap-3 z-10">
+          <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
+            <span className="text-xl">📊</span>
+          </div>
           <div>
-            <h2 className="text-3xl font-bold mb-2">Genel Performans Analizi</h2>
-            <p className="text-blue-100">{studentName} - Tüm Aktiviteler</p>
+            <h2 className="text-lg font-bold text-gray-800">Genel Performans</h2>
+            <p className="text-xs text-gray-500 font-medium">{studentName} • {overallStats.totalActivities} Aktivite</p>
           </div>
-          <div className="text-right">
-            <div className="text-4xl font-bold">
-              %{Math.round((
-                ((overallStats.avgTestScore || 0) + (overallStats.avgAssignmentScore || 0) + (overallStats.avgPDFTestScore || 0) + (overallStats.avgDiagnosisTestScore || 0) + (overallStats.avgQBTestScore || 0)) /
-                ([overallStats.avgTestScore, overallStats.avgAssignmentScore, overallStats.avgPDFTestScore, overallStats.avgDiagnosisTestScore, overallStats.avgQBTestScore].filter(x => x > 0).length || 1)
-              ))}
+        </div>
+
+        <div className="flex items-center gap-6 z-10">
+          <div className="flex flex-col items-end">
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-gray-900">%{weightedAverage}</span>
+              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Başarı</span>
             </div>
-            <div className="text-blue-200 text-sm">Genel Başarı</div>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-xs font-bold ${performanceLevel.bg} ${performanceLevel.color}`}>
+            {performanceLevel.label}
           </div>
         </div>
-
-        <div className="mt-4 flex items-center space-x-4">
-          <span className={`px-4 py-2 rounded-full ${performanceLevel.bg} ${performanceLevel.color} font-bold`}>
-            {performanceLevel.label}
-          </span>
-          <span className="text-blue-100">
-            {overallStats.totalActivities} Toplam Aktivite
-          </span>
-        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">Tanı Testleri</div>
-          <div className="text-2xl font-bold text-orange-600">{overallStats.totalDiagnosisTests}</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgDiagnosisTestScore}%</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">Testler</div>
-          <div className="text-2xl font-bold text-blue-600">{overallStats.totalTests}</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgTestScore}%</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">Ödevler</div>
-          <div className="text-2xl font-bold text-cyan-600">{overallStats.totalAssignments}</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgAssignmentScore}%</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">Soru Bankası</div>
-          <div className="text-2xl font-bold text-purple-600">{overallStats.totalQBTests}</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgQBTestScore}/100</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">PDF Testler</div>
-          <div className="text-2xl font-bold text-yellow-600">{overallStats.totalPDFTests}</div>
-          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgPDFTestScore}%</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">Flashcardlar</div>
-          <div className="text-2xl font-bold text-pink-600">{overallStats.totalFlashcards}</div>
-          <div className="text-xs text-gray-400 mt-0.5">Hakimiyet: {overallStats.flashcardMasteryRate}%</div>
-        </div>
+      {/* Stats Grid - Cleaner Look */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {[
+          { label: 'Tanı Testleri', count: overallStats.totalDiagnosisTests, avg: overallStats.avgDiagnosisTestScore, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Testler', count: overallStats.totalTests, avg: overallStats.avgTestScore, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Ödevler', count: overallStats.totalAssignments, avg: overallStats.avgAssignmentScore, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+          { label: 'Soru Bankası', count: overallStats.totalQBTests, avg: overallStats.avgQBTestScore, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'PDF Testler', count: overallStats.totalPDFTests, avg: overallStats.avgPDFTestScore, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+        ].map((stat, idx) => (
+          <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between hover:border-gray-200 transition-colors">
+            <div className="text-xs text-gray-500 font-medium mb-1">{stat.label}</div>
+            <div className="flex items-end justify-between">
+              <div className={`text-xl font-bold ${stat.color}`}>{stat.count}</div>
+              <div className="text-xs text-gray-400 font-medium">Ort: %{stat.avg}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">İlerleme Grafiği</h3>
-          {progressOverTime.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={progressOverTime}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="puan" stroke={COLORS.primary} strokeWidth={3} name="Puan" />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-500 text-center py-8">Yeterli veri yok</p>
-          )}
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Ders Bazlı Performans</h3>
-          {subjectPerformance.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={subjectPerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="subject" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="ortalama" fill={COLORS.secondary} name="Ortalama %" />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-500 text-center py-8">Yeterli veri yok</p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Aktivite Dağılımı</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={activityDistribution}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry) => `${entry.name}`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {activityDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <span className="text-2xl mr-2">⚠️</span>
-            En Çok Zorlanan Konular (Bütüncül Analiz)
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Progress Chart */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+            İlerleme Grafiği
           </h3>
-          <p className="text-sm text-gray-500 mb-3">
-            Tanı testleri, testler, soru bankası ve ödevlerden toplanan veriler
-          </p>
+          {progressOverTime.length > 0 ? (
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={progressOverTime}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} dy={10} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} dx={-10} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontSize: '12px' }}
+                  />
+                  <Line type="monotone" dataKey="puan" stroke={COLORS.primary} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.primary }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-gray-400 text-xs">Yeterli veri yok</div>
+          )}
+        </div>
+
+        {/* Subject Performance */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+            Ders Bazlı Performans
+          </h3>
+          {subjectPerformance.length > 0 ? (
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={subjectPerformance} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
+                  <XAxis type="number" domain={[0, 100]} hide />
+                  <YAxis dataKey="subject" type="category" width={100} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="ortalama" fill={COLORS.secondary} radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-gray-400 text-xs">Yeterli veri yok</div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Weak Topics */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="text-red-500">⚠️</span>
+            Gelişim Alanları
+          </h3>
           {weakTopicsAggregated.length > 0 ? (
-            <div className="space-y-3">
-              {weakTopicsAggregated.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between bg-red-50 p-3 rounded-lg border border-red-200 hover:bg-red-100 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl font-bold text-red-600">{idx + 1}</span>
-                    <span className="text-gray-800 font-medium">{item.topic}</span>
+            <div className="space-y-2">
+              {weakTopicsAggregated.slice(0, 3).map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-red-50/50 border border-red-100">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="text-xs font-bold text-red-400 w-4">{idx + 1}.</span>
+                    <span className="text-xs font-medium text-gray-700 truncate">{item.topic}</span>
                   </div>
-                  <span className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm font-semibold">
-                    {item.count} aktivitede
+                  <span className="text-[10px] px-1.5 py-0.5 bg-white rounded border border-red-100 text-red-500 font-medium whitespace-nowrap">
+                    {item.count} tekrar
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">Zayıf konu tespit edilmedi</p>
+            <p className="text-xs text-gray-400 text-center py-4">Tespit edilen eksik konu yok</p>
+          )}
+        </div>
+
+        {/* Strong Topics */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="text-green-500">💪</span>
+            Güçlü Yönler
+          </h3>
+          {strongTopicsAggregated.length > 0 ? (
+            <div className="space-y-2">
+              {strongTopicsAggregated.slice(0, 3).map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-green-50/50 border border-green-100">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <span className="text-xs font-bold text-green-500">✓</span>
+                    <span className="text-xs font-medium text-gray-700 truncate">{item.topic}</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-white rounded border border-green-100 text-green-600 font-medium whitespace-nowrap">
+                    {item.count} aktivite
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400 text-center py-4">Veri bekleniyor</p>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-          <span className="text-2xl mr-2">💪</span>
-          En Güçlü Konular (Bütüncül Analiz)
-        </h3>
-        <p className="text-sm text-gray-500 mb-3">
-          Tanı testleri, testler, soru bankası ve ödevlerden toplanan veriler
-        </p>
-        {strongTopicsAggregated.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {strongTopicsAggregated.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">✓</span>
-                  <span className="text-gray-800 font-medium">{item.topic}</span>
-                </div>
-                <span className="px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-semibold">
-                  {item.count} aktivite
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 text-center">
-            <p className="text-gray-600 font-medium">
-              Henüz güçlü olunan bir konu tespit edilememiştir.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-lg p-6 border border-blue-200">
-        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-          <span className="text-2xl mr-2">💡</span>
-          Genel Öneriler (Tüm Testler & Ödevler)
+      {/* Suggestions - Compact */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4">
+        <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+          <span className="text-blue-500">💡</span>
+          AI Önerileri
         </h3>
         <ul className="space-y-2">
           {overallStats.avgDiagnosisTestScore < 60 && overallStats.totalDiagnosisTests > 0 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                Tanı testlerinde temel eksikler göze çarpıyor ({overallStats.avgDiagnosisTestScore}%). Kişiselleştirilmiş çalışma programı oluşturulması önerilir.
-              </span>
+            <li className="flex items-start gap-2 text-xs text-blue-800">
+              <span className="mt-0.5 text-orange-500">●</span>
+              Tanı testlerinde temel eksikler var (%{overallStats.avgDiagnosisTestScore}). Yeni bir çalışma planı oluştur.
             </li>
           )}
-          {overallStats.avgTestScore < 70 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                Test ortalaması düşük ({overallStats.avgTestScore}%). Konu tekrarı ve ek çalışma materyali önerilir.
-              </span>
-            </li>
-          )}
-          {overallStats.avgAssignmentScore < 70 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                Ödev performansı artırılabilir ({overallStats.avgAssignmentScore}%). Düzenli ödev takibi yapılmalı.
-              </span>
-            </li>
-          )}
-          {overallStats.avgQBTestScore < 70 && overallStats.totalQBTests > 0 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                Soru bankası testlerinde performans artırılmalı ({overallStats.avgQBTestScore}/100). Daha fazla örnek soru çözümü önerilir.
-              </span>
-            </li>
-          )}
-          {overallStats.flashcardMasteryRate < 50 && overallStats.totalFlashcards > 0 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                Flashcard çalışmasına daha fazla zaman ayrılmalı. Düzenli tekrar önemli (Hakimiyet: {overallStats.flashcardMasteryRate}%).
-              </span>
+          {weightedAverage < 70 && weightedAverage > 0 && (
+            <li className="flex items-start gap-2 text-xs text-blue-800">
+              <span className="mt-0.5 text-orange-500">●</span>
+              Genel ortalama hedefin altında (%{weightedAverage}). Konu tekrarlarına ağırlık verilmeli.
             </li>
           )}
           {weakTopicsAggregated.length > 0 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                <strong>{weakTopicsAggregated[0].topic}</strong> konusunda {weakTopicsAggregated[0].count} farklı aktivitede zorluk yaşanmış. Bu konuda ek kaynak çalışması ve örnek soru çözümü yapılması önerilir.
-              </span>
+            <li className="flex items-start gap-2 text-xs text-blue-800">
+              <span className="mt-0.5 text-red-500">●</span>
+              <strong>{weakTopicsAggregated[0].topic}</strong> konusunda yoğunlaşmalısın.
             </li>
           )}
           {strongTopicsAggregated.length > 0 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-green-600 mr-2">✓</span>
-              <span className="text-gray-700">
-                <strong>{strongTopicsAggregated[0].topic}</strong> konusunda başarılı performans gösterilmiş. Bu konudaki çalışma yöntemi diğer konulara da uygulanabilir.
-              </span>
+            <li className="flex items-start gap-2 text-xs text-blue-800">
+              <span className="mt-0.5 text-green-500">●</span>
+              <strong>{strongTopicsAggregated[0].topic}</strong> konusundaki başarını korumaya devam et.
+            </li>
+          )}
+          {overallStats.totalActivities < 5 && (
+            <li className="flex items-start gap-2 text-xs text-blue-800 opacity-75">
+              <span className="mt-0.5">ℹ</span>
+              Daha sağlıklı analiz için daha fazla test çözmelisin.
             </li>
           )}
         </ul>
@@ -628,3 +600,4 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
 };
 
 export default OverallAnalytics;
+

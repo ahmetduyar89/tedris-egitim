@@ -21,7 +21,6 @@ import SpacedRepetitionDashboard from '../components/SpacedRepetitionDashboard';
 import FlashcardWidget from '../components/FlashcardWidget';
 import StreakWidget from '../components/StreakWidget';
 import DailyGoalsCard from '../components/DailyGoalsCard';
-import CompactAchievementCard from '../components/CompactAchievementCard';
 import CompactDailyGoalsCard from '../components/CompactDailyGoalsCard';
 import AchievementNotification from '../components/AchievementNotification';
 import { logActivity } from '../services/streakService';
@@ -1129,7 +1128,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         {/* Achievement Notifications */}
         <AchievementNotification studentId={user.id} />
 
-        {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} />}
+        {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} student={studentData} />}
 
         <div className={`grid grid-cols-1 ${hasWeeklyProgram ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
           {/* Main Content - Weekly Program (Focus Area) */}
@@ -1155,9 +1154,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
                 completedPDFTests={completedPDFTests}
                 onStartPDFTest={handleStartPDFTest}
               />
-
-              {/* Compact Tedris Başarı */}
-              <CompactAchievementCard student={studentData} />
 
               {/* Compact Daily Goals */}
               <CompactDailyGoalsCard studentId={user.id} />
@@ -1189,7 +1185,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {studentData && (
                   <>
-                    <CompactAchievementCard student={studentData} />
                     <CompactDailyGoalsCard studentId={user.id} />
                   </>
                 )}

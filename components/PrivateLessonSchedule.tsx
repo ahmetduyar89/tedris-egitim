@@ -1658,8 +1658,38 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                             if (!selectedLesson || !selectedStudent) return;
 
                                             try {
+                                                let targetLessonId = selectedLesson.id;
+
+                                                // Check if this is a virtual lesson
+                                                if (selectedLesson.id.startsWith('virtual-')) {
+                                                    // Create a real lesson record first
+                                                    const { data: newLesson, error: createError } = await supabase
+                                                        .from('private_lessons')
+                                                        .insert([{
+                                                            tutor_id: selectedLesson.tutorId,
+                                                            student_id: selectedLesson.studentId,
+                                                            student_name: selectedLesson.studentName,
+                                                            start_time: selectedLesson.startTime,
+                                                            end_time: selectedLesson.endTime,
+                                                            subject: selectedLesson.subject,
+                                                            duration: selectedLesson.duration,
+                                                            status: attendanceStatus,
+                                                            color: selectedLesson.color,
+                                                            contact: selectedLesson.contact,
+                                                            grade: selectedLesson.grade,
+                                                            lesson_notes: detailLessonNotes,
+                                                            homework: JSON.stringify(weeklyHomework),
+                                                            topic: detailTopic
+                                                        }])
+                                                        .select()
+                                                        .single();
+
+                                                    if (createError) throw createError;
+                                                    targetLessonId = newLesson.id;
+                                                }
+
                                                 await privateLessonService.markLessonAttendance(
-                                                    selectedLesson.id,
+                                                    targetLessonId,
                                                     selectedStudent.id,
                                                     user.id,
                                                     attendanceStatus,
@@ -1673,6 +1703,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                                                 alert('Katılım bilgisi kaydedildi!');
                                                 fetchLessons();
+                                                setIsStudentDetailModalOpen(false);
                                             } catch (error) {
                                                 console.error('Error saving attendance:', error);
                                                 alert('Katılım bilgisi kaydedilirken bir hata oluştu.');

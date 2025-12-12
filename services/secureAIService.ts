@@ -135,21 +135,64 @@ export const generateWeeklyProgram = async (
                         duration = parseInt(task.duration_mins) || 30;
                     }
 
-                    // Determine subject (AI might return specific subject for the task)
+                    // Determine subject
                     const taskSubject = task.subject || subject;
+
+                    // Translate Activity Type
+                    const rawType = (task.activity_type || task.type || '').toLowerCase();
+                    const activityTypeMap: { [key: string]: string } = {
+                        'study': 'Konu Anlatımı',
+                        'learning': 'Konu Anlatımı',
+                        'practice': 'Soru Çözümü',
+                        'review': 'Tekrar',
+                        'quiz': 'Test',
+                        'test': 'Test',
+                        'assessment': 'Değerlendirme',
+                        'homework': 'Ödev',
+                        'reading': 'Okuma',
+                        'exercise': 'Alıştırma',
+                        'project': 'Proje'
+                    };
+
+                    // Search for partial matches if direct match fails (e.g. "math practice" -> "Soru Çözümü")
+                    let type = activityTypeMap[rawType] || 'Konu Çalışması';
+                    if (rawType && !activityTypeMap[rawType]) {
+                        for (const key in activityTypeMap) {
+                            if (rawType.includes(key)) {
+                                type = activityTypeMap[key];
+                                break;
+                            }
+                        }
+                    }
+
+                    // Determine Title/Topic
+                    // If topic is missing or "Ders Çalışması", try to use description or default to Subject name
+                    let topic = task.topic;
+                    if (!topic || topic === 'Ders Çalışması' || topic === 'Study') {
+                        // If we have a description that isn't too long, maybe it contains the topic
+                        if (task.description && task.description.length < 50) {
+                            topic = task.description;
+                        } else {
+                            topic = `${taskSubject} Çalışması`;
+                        }
+                    }
+
+                    // Final title cleanup
+                    const title = topic || 'Genel Tekrar';
 
                     return {
                         id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        description: task.description || `${task.activity_type}: '${task.topic}'`,
-                        title: task.title || task.topic || 'Ders Çalışması',
-                        type: task.activity_type || task.type || 'Konu Çalışması',
+                        description: task.description || `${type}: ${title}`,
+                        title: title,
+                        type: type,
                         status: TaskStatus.Assigned,
                         duration: duration,
                         subject: taskSubject,
                         ai_recommended: true,
-                        topic: task.topic,
+                        topic: topic,
                         metadata: {
-                            original_day: day.day
+                            original_day: day.day,
+                            original_type: rawType
                         }
                     };
                 })

@@ -1146,6 +1146,16 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           {/* Compact Sidebar (Right) - Only show if weekly program exists */}
           {hasWeeklyProgram && studentData && (
             <div className="space-y-4">
+              <TestArea
+                pendingTests={pendingTests}
+                completedTests={completedTests}
+                onStartTest={handleStartTest}
+                onViewReport={handleViewReport}
+                pendingPDFTests={pendingPDFTests}
+                completedPDFTests={completedPDFTests}
+                onStartPDFTest={handleStartPDFTest}
+              />
+
               {/* Compact Tedris Başarı */}
               <CompactAchievementCard student={studentData} />
 
@@ -1159,15 +1169,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
               <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
               <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
               <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
-              <TestArea
-                pendingTests={pendingTests}
-                completedTests={completedTests}
-                onStartTest={handleStartTest}
-                onViewReport={handleViewReport}
-                pendingPDFTests={pendingPDFTests}
-                completedPDFTests={completedPDFTests}
-                onStartPDFTest={handleStartPDFTest}
-              />
             </div>
           )}
 

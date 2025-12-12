@@ -83,17 +83,78 @@ export const generateWeeklyProgram = async (
         analysis: report
     });
 
+    const dayMap: { [key: string]: string } = {
+        'Monday': 'Pazartesi',
+        'Tuesday': 'Salı',
+        'Wednesday': 'Çarşamba',
+        'Thursday': 'Perşembe',
+        'Friday': 'Cuma',
+        'Saturday': 'Cumartesi',
+        'Sunday': 'Pazar',
+        'monday': 'Pazartesi',
+        'tuesday': 'Salı',
+        'wednesday': 'Çarşamba',
+        'thursday': 'Perşembe',
+        'friday': 'Cuma',
+        'saturday': 'Cumartesi',
+        'sunday': 'Pazar'
+    };
+
     return {
-        days: response.days.map((day: any) => ({
-            day: day.day,
-            tasks: day.tasks.map((task: any) => ({
-                id: `task-${Date.now()}-${Math.random()}`,
-                description: task.description || `${task.activity_type}: '${task.topic}'`,
-                status: TaskStatus.Assigned,
-                duration: task.duration || task.duration_mins,
-                subject: subject,
-            }))
-        }))
+        days: response.days.map((day: any) => {
+            // Normalize day name
+            let dayName = day.day.trim();
+            // Check if it's in the map (accounting for potential case differences)
+            for (const [eng, tr] of Object.entries(dayMap)) {
+                if (dayName.toLowerCase() === eng.toLowerCase()) {
+                    dayName = tr;
+                    break;
+                }
+            }
+
+            // If it mimics "Day 1", "Day 2" etc, map them to standard days starting from Monday
+            if (dayName.toLowerCase().startsWith('day') || dayName.toLowerCase().startsWith('gün')) {
+                const dayNum = parseInt(dayName.replace(/\D/g, '')) || 1;
+                const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+                dayName = days[(dayNum - 1) % 7];
+            }
+
+            return {
+                day: dayName,
+                tasks: day.tasks.map((task: any) => {
+                    // Clean duration
+                    let duration = 30; // Default
+                    if (typeof task.duration === 'number') {
+                        duration = task.duration;
+                    } else if (typeof task.duration === 'string') {
+                        const match = task.duration.match(/(\d+)/);
+                        if (match) {
+                            duration = parseInt(match[0]);
+                        }
+                    } else if (task.duration_mins) {
+                        duration = parseInt(task.duration_mins) || 30;
+                    }
+
+                    // Determine subject (AI might return specific subject for the task)
+                    const taskSubject = task.subject || subject;
+
+                    return {
+                        id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        description: task.description || `${task.activity_type}: '${task.topic}'`,
+                        title: task.title || task.topic || 'Ders Çalışması',
+                        type: task.activity_type || task.type || 'Konu Çalışması',
+                        status: TaskStatus.Assigned,
+                        duration: duration,
+                        subject: taskSubject,
+                        ai_recommended: true,
+                        topic: task.topic,
+                        metadata: {
+                            original_day: day.day
+                        }
+                    };
+                })
+            };
+        })
     };
 };
 
@@ -352,10 +413,10 @@ SADECE JSON döndür, başka açıklama ekleme!
 `;
 
     try {
-        const response = await invokeAIFunction<any>('generateContent', { 
-            prompt: evaluationPrompt 
+        const response = await invokeAIFunction<any>('generateContent', {
+            prompt: evaluationPrompt
         });
-        
+
         // Parse the response if it's a string
         if (typeof response === 'string') {
             // Clean up markdown code blocks if present
@@ -367,7 +428,7 @@ SADECE JSON döndür, başka açıklama ekleme!
             }
             return JSON.parse(cleanedResponse);
         }
-        
+
         return response;
     } catch (error) {
         console.error('Error evaluating composition:', error);

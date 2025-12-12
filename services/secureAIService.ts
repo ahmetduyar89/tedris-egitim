@@ -75,12 +75,39 @@ export const generateTestAnalysis = async (
 export const generateWeeklyProgram = async (
     grade: number,
     subject: Subject,
-    report: AIAnalysisReport
+    report: any // Allowing flexible input to handle both DiagnosisAIAnalysis and AIAnalysisReport
 ): Promise<Omit<WeeklyProgram, 'id' | 'studentId' | 'week'>> => {
+
+    // 1. Normalize Analysis Data
+    const weakTopics: string[] = [];
+    const strongTopics: string[] = [];
+    let overallComment = '';
+
+    if (report.analysis && Array.isArray(report.analysis.weakTopics)) {
+        // AIAnalysisReport format
+        weakTopics.push(...report.analysis.weakTopics);
+        strongTopics.push(...(report.analysis.strongTopics || []));
+        overallComment = report.analysis.overallComment || '';
+    } else if (Array.isArray(report.weakAreas)) {
+        // DiagnosisAIAnalysis format
+        weakTopics.push(...report.weakAreas.map((w: any) => typeof w === 'string' ? w : w.moduleName || w.name));
+        strongTopics.push(...(report.strongAreas || []).map((s: any) => typeof s === 'string' ? s : s.moduleName || s.name));
+        overallComment = report.overallAssessment || '';
+    }
+
+    // Prioritize weak topics for filling generic slots
+    let weakTopicIndex = 0;
+
     const response = await invokeAIFunction<{ days: any[] }>('generateWeeklyPlan', {
         grade,
         subject,
-        analysis: report
+        analysis: {
+            weakTopics,
+            strongTopics,
+            overallComment,
+            // Pass original fields just in case
+            ...report
+        }
     });
 
     const dayMap: { [key: string]: string } = {
@@ -165,11 +192,18 @@ export const generateWeeklyProgram = async (
                         }
                     }
 
-                    // Determine Title/Topic
-                    // If topic is missing or "Ders Çalışması", try to use description or default to Subject name
+                    // Determine Title/Topic with Weak Topic Fallback
                     let topic = task.topic;
-                    if (!topic || topic === 'Ders Çalışması' || topic === 'Study') {
-                        // If we have a description that isn't too long, maybe it contains the topic
+
+                    // Check if the current topic is generic 
+                    const isGenericTopic = !topic || topic === 'Ders Çalışması' || topic === 'Study' ||
+                        topic.includes('Çalışması') || topic.includes('Study');
+
+                    if (isGenericTopic && weakTopics.length > 0) {
+                        // Use a weak topic and rotate index
+                        topic = weakTopics[weakTopicIndex % weakTopics.length];
+                        weakTopicIndex++; // Move to next weak topic for next generic task
+                    } else if (!topic) {
                         if (task.description && task.description.length < 50) {
                             topic = task.description;
                         } else {
@@ -192,7 +226,8 @@ export const generateWeeklyProgram = async (
                         topic: topic,
                         metadata: {
                             original_day: day.day,
-                            original_type: rawType
+                            original_type: rawType,
+                            is_weak_topic_focus: !isGenericTopic
                         }
                     };
                 })

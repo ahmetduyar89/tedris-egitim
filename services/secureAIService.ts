@@ -199,24 +199,58 @@ export const generateWeeklyProgram = async (
                     const isGenericTopic = !topic || topic === 'Ders Çalışması' || topic === 'Study' ||
                         topic.includes('Çalışması') || topic.includes('Study');
 
+                    let isWeakTopicFocus = false;
+
                     if (isGenericTopic && weakTopics.length > 0) {
                         // Use a weak topic and rotate index
                         topic = weakTopics[weakTopicIndex % weakTopics.length];
                         weakTopicIndex++; // Move to next weak topic for next generic task
-                    } else if (!topic) {
+                        isWeakTopicFocus = true;
+                    } else if (isGenericTopic && !topic) {
                         if (task.description && task.description.length < 50) {
                             topic = task.description;
                         } else {
-                            topic = `${taskSubject} Çalışması`;
+                            topic = `${taskSubject} Genel Çalışma`;
                         }
+                    } else if (!topic) {
+                        topic = 'Genel Tekrar';
                     }
 
                     // Final title cleanup
-                    const title = topic || 'Genel Tekrar';
+                    const title = topic;
+
+                    // Improved Description Generator
+                    let description = task.description;
+
+                    // We overwrite description if it's missing, generic, OR if we injected a specific weak topic (to make it actionable)
+                    const isGenericDescription = !description || description.length < 5 || description.includes('task') || description.includes('Activity');
+
+                    if (isGenericDescription || isWeakTopicFocus) {
+                        const actionMap: { [key: string]: string[] } = {
+                            'Konu Anlatımı': ['konu anlatımını dikkatlice çalış', 'konu anlatım videosunu izle ve not al', 'konusunu kitabından detaylıca oku'],
+                            'Soru Çözümü': ['ile ilgili en az 20 soru çöz', 'konusundaki alıştırmaları tamamla', 'örnek soru çözümleri yap'],
+                            'Tekrar': ['konusunu baştan sona tekrar et', 'ile ilgili aldığın notları gözden geçir', 'kavram haritası çıkararak çalış'],
+                            'Test': ['konusundan tarama testi çöz', 'seviye tespit testi uygula', 'konu kavrama testi çöz'],
+                            'Ödev': ['verilen ödevleri eksiksiz tamamla', 'çalışma sorularını bitir'],
+                            'Okuma': ['bölümünü oku ve özet çıkar', 'ilgili metinleri incele'],
+                            'Alıştırma': ['pratik yap', 'alıştırmaları çöz']
+                        };
+
+                        const actions = actionMap[type] || ['üzerine yoğunlaş', 'çalışması yap'];
+                        // Use a deterministic "random" based on title length to keep it stable but varied
+                        const actionIndex = title.length % actions.length;
+                        const selectedAction = actions[actionIndex];
+
+                        if (isWeakTopicFocus) {
+                            description = `❗ Eksik Giderme: ${title} ${selectedAction}.`;
+                        } else {
+                            description = `${title} ${selectedAction}.`;
+                        }
+                    }
 
                     return {
                         id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        description: task.description || `${type}: ${title}`,
+                        description: description,
                         title: title,
                         type: type,
                         status: TaskStatus.Assigned,
@@ -227,7 +261,7 @@ export const generateWeeklyProgram = async (
                         metadata: {
                             original_day: day.day,
                             original_type: rawType,
-                            is_weak_topic_focus: !isGenericTopic
+                            is_weak_topic_focus: isWeakTopicFocus
                         }
                     };
                 })

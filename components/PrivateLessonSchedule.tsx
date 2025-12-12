@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../services/dbAdapter';
-import { User, Student, PrivateLesson, Subject, LessonAttendance, StudentPaymentConfig } from '../types';
+import { User, Student, PrivateLesson, Subject, LessonAttendance, StudentPaymentConfig, WeeklyProgram, Task, TaskStatus } from '../types';
 import * as optimizedAIService from '../services/optimizedAIService';
 import * as privateLessonService from '../services/privateLessonService';
+import EditableWeeklySchedule from './EditableWeeklySchedule'; // Verify path
+import { db } from '../services/dbAdapter'; // Needed for fetching program
 
 
 
@@ -68,6 +70,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     const [draggedLesson, setDraggedLesson] = useState<PrivateLesson | null>(null);
     const [dropTarget, setDropTarget] = useState<{ day: number; hour: number } | null>(null);
 
+    const [currentWeeklyProgram, setCurrentWeeklyProgram] = useState<WeeklyProgram | null>(null);
 
     useEffect(() => {
         const fetchAllStudents = async () => {
@@ -274,7 +277,6 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             alert('Ders eklenirken bir hata oluştu.');
         }
     };
-
     const handleLessonClick = async (lesson: PrivateLesson) => {
         setSelectedLesson(lesson);
         const student = allStudents.find(s => s.id === lesson.studentId);
@@ -283,12 +285,56 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             setDetailLessonNotes(lesson.lessonNotes || '');
             setDetailTopic(lesson.topic || '');
 
+            // Use the student's ID and tutor ID from the lesson
+            const studentId = lesson.studentId;
+            const tutorId = lesson.tutorId;
+
+            // Fetch Weekly Program
+            try {
+                const programSnapshot = await db.collection('weeklyPrograms')
+                    .where('studentId', '==', studentId)
+                    .limit(1)
+                    .get();
+
+                if (!programSnapshot.empty) {
+                    const doc = programSnapshot.docs[0];
+                    setCurrentWeeklyProgram({ id: doc.id, ...doc.data() } as WeeklyProgram);
+                } else {
+                    // Create a new weekly program if one doesn't exist
+                    const newProgram: WeeklyProgram = {
+                        id: `prog_${Date.now()}`,
+                        studentId: studentId,
+                        week: 1,
+                        days: DAYS_TR.map(day => ({
+                            day,
+                            tasks: [] as Task[]
+                        }))
+                    };
+
+                    // Save to DB immediately so EditableWeeklySchedule can update it
+                    await db.collection('weeklyPrograms').doc(newProgram.id).set(newProgram);
+                    setCurrentWeeklyProgram(newProgram);
+                }
+            } catch (error) {
+                console.error("Error fetching weekly program:", error);
+                // Fallback object to prevent crash
+                setCurrentWeeklyProgram({
+                    id: `temp_${Date.now()}`,
+                    studentId: studentId,
+                    week: 1,
+                    days: DAYS_TR.map(day => ({
+                        day,
+                        tasks: [] as Task[]
+                    }))
+                });
+            }
+
             // Reset AI states
             setAiSummary('');
             setAiHomeworkSuggestions('');
             setAiLoading(false);
 
-            // Parse homework if exists
+            // Parse homework if exists (LEGACY support)
             if (lesson.homework) {
                 try {
                     const parsed = JSON.parse(lesson.homework);
@@ -300,7 +346,6 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     });
                 }
             } else {
-                // Reset if no homework exists
                 setWeeklyHomework({
                     'Pazartesi': '', 'Salı': '', 'Çarşamba': '', 'Perşembe': '',
                     'Cuma': '', 'Cumartesi': '', 'Pazar': ''
@@ -1315,86 +1360,31 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                         )}
 
                         {detailActiveTab === 'homework' && (
-                            <div className="space-y-3 sm:space-y-4">
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-4">
-                                    <h4 className="text-base sm:text-lg font-semibold">Öğrenci Çalışma Programı</h4>
-                                    <button
-                                        onClick={() => setWeeklyHomework({
-                                            'Pazartesi': '', 'Salı': '', 'Çarşamba': '', 'Perşembe': '',
-                                            'Cuma': '', 'Cumartesi': '', 'Pazar': ''
-                                        })}
-                                        className="text-xs sm:text-sm text-orange-600 hover:text-orange-700 flex items-center space-x-1 self-start sm:self-auto"
-                                    >
-                                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                        <span>Tümünü Temizle</span>
-                                    </button>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {DAYS_TR.map(day => (
-                                        <div key={day} className="border border-gray-200 rounded-lg p-3 hover:border-primary/30 transition-colors">
-                                            <div className="flex justify-between items-center mb-2">
-                                                <span className="font-semibold text-gray-700 text-sm sm:text-base">{day}</span>
-                                                {weeklyHomework[day] ? (
-                                                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">✓ Görev var</span>
-                                                ) : (
-                                                    <span className="text-xs text-gray-400">Görev yok</span>
-                                                )}
-                                            </div>
-                                            <div className="relative">
-                                                <textarea
-                                                    value={weeklyHomework[day]}
-                                                    onChange={e => setWeeklyHomework({ ...weeklyHomework, [day]: e.target.value })}
-                                                    placeholder="Bu gün için görev yazın..."
-                                                    className="w-full border border-gray-200 rounded-lg py-2 px-3 text-xs sm:text-sm resize-none focus:border-primary focus:ring-1 focus:ring-primary"
-                                                    rows={2}
-                                                />
-                                                {weeklyHomework[day] && (
-                                                    <button
-                                                        onClick={() => setWeeklyHomework({ ...weeklyHomework, [day]: '' })}
-                                                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
-                                                        title="Temizle"
-                                                    >
-                                                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                            </div>
+                            <div className="space-y-4">
+                                {currentWeeklyProgram ? (
+                                    <>
+                                        <EditableWeeklySchedule
+                                            program={currentWeeklyProgram}
+                                            onProgramUpdate={(updated) => setCurrentWeeklyProgram(updated)}
+                                        />
+                                        <div className="flex justify-end pt-4 border-t border-gray-100">
+                                            <button
+                                                onClick={() => setIsStudentDetailModalOpen(false)}
+                                                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                                            >
+                                                Kapat
+                                            </button>
                                         </div>
-                                    ))}
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 pt-4">
-                                    <button
-                                        onClick={handleSendHomeworkReminder}
-                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-blue-600 text-blue-600 rounded-xl hover:bg-blue-50 flex items-center justify-center space-x-2 text-sm sm:text-base order-2 sm:order-1 mt-2 sm:mt-0"
-                                    >
-                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-gray-500 min-h-[300px]">
+                                        <svg className="animate-spin h-8 w-8 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
-                                        <span>Ödev Hatırlat (Veli)</span>
-                                    </button>
-                                    <button
-                                        onClick={handleWhatsAppShare}
-                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-green-600 text-green-600 rounded-xl hover:bg-green-50 flex items-center justify-center space-x-2 text-sm sm:text-base order-2 sm:order-1"
-                                    >
-                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                                        </svg>
-                                        <span>Ders Özeti (Öğrenci)</span>
-                                    </button>
-                                    <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 order-1 sm:order-2">
-                                        <button onClick={() => setIsStudentDetailModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">
-                                            Vazgeç
-                                        </button>
-                                        <button onClick={handleSaveStudentDetail} className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm sm:text-base">
-                                            Kaydet
-                                        </button>
+                                        <p>Haftalık program yükleniyor...</p>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         )}
 

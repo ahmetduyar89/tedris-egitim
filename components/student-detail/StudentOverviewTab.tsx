@@ -167,6 +167,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                         spacedRepetitionSchedules={spacedRepetitionSchedules}
                         questionBankAssignments={questionBankAssignments}
                         pdfTestSubmissions={pdfTestSubmissions}
+                        diagnosisTestAssignments={diagnosisTestAssignments}
                         studentName={student.name}
                     />
                 </div>

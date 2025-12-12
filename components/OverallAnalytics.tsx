@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import * as Recharts from 'recharts';
 import { Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssignment } from '../types';
 import { PDFTestSubmission } from '../services/pdfTestService';
+import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 
 const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } = Recharts;
 
@@ -12,7 +13,8 @@ const COLORS = {
   warning: '#F59E0B',
   danger: '#EF4444',
   purple: '#8B5CF6',
-  pink: '#EC4899'
+  pink: '#EC4899',
+  orange: '#F97316'
 };
 
 interface OverallAnalyticsProps {
@@ -22,6 +24,7 @@ interface OverallAnalyticsProps {
   spacedRepetitionSchedules: SpacedRepetitionSchedule[];
   questionBankAssignments?: QuestionBankAssignment[];
   pdfTestSubmissions?: PDFTestSubmission[];
+  diagnosisTestAssignments?: DiagnosisTestAssignment[];
   studentName: string;
 }
 
@@ -32,12 +35,14 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
   spacedRepetitionSchedules,
   questionBankAssignments = [],
   pdfTestSubmissions = [],
+  diagnosisTestAssignments = [],
   studentName
 }) => {
   const completedTests = useMemo(() => tests.filter(t => t.completed && t.analysis), [tests]);
   const completedAssignments = useMemo(() => assignments.filter(a => a.submission?.status === 'Değerlendirildi'), [assignments]);
   const completedQBTests = useMemo(() => questionBankAssignments.filter(qb => qb.status === 'Tamamlandı'), [questionBankAssignments]);
   const completedPDFTests = useMemo(() => pdfTestSubmissions.filter(pdf => pdf.status === 'completed' && pdf.scorePercentage !== undefined), [pdfTestSubmissions]);
+  const completedDiagnosisTests = useMemo(() => diagnosisTestAssignments.filter(d => d.status === 'completed'), [diagnosisTestAssignments]);
 
   const overallStats = useMemo(() => {
     // Total counts should reflect ALL assigned items, not just completed ones
@@ -46,6 +51,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     const totalFlashcards = flashcards.length;
     const totalQBTests = questionBankAssignments.length;
     const totalPDFTests = pdfTestSubmissions.length;
+    const totalDiagnosisTests = diagnosisTestAssignments.length;
 
     const avgTestScore = completedTests.length > 0
       ? Math.round(completedTests.reduce((sum, t) => sum + (t.score || 0), 0) / completedTests.length)
@@ -66,6 +72,10 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       ? Math.round(completedPDFTests.reduce((sum, pdf) => sum + (pdf.scorePercentage || 0), 0) / completedPDFTests.length)
       : 0;
 
+    const avgDiagnosisTestScore = completedDiagnosisTests.length > 0
+      ? Math.round(completedDiagnosisTests.reduce((sum, d) => sum + (d.score || 0), 0) / completedDiagnosisTests.length)
+      : 0;
+
     const masteredFlashcards = spacedRepetitionSchedules.filter(s => s.intervalDays >= 30).length;
     const flashcardMasteryRate = totalFlashcards > 0
       ? Math.round((masteredFlashcards / totalFlashcards) * 100)
@@ -77,19 +87,22 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       totalFlashcards,
       totalQBTests,
       totalPDFTests,
+      totalDiagnosisTests,
       avgTestScore,
       avgAssignmentScore,
       avgQBTestScore,
       avgPDFTestScore,
+      avgDiagnosisTestScore,
       flashcardMasteryRate,
-      totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests + totalPDFTests,
+      totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests + totalPDFTests + totalDiagnosisTests,
       // Add completion counts for UI display if needed
       completedTestsCount: completedTests.length,
       completedAssignmentsCount: completedAssignments.length,
       completedQBTestsCount: completedQBTests.length,
-      completedPDFTestsCount: completedPDFTests.length
+      completedPDFTestsCount: completedPDFTests.length,
+      completedDiagnosisTestsCount: completedDiagnosisTests.length
     };
-  }, [tests, assignments, flashcards, spacedRepetitionSchedules, questionBankAssignments, pdfTestSubmissions, completedTests, completedAssignments, completedQBTests, completedPDFTests]);
+  }, [tests, assignments, flashcards, spacedRepetitionSchedules, questionBankAssignments, pdfTestSubmissions, diagnosisTestAssignments, completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
 
   const progressOverTime = useMemo(() => {
     const allActivities = [
@@ -112,21 +125,27 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         date: new Date(a.submission?.submittedAt || ''),
         score: a.submission?.teacherScore ?? a.submission?.aiScore ?? 0,
         type: 'Ödev'
+      })),
+      ...completedDiagnosisTests.map(d => ({
+        date: new Date(d.completedAt || ''),
+        score: d.score || 0,
+        type: 'Tanı Testi'
       }))
     ].sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    return allActivities.slice(-10).map(activity => ({
+    return allActivities.slice(-20).map(activity => ({
       date: activity.date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
       puan: activity.score,
       tip: activity.type
     }));
-  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests]);
+  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
 
   const subjectPerformance = useMemo(() => {
     const subjectMap = new Map<string, { total: number; sum: number }>();
 
     completedTests.forEach(test => {
       const subject = test.subject;
+      if (!subject) return;
       if (!subjectMap.has(subject)) {
         subjectMap.set(subject, { total: 0, sum: 0 });
       }
@@ -137,6 +156,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
 
     completedAssignments.forEach(assignment => {
       const subject = assignment.subject;
+      if (!subject) return;
       if (!subjectMap.has(subject)) {
         subjectMap.set(subject, { total: 0, sum: 0 });
       }
@@ -169,12 +189,24 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       }
     });
 
+    completedDiagnosisTests.forEach(dTest => {
+      if (dTest.test?.subject) {
+        const subject = dTest.test.subject;
+        if (!subjectMap.has(subject)) {
+          subjectMap.set(subject, { total: 0, sum: 0 });
+        }
+        const data = subjectMap.get(subject)!;
+        data.total += 1;
+        data.sum += dTest.score || 0;
+      }
+    });
+
     return Array.from(subjectMap.entries()).map(([subject, data]) => ({
       subject,
       ortalama: Math.round(data.sum / data.total),
       aktivite: data.total
     }));
-  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests]);
+  }, [completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
 
   const weakTopicsAggregated = useMemo(() => {
     const topicMap = new Map<string, number>();
@@ -183,11 +215,12 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       /bulunamadı/i,
       /yok/i,
       /bu sınavda/i,
-      /henüz/i
+      /henüz/i,
+      /N\/A/i
     ];
 
     const isValidTopic = (topic: string) => {
-      if (!topic || topic.trim().length < 3) return false;
+      if (!topic || typeof topic !== 'string' || topic.trim().length < 3) return false;
       return !invalidTopicPatterns.some(pattern => pattern.test(topic));
     };
 
@@ -217,11 +250,23 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       }
     });
 
+    completedDiagnosisTests.forEach(dTest => {
+      // Handle array of objects { moduleName: string, ... }
+      if (dTest.aiAnalysis?.weakAreas) {
+        dTest.aiAnalysis.weakAreas.forEach((area: any) => {
+          const topic = typeof area === 'string' ? area : (area.moduleName || area.name);
+          if (isValidTopic(topic)) {
+            topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
+          }
+        });
+      }
+    });
+
     return Array.from(topicMap.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([topic, count]) => ({ topic, count }));
-  }, [completedTests, completedAssignments, completedQBTests]);
+  }, [completedTests, completedAssignments, completedQBTests, completedDiagnosisTests]);
 
   const strongTopicsAggregated = useMemo(() => {
     const topicMap = new Map<string, number>();
@@ -230,11 +275,12 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       /bulunamadı/i,
       /yok/i,
       /bu sınavda/i,
-      /henüz/i
+      /henüz/i,
+      /N\/A/i
     ];
 
     const isValidTopic = (topic: string) => {
-      if (!topic || topic.trim().length < 3) return false;
+      if (!topic || typeof topic !== 'string' || topic.trim().length < 3) return false;
       return !invalidTopicPatterns.some(pattern => pattern.test(topic));
     };
 
@@ -264,20 +310,33 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       }
     });
 
+    completedDiagnosisTests.forEach(dTest => {
+      // Handle array of objects { moduleName: string, ... }
+      if (dTest.aiAnalysis?.strongAreas) {
+        dTest.aiAnalysis.strongAreas.forEach((area: any) => {
+          const topic = typeof area === 'string' ? area : (area.moduleName || area.name);
+          if (isValidTopic(topic)) {
+            topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
+          }
+        });
+      }
+    });
+
     return Array.from(topicMap.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([topic, count]) => ({ topic, count }));
-  }, [completedTests, completedAssignments, completedQBTests]);
+  }, [completedTests, completedAssignments, completedQBTests, completedDiagnosisTests]);
 
   const activityDistribution = useMemo(() => {
     return [
+      { name: 'Tanı Testleri', value: overallStats.totalDiagnosisTests, color: COLORS.orange },
       { name: 'Testler', value: overallStats.totalTests, color: COLORS.primary },
       { name: 'Ödevler', value: overallStats.totalAssignments, color: COLORS.secondary },
       { name: 'Soru Bankası', value: overallStats.totalQBTests, color: COLORS.purple },
       { name: 'PDF Testler', value: overallStats.totalPDFTests, color: COLORS.warning },
       { name: 'Flashcardlar', value: overallStats.totalFlashcards, color: COLORS.pink }
-    ];
+    ].filter(item => item.value > 0);
   }, [overallStats]);
 
   const performanceLevel = useMemo(() => {
@@ -285,7 +344,8 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       overallStats.avgTestScore,
       overallStats.avgAssignmentScore,
       overallStats.avgQBTestScore,
-      overallStats.avgPDFTestScore
+      overallStats.avgPDFTestScore,
+      overallStats.avgDiagnosisTestScore
     ].filter(score => score > 0);
     const avg = totalScores.length > 0
       ? totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length
@@ -296,7 +356,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     return { label: 'Destek Gerekli', color: 'text-red-600', bg: 'bg-red-100' };
   }, [overallStats]);
 
-  if (completedTests.length === 0 && completedAssignments.length === 0) {
+  if (completedTests.length === 0 && completedAssignments.length === 0 && completedDiagnosisTests.length === 0 && completedPDFTests.length === 0 && completedQBTests.length === 0) {
     return (
       <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
         <div className="text-6xl mb-4">📊</div>
@@ -313,8 +373,22 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-8 text-white">
-        <h2 className="text-3xl font-bold mb-2">Genel Performans Analizi</h2>
-        <p className="text-blue-100">{studentName} - Tüm Aktiviteler</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Genel Performans Analizi</h2>
+            <p className="text-blue-100">{studentName} - Tüm Aktiviteler</p>
+          </div>
+          <div className="text-right">
+            <div className="text-4xl font-bold">
+              %{Math.round((
+                ((overallStats.avgTestScore || 0) + (overallStats.avgAssignmentScore || 0) + (overallStats.avgPDFTestScore || 0) + (overallStats.avgDiagnosisTestScore || 0) + (overallStats.avgQBTestScore || 0)) /
+                ([overallStats.avgTestScore, overallStats.avgAssignmentScore, overallStats.avgPDFTestScore, overallStats.avgDiagnosisTestScore, overallStats.avgQBTestScore].filter(x => x > 0).length || 1)
+              ))}
+            </div>
+            <div className="text-blue-200 text-sm">Genel Başarı</div>
+          </div>
+        </div>
+
         <div className="mt-4 flex items-center space-x-4">
           <span className={`px-4 py-2 rounded-full ${performanceLevel.bg} ${performanceLevel.color} font-bold`}>
             {performanceLevel.label}
@@ -326,6 +400,12 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+          <div className="text-xs text-gray-500 mb-1">Tanı Testleri</div>
+          <div className="text-2xl font-bold text-orange-600">{overallStats.totalDiagnosisTests}</div>
+          <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgDiagnosisTestScore}%</div>
+        </div>
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
           <div className="text-xs text-gray-500 mb-1">Testler</div>
           <div className="text-2xl font-bold text-blue-600">{overallStats.totalTests}</div>
@@ -346,7 +426,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
           <div className="text-xs text-gray-500 mb-1">PDF Testler</div>
-          <div className="text-2xl font-bold text-orange-600">{overallStats.totalPDFTests}</div>
+          <div className="text-2xl font-bold text-yellow-600">{overallStats.totalPDFTests}</div>
           <div className="text-xs text-gray-400 mt-0.5">Ort: {overallStats.avgPDFTestScore}%</div>
         </div>
 
@@ -354,14 +434,6 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
           <div className="text-xs text-gray-500 mb-1">Flashcardlar</div>
           <div className="text-2xl font-bold text-pink-600">{overallStats.totalFlashcards}</div>
           <div className="text-xs text-gray-400 mt-0.5">Hakimiyet: {overallStats.flashcardMasteryRate}%</div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-          <div className="text-xs text-gray-500 mb-1">Genel Ortalama</div>
-          <div className="text-2xl font-bold text-green-600">
-            {Math.round((overallStats.avgTestScore + overallStats.avgAssignmentScore + overallStats.avgPDFTestScore) / 3)}%
-          </div>
-          <div className="text-xs text-gray-400 mt-0.5">Tüm Testler</div>
         </div>
       </div>
 
@@ -413,7 +485,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={(entry) => `${entry.name}: ${entry.value}`}
+                label={(entry) => `${entry.name}`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
@@ -434,7 +506,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
             En Çok Zorlanan Konular (Bütüncül Analiz)
           </h3>
           <p className="text-sm text-gray-500 mb-3">
-            Testler, soru bankası ve ödevlerden toplanan veriler
+            Tanı testleri, testler, soru bankası ve ödevlerden toplanan veriler
           </p>
           {weakTopicsAggregated.length > 0 ? (
             <div className="space-y-3">
@@ -462,7 +534,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
           En Güçlü Konular (Bütüncül Analiz)
         </h3>
         <p className="text-sm text-gray-500 mb-3">
-          Testler, soru bankası ve ödevlerden toplanan veriler
+          Tanı testleri, testler, soru bankası ve ödevlerden toplanan veriler
         </p>
         {strongTopicsAggregated.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -493,6 +565,14 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
           Genel Öneriler (Tüm Testler & Ödevler)
         </h3>
         <ul className="space-y-2">
+          {overallStats.avgDiagnosisTestScore < 60 && overallStats.totalDiagnosisTests > 0 && (
+            <li className="flex items-start bg-white p-3 rounded-lg">
+              <span className="text-orange-600 mr-2">→</span>
+              <span className="text-gray-700">
+                Tanı testlerinde temel eksikler göze çarpıyor ({overallStats.avgDiagnosisTestScore}%). Kişiselleştirilmiş çalışma programı oluşturulması önerilir.
+              </span>
+            </li>
+          )}
           {overallStats.avgTestScore < 70 && (
             <li className="flex items-start bg-white p-3 rounded-lg">
               <span className="text-orange-600 mr-2">→</span>
@@ -533,51 +613,11 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
               </span>
             </li>
           )}
-          {weakTopicsAggregated.length >= 2 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                <strong>{weakTopicsAggregated[1].topic}</strong> konusunda da gelişim gerekiyor. Konu anlatımı tekrarı ve alıştırma soruları faydalı olacaktır.
-              </span>
-            </li>
-          )}
-          {weakTopicsAggregated.length >= 3 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-orange-600 mr-2">→</span>
-              <span className="text-gray-700">
-                <strong>{weakTopicsAggregated[2].topic}</strong> konusuna da dikkat edilmeli. Temel kavramların pekiştirilmesi önerilir.
-              </span>
-            </li>
-          )}
           {strongTopicsAggregated.length > 0 && (
             <li className="flex items-start bg-white p-3 rounded-lg">
               <span className="text-green-600 mr-2">✓</span>
               <span className="text-gray-700">
                 <strong>{strongTopicsAggregated[0].topic}</strong> konusunda başarılı performans gösterilmiş. Bu konudaki çalışma yöntemi diğer konulara da uygulanabilir.
-              </span>
-            </li>
-          )}
-          {strongTopicsAggregated.length >= 2 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-green-600 mr-2">✓</span>
-              <span className="text-gray-700">
-                <strong>{strongTopicsAggregated[1].topic}</strong> konusundaki hakimiyet devam ettirilerek benzer konulara geçiş yapılabilir.
-              </span>
-            </li>
-          )}
-          {overallStats.avgTestScore >= 85 && overallStats.avgAssignmentScore >= 85 && overallStats.avgQBTestScore >= 85 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-green-600 mr-2">✓</span>
-              <span className="text-gray-700">
-                Tüm alanlarda yüksek başarı gösterilmektedir (%85+). Mevcut çalışma disiplini sürdürülmeli ve zorluk seviyesi artırılabilir.
-              </span>
-            </li>
-          )}
-          {overallStats.totalActivities < 5 && (
-            <li className="flex items-start bg-white p-3 rounded-lg">
-              <span className="text-blue-600 mr-2">ℹ</span>
-              <span className="text-gray-700">
-                Daha detaylı analiz için daha fazla aktivite tamamlanmalı. Düzenli test ve ödev çalışması önerilir.
               </span>
             </li>
           )}

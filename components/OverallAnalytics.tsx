@@ -4,7 +4,7 @@ import { Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssi
 import { PDFTestSubmission } from '../services/pdfTestService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 
-const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } = Recharts;
+const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell } = Recharts;
 
 const COLORS = {
   primary: '#4F46E5',
@@ -45,7 +45,6 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
   const completedDiagnosisTests = useMemo(() => diagnosisTestAssignments.filter(d => d.status === 'completed'), [diagnosisTestAssignments]);
 
   const overallStats = useMemo(() => {
-    // Total counts should reflect ALL assigned items, not just completed ones
     const totalTests = tests.length;
     const totalAssignments = assignments.length;
     const totalFlashcards = flashcards.length;
@@ -95,12 +94,6 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       avgDiagnosisTestScore,
       flashcardMasteryRate,
       totalActivities: totalTests + totalAssignments + totalFlashcards + totalQBTests + totalPDFTests + totalDiagnosisTests,
-      // Add completion counts for UI display if needed
-      completedTestsCount: completedTests.length,
-      completedAssignmentsCount: completedAssignments.length,
-      completedQBTestsCount: completedQBTests.length,
-      completedPDFTestsCount: completedPDFTests.length,
-      completedDiagnosisTestsCount: completedDiagnosisTests.length
     };
   }, [tests, assignments, flashcards, spacedRepetitionSchedules, questionBankAssignments, pdfTestSubmissions, diagnosisTestAssignments, completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
 
@@ -143,256 +136,89 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
   const subjectPerformance = useMemo(() => {
     const subjectMap = new Map<string, { total: number; sum: number }>();
 
-    completedTests.forEach(test => {
-      const subject = test.subject;
+    const updateMap = (subject: string | undefined, score: number) => {
       if (!subject) return;
       if (!subjectMap.has(subject)) {
         subjectMap.set(subject, { total: 0, sum: 0 });
       }
       const data = subjectMap.get(subject)!;
       data.total += 1;
-      data.sum += test.score || 0;
-    });
+      data.sum += score;
+    };
 
-    completedAssignments.forEach(assignment => {
-      const subject = assignment.subject;
-      if (!subject) return;
-      if (!subjectMap.has(subject)) {
-        subjectMap.set(subject, { total: 0, sum: 0 });
-      }
-      const data = subjectMap.get(subject)!;
-      data.total += 1;
-      data.sum += assignment.submission?.teacherScore ?? assignment.submission?.aiScore ?? 0;
-    });
+    completedTests.forEach(test => updateMap(test.subject, test.score || 0));
+    completedAssignments.forEach(assignment => updateMap(assignment.subject, assignment.submission?.teacherScore ?? assignment.submission?.aiScore ?? 0));
+    completedQBTests.forEach(qb => updateMap(qb.questionBank?.subject, qb.score || 0));
+    completedPDFTests.forEach(pdf => updateMap(pdf.pdfTest?.subject, pdf.scorePercentage || 0));
+    completedDiagnosisTests.forEach(d => updateMap(d.test?.subject, d.score || 0));
 
-    completedQBTests.forEach(qbTest => {
-      if (qbTest.questionBank?.subject) {
-        const subject = qbTest.questionBank.subject;
-        if (!subjectMap.has(subject)) {
-          subjectMap.set(subject, { total: 0, sum: 0 });
-        }
-        const data = subjectMap.get(subject)!;
-        data.total += 1;
-        data.sum += qbTest.score || 0;
-      }
-    });
-
-    completedPDFTests.forEach(pdfTest => {
-      if (pdfTest.pdfTest?.subject) {
-        const subject = pdfTest.pdfTest.subject;
-        if (!subjectMap.has(subject)) {
-          subjectMap.set(subject, { total: 0, sum: 0 });
-        }
-        const data = subjectMap.get(subject)!;
-        data.total += 1;
-        data.sum += pdfTest.scorePercentage || 0;
-      }
-    });
-
-    completedDiagnosisTests.forEach(dTest => {
-      if (dTest.test?.subject) {
-        const subject = dTest.test.subject;
-        if (!subjectMap.has(subject)) {
-          subjectMap.set(subject, { total: 0, sum: 0 });
-        }
-        const data = subjectMap.get(subject)!;
-        data.total += 1;
-        data.sum += dTest.score || 0;
-      }
-    });
-
-    return Array.from(subjectMap.entries()).map(([subject, data]) => ({
-      subject,
-      ortalama: Math.round(data.sum / data.total),
-      aktivite: data.total
-    }));
+    return Array.from(subjectMap.entries())
+      .map(([subject, data]) => ({
+        subject,
+        ortalama: Math.round(data.sum / data.total),
+        aktivite: data.total
+      }))
+      .sort((a, b) => b.ortalama - a.ortalama) // Sort by performance
+      .slice(0, 7); // Limit to top 7
   }, [completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
 
   const weakTopicsAggregated = useMemo(() => {
     const topicMap = new Map<string, number>();
-    const invalidTopicPatterns = [
-      /tespit edilememiştir/i,
-      /bulunamadı/i,
-      /yok/i,
-      /bu sınavda/i,
-      /henüz/i,
-      /N\/A/i
-    ];
+    const invalidTopicPatterns = [/tespit edilememiştir/i, /bulunamadı/i, /yok/i, /bu sınavda/i, /henüz/i, /N\/A/i];
+    const isValidTopic = (topic: string) => topic && typeof topic === 'string' && topic.trim().length >= 3 && !invalidTopicPatterns.some(p => p.test(topic));
 
-    const isValidTopic = (topic: string) => {
-      if (!topic || typeof topic !== 'string' || topic.trim().length < 3) return false;
-      return !invalidTopicPatterns.some(pattern => pattern.test(topic));
+    const addTopic = (topic: string) => {
+      if (isValidTopic(topic)) topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
     };
 
-    completedTests.forEach(test => {
-      test.analysis?.analysis?.weakTopics?.forEach(topic => {
-        if (isValidTopic(topic)) {
-          topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-        }
-      });
-    });
+    completedTests.forEach(t => t.analysis?.analysis?.weakTopics?.forEach(addTopic));
+    completedAssignments.forEach(a => a.submission?.aiAnalysis?.weakTopics?.forEach(addTopic));
+    completedQBTests.forEach(q => q.aiFeedback?.weaknesses?.forEach(addTopic));
+    completedDiagnosisTests.forEach(d => d.aiAnalysis?.weakAreas?.forEach((area: any) => addTopic(typeof area === 'string' ? area : (area.moduleName || area.name))));
 
-    completedAssignments.forEach(assignment => {
-      assignment.submission?.aiAnalysis?.weakTopics?.forEach(topic => {
-        if (isValidTopic(topic)) {
-          topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-        }
-      });
-    });
-
-    completedQBTests.forEach(qbTest => {
-      if (qbTest.aiFeedback?.weaknesses) {
-        qbTest.aiFeedback.weaknesses.forEach(topic => {
-          if (isValidTopic(topic)) {
-            topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-          }
-        });
-      }
-    });
-
-    completedDiagnosisTests.forEach(dTest => {
-      // Handle array of objects { moduleName: string, ... }
-      if (dTest.aiAnalysis?.weakAreas) {
-        dTest.aiAnalysis.weakAreas.forEach((area: any) => {
-          const topic = typeof area === 'string' ? area : (area.moduleName || area.name);
-          if (isValidTopic(topic)) {
-            topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-          }
-        });
-      }
-    });
-
-    return Array.from(topicMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([topic, count]) => ({ topic, count }));
+    return Array.from(topicMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([topic, count]) => ({ topic, count }));
   }, [completedTests, completedAssignments, completedQBTests, completedDiagnosisTests]);
 
   const strongTopicsAggregated = useMemo(() => {
     const topicMap = new Map<string, number>();
-    const invalidTopicPatterns = [
-      /tespit edilememiştir/i,
-      /bulunamadı/i,
-      /yok/i,
-      /bu sınavda/i,
-      /henüz/i,
-      /N\/A/i
-    ];
+    const invalidTopicPatterns = [/tespit edilememiştir/i, /bulunamadı/i, /yok/i, /bu sınavda/i, /henüz/i, /N\/A/i];
+    const isValidTopic = (topic: string) => topic && typeof topic === 'string' && topic.trim().length >= 3 && !invalidTopicPatterns.some(p => p.test(topic));
 
-    const isValidTopic = (topic: string) => {
-      if (!topic || typeof topic !== 'string' || topic.trim().length < 3) return false;
-      return !invalidTopicPatterns.some(pattern => pattern.test(topic));
+    const addTopic = (topic: string) => {
+      if (isValidTopic(topic)) topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
     };
 
-    completedTests.forEach(test => {
-      test.analysis?.analysis?.strongTopics?.forEach(topic => {
-        if (isValidTopic(topic)) {
-          topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-        }
-      });
-    });
+    completedTests.forEach(t => t.analysis?.analysis?.strongTopics?.forEach(addTopic));
+    completedAssignments.forEach(a => a.submission?.aiAnalysis?.strongTopics?.forEach(addTopic));
+    completedQBTests.forEach(q => q.aiFeedback?.strengths?.forEach(addTopic));
+    completedDiagnosisTests.forEach(d => d.aiAnalysis?.strongAreas?.forEach((area: any) => addTopic(typeof area === 'string' ? area : (area.moduleName || area.name))));
 
-    completedAssignments.forEach(assignment => {
-      assignment.submission?.aiAnalysis?.strongTopics?.forEach(topic => {
-        if (isValidTopic(topic)) {
-          topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-        }
-      });
-    });
-
-    completedQBTests.forEach(qbTest => {
-      if (qbTest.aiFeedback?.strengths) {
-        qbTest.aiFeedback.strengths.forEach(topic => {
-          if (isValidTopic(topic)) {
-            topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-          }
-        });
-      }
-    });
-
-    completedDiagnosisTests.forEach(dTest => {
-      // Handle array of objects { moduleName: string, ... }
-      if (dTest.aiAnalysis?.strongAreas) {
-        dTest.aiAnalysis.strongAreas.forEach((area: any) => {
-          const topic = typeof area === 'string' ? area : (area.moduleName || area.name);
-          if (isValidTopic(topic)) {
-            topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-          }
-        });
-      }
-    });
-
-    return Array.from(topicMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([topic, count]) => ({ topic, count }));
+    return Array.from(topicMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([topic, count]) => ({ topic, count }));
   }, [completedTests, completedAssignments, completedQBTests, completedDiagnosisTests]);
 
-  const activityDistribution = useMemo(() => {
-    return [
-      { name: 'Tanı Testleri', value: overallStats.totalDiagnosisTests, color: COLORS.orange },
-      { name: 'Testler', value: overallStats.totalTests, color: COLORS.primary },
-      { name: 'Ödevler', value: overallStats.totalAssignments, color: COLORS.secondary },
-      { name: 'Soru Bankası', value: overallStats.totalQBTests, color: COLORS.purple },
-      { name: 'PDF Testler', value: overallStats.totalPDFTests, color: COLORS.warning },
-      { name: 'Flashcardlar', value: overallStats.totalFlashcards, color: COLORS.pink }
-    ].filter(item => item.value > 0);
-  }, [overallStats]);
-
-  const performanceLevel = useMemo(() => {
-    const totalScores = [
-      overallStats.avgTestScore,
-      overallStats.avgAssignmentScore,
-      overallStats.avgQBTestScore,
-      overallStats.avgPDFTestScore,
-      overallStats.avgDiagnosisTestScore
-    ].filter(score => score > 0);
-    const avg = totalScores.length > 0
-      ? totalScores.reduce((sum, score) => sum + score, 0) / totalScores.length
-      : 0;
-    if (avg >= 85) return { label: 'Mükemmel', color: 'text-green-600', bg: 'bg-green-100' };
-    if (avg >= 70) return { label: 'İyi', color: 'text-blue-600', bg: 'bg-blue-100' };
-    if (avg >= 50) return { label: 'Gelişmekte', color: 'text-yellow-600', bg: 'bg-yellow-100' };
-    return { label: 'Destek Gerekli', color: 'text-red-600', bg: 'bg-red-100' };
-  }, [overallStats]);
-
-  // Calculate weighted average for realistic data
   const weightedAverage = useMemo(() => {
     let totalScore = 0;
     let totalCount = 0;
+    const addScores = (items: any[], getScore: (i: any) => number) => {
+      totalScore += items.reduce((sum, item) => sum + getScore(item), 0);
+      totalCount += items.length;
+    };
 
-    // Tests
-    if (completedTests.length > 0) {
-      totalScore += completedTests.reduce((sum, t) => sum + (t.score || 0), 0);
-      totalCount += completedTests.length;
-    }
-
-    // Assignments
-    if (completedAssignments.length > 0) {
-      totalScore += completedAssignments.reduce((sum, a) => sum + (a.submission?.teacherScore ?? a.submission?.aiScore ?? 0), 0);
-      totalCount += completedAssignments.length;
-    }
-
-    // QB Tests
-    if (completedQBTests.length > 0) {
-      totalScore += completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0);
-      totalCount += completedQBTests.length;
-    }
-
-    // PDF Tests
-    if (completedPDFTests.length > 0) {
-      totalScore += completedPDFTests.reduce((sum, pdf) => sum + (pdf.scorePercentage || 0), 0);
-      totalCount += completedPDFTests.length;
-    }
-
-    // Diagnosis Tests
-    if (completedDiagnosisTests.length > 0) {
-      totalScore += completedDiagnosisTests.reduce((sum, d) => sum + (d.score || 0), 0);
-      totalCount += completedDiagnosisTests.length;
-    }
+    addScores(completedTests, t => t.score || 0);
+    addScores(completedAssignments, a => a.submission?.teacherScore ?? a.submission?.aiScore ?? 0);
+    addScores(completedQBTests, qb => qb.score || 0);
+    addScores(completedPDFTests, pdf => pdf.scorePercentage || 0);
+    addScores(completedDiagnosisTests, d => d.score || 0);
 
     return totalCount > 0 ? Math.round(totalScore / totalCount) : 0;
   }, [completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
+
+  const performanceLevel = useMemo(() => {
+    if (weightedAverage >= 85) return { label: 'Mükemmel', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-200' };
+    if (weightedAverage >= 70) return { label: 'İyi', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' };
+    if (weightedAverage >= 50) return { label: 'Gelişmekte', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200' };
+    return { label: 'Destek Gerekli', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' };
+  }, [weightedAverage]);
 
   if (completedTests.length === 0 && completedAssignments.length === 0 && completedDiagnosisTests.length === 0 && completedPDFTests.length === 0 && completedQBTests.length === 0) {
     return (
@@ -406,191 +232,232 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     );
   }
 
+  const GRID_STATS = [
+    { label: 'Tanı Testleri', count: overallStats.totalDiagnosisTests, avg: overallStats.avgDiagnosisTestScore, bgInfo: 'bg-orange-50 border-orange-100', textColors: { label: 'text-orange-900', value: 'text-orange-700', sub: 'text-orange-600/80' }, icon: '📋' },
+    { label: 'Testler', count: overallStats.totalTests, avg: overallStats.avgTestScore, bgInfo: 'bg-indigo-50 border-indigo-100', textColors: { label: 'text-indigo-900', value: 'text-indigo-700', sub: 'text-indigo-600/80' }, icon: '📝' },
+    { label: 'Ödevler', count: overallStats.totalAssignments, avg: overallStats.avgAssignmentScore, bgInfo: 'bg-cyan-50 border-cyan-100', textColors: { label: 'text-cyan-900', value: 'text-cyan-700', sub: 'text-cyan-600/80' }, icon: '📚' },
+    { label: 'Soru Bankası', count: overallStats.totalQBTests, avg: overallStats.avgQBTestScore, bgInfo: 'bg-purple-50 border-purple-100', textColors: { label: 'text-purple-900', value: 'text-purple-700', sub: 'text-purple-600/80' }, icon: '🧩' },
+    { label: 'PDF Testler', count: overallStats.totalPDFTests, avg: overallStats.avgPDFTestScore, bgInfo: 'bg-rose-50 border-rose-100', textColors: { label: 'text-rose-900', value: 'text-rose-700', sub: 'text-rose-600/80' }, icon: '📄' },
+  ];
+
+  const SUBJECT_COLORS = [COLORS.primary, COLORS.secondary, COLORS.purple, COLORS.pink, COLORS.orange, COLORS.success, COLORS.warning];
+
   return (
-    <div className="space-y-4">
-      {/* Header Section - Minimal & Modern */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-600"></div>
-        <div className="flex items-center gap-3 z-10">
-          <div className="p-2.5 rounded-lg bg-blue-50 text-blue-600">
-            <span className="text-xl">📊</span>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden group">
+        <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+        <div className="flex items-center gap-4 z-10">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center text-2xl shadow-inner text-indigo-600">
+            📊
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-800">Genel Performans</h2>
-            <p className="text-xs text-gray-500 font-medium">{studentName} • {overallStats.totalActivities} Aktivite</p>
+            <h2 className="text-xl font-bold text-gray-900">Genel Performans</h2>
+            <p className="text-sm text-gray-500 font-medium flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+              {studentName}
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+              {overallStats.totalActivities} Aktivite
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6 z-10">
+        <div className="flex items-center gap-8 z-10 md:pr-4">
           <div className="flex flex-col items-end">
+            <span className="text-sm text-gray-400 font-medium uppercase tracking-wider mb-0.5">Başarı Oranı</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-gray-900">%{weightedAverage}</span>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Başarı</span>
+              <span className={`text-4xl font-black ${weightedAverage >= 70 ? 'text-gray-900' : 'text-gray-700'}`}>%{weightedAverage}</span>
             </div>
           </div>
-          <div className={`px-3 py-1 rounded-full text-xs font-bold ${performanceLevel.bg} ${performanceLevel.color}`}>
+          <div className={`px-4 py-2 rounded-xl text-sm font-bold border ${performanceLevel.bg} ${performanceLevel.color} ${performanceLevel.border} shadow-sm`}>
             {performanceLevel.label}
           </div>
         </div>
       </div>
 
-      {/* Stats Grid - Cleaner Look */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {[
-          { label: 'Tanı Testleri', count: overallStats.totalDiagnosisTests, avg: overallStats.avgDiagnosisTestScore, color: 'text-orange-600', bg: 'bg-orange-50' },
-          { label: 'Testler', count: overallStats.totalTests, avg: overallStats.avgTestScore, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Ödevler', count: overallStats.totalAssignments, avg: overallStats.avgAssignmentScore, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-          { label: 'Soru Bankası', count: overallStats.totalQBTests, avg: overallStats.avgQBTestScore, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'PDF Testler', count: overallStats.totalPDFTests, avg: overallStats.avgPDFTestScore, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        ].map((stat, idx) => (
-          <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col justify-between hover:border-gray-200 transition-colors">
-            <div className="text-xs text-gray-500 font-medium mb-1">{stat.label}</div>
-            <div className="flex items-end justify-between">
-              <div className={`text-xl font-bold ${stat.color}`}>{stat.count}</div>
-              <div className="text-xs text-gray-400 font-medium">Ort: %{stat.avg}</div>
+      {/* Stats Grid - Colorful Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {GRID_STATS.map((stat, idx) => (
+          <div key={idx} className={`rounded-2xl p-4 border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${stat.bgInfo}`}>
+            <div className="flex justify-between items-start mb-2">
+              <div className={`text-sm font-bold ${stat.textColors.label}`}>{stat.label}</div>
+              <span className="text-lg opacity-50 grayscale">{stat.icon}</span>
+            </div>
+            <div className="mt-2">
+              <div className={`text-2xl font-black ${stat.textColors.value}`}>{stat.count}</div>
+              <div className={`text-xs font-semibold mt-1 ${stat.textColors.sub}`}>Ort: %{stat.avg}</div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Progress Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Progress Chart - Enhanced */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            </div>
             İlerleme Grafiği
           </h3>
           {progressOverTime.length > 0 ? (
-            <div className="h-[200px] w-full">
+            <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={progressOverTime}>
+                <AreaChart data={progressOverTime} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorPuan" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} dy={10} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} dx={-10} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} dy={10} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} dx={-10} />
                   <Tooltip
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ fontSize: '12px' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                    itemStyle={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}
+                    cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
                   />
-                  <Line type="monotone" dataKey="puan" stroke={COLORS.primary} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.primary }} activeDot={{ r: 5 }} />
-                </LineChart>
+                  <Area type="monotone" dataKey="puan" stroke={COLORS.primary} strokeWidth={3} fillOpacity={1} fill="url(#colorPuan)" />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-gray-400 text-xs">Yeterli veri yok</div>
+            <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm bg-gray-50/50 rounded-xl">Yeterli veri yok</div>
           )}
         </div>
 
-        {/* Subject Performance */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+        {/* Subject Performance - Enhanced */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+          <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-cyan-100 text-cyan-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
             Ders Bazlı Performans
           </h3>
           {subjectPerformance.length > 0 ? (
-            <div className="h-[200px] w-full">
+            <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectPerformance} layout="vertical">
+                <BarChart data={subjectPerformance} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
                   <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis dataKey="subject" type="category" width={100} tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="ortalama" fill={COLORS.secondary} radius={[0, 4, 4, 0]} barSize={20} />
+                  <YAxis dataKey="subject" type="category" width={110} tick={{ fontSize: 11, fill: '#4b5563', fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    cursor={{ fill: '#f9fafb' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                    formatter={(value: number) => [`%${value}`, 'Ortalama']}
+                  />
+                  <Bar dataKey="ortalama" radius={[0, 6, 6, 0]} barSize={24}>
+                    {subjectPerformance.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={SUBJECT_COLORS[index % SUBJECT_COLORS.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[200px] flex items-center justify-center text-gray-400 text-xs">Yeterli veri yok</div>
+            <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm bg-gray-50/50 rounded-xl">Yeterli veri yok</div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Weak Topics */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="text-red-500">⚠️</span>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 transition-transform hover:scale-[1.01] duration-300">
+          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-500 text-xs">⚠️</span>
             Gelişim Alanları
           </h3>
           {weakTopicsAggregated.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {weakTopicsAggregated.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-red-50/50 border border-red-100">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="text-xs font-bold text-red-400 w-4">{idx + 1}.</span>
-                    <span className="text-xs font-medium text-gray-700 truncate">{item.topic}</span>
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-red-50 to-white border border-red-100/50">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-500">{idx + 1}</span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.topic}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 bg-white rounded border border-red-100 text-red-500 font-medium whitespace-nowrap">
+                  <span className="text-[10px] px-2 py-1 bg-white rounded-md border border-red-100 text-red-500 font-bold shadow-sm whitespace-nowrap">
                     {item.count} tekrar
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-4">Tespit edilen eksik konu yok</p>
+            <p className="text-sm text-gray-400 text-center py-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">Tespit edilen eksik konu yok</p>
           )}
         </div>
 
         {/* Strong Topics */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-          <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="text-green-500">💪</span>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 transition-transform hover:scale-[1.01] duration-300">
+          <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-500 text-xs">💪</span>
             Güçlü Yönler
           </h3>
           {strongTopicsAggregated.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {strongTopicsAggregated.slice(0, 3).map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-green-50/50 border border-green-100">
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="text-xs font-bold text-green-500">✓</span>
-                    <span className="text-xs font-medium text-gray-700 truncate">{item.topic}</span>
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-green-50 to-white border border-green-100/50">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-green-100 text-[10px] font-bold text-green-600">✓</span>
+                    <span className="text-sm font-medium text-gray-700 truncate">{item.topic}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 bg-white rounded border border-green-100 text-green-600 font-medium whitespace-nowrap">
+                  <span className="text-[10px] px-2 py-1 bg-white rounded-md border border-green-100 text-green-600 font-bold shadow-sm whitespace-nowrap">
                     {item.count} aktivite
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-4">Veri bekleniyor</p>
+            <p className="text-sm text-gray-400 text-center py-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">Veri bekleniyor</p>
           )}
         </div>
       </div>
 
-      {/* Suggestions - Compact */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-4">
-        <h3 className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-          <span className="text-blue-500">💡</span>
+      {/* Suggestions - Modern Card */}
+      <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-white rounded-2xl border border-blue-100 p-6 shadow-sm">
+        <h3 className="text-sm font-bold text-indigo-900 mb-4 flex items-center gap-2">
+          <div className="p-1.5 rounded bg-indigo-100 text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           AI Önerileri
         </h3>
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {overallStats.avgDiagnosisTestScore < 60 && overallStats.totalDiagnosisTests > 0 && (
-            <li className="flex items-start gap-2 text-xs text-blue-800">
-              <span className="mt-0.5 text-orange-500">●</span>
-              Tanı testlerinde temel eksikler var (%{overallStats.avgDiagnosisTestScore}). Yeni bir çalışma planı oluştur.
+            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
+              <span className="mt-1 text-orange-500 text-[10px]">●</span>
+              <span>Tanı testlerinde temel eksikler var (%{overallStats.avgDiagnosisTestScore}). Yeni bir çalışma planı oluştur.</span>
             </li>
           )}
           {weightedAverage < 70 && weightedAverage > 0 && (
-            <li className="flex items-start gap-2 text-xs text-blue-800">
-              <span className="mt-0.5 text-orange-500">●</span>
-              Genel ortalama hedefin altında (%{weightedAverage}). Konu tekrarlarına ağırlık verilmeli.
+            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
+              <span className="mt-1 text-orange-500 text-[10px]">●</span>
+              <span>Genel ortalama hedefin altında (%{weightedAverage}). Konu tekrarlarına ağırlık verilmeli.</span>
             </li>
           )}
           {weakTopicsAggregated.length > 0 && (
-            <li className="flex items-start gap-2 text-xs text-blue-800">
-              <span className="mt-0.5 text-red-500">●</span>
-              <strong>{weakTopicsAggregated[0].topic}</strong> konusunda yoğunlaşmalısın.
+            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
+              <span className="mt-1 text-red-500 text-[10px]">●</span>
+              <span><strong>{weakTopicsAggregated[0].topic}</strong> konusunda yoğunlaşmalısın.</span>
             </li>
           )}
           {strongTopicsAggregated.length > 0 && (
-            <li className="flex items-start gap-2 text-xs text-blue-800">
-              <span className="mt-0.5 text-green-500">●</span>
-              <strong>{strongTopicsAggregated[0].topic}</strong> konusundaki başarını korumaya devam et.
+            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
+              <span className="mt-1 text-green-500 text-[10px]">●</span>
+              <span><strong>{strongTopicsAggregated[0].topic}</strong> konusundaki başarını korumaya devam et.</span>
             </li>
           )}
           {overallStats.totalActivities < 5 && (
-            <li className="flex items-start gap-2 text-xs text-blue-800 opacity-75">
-              <span className="mt-0.5">ℹ</span>
-              Daha sağlıklı analiz için daha fazla test çözmelisin.
+            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
+              <span className="mt-1 text-blue-400">ℹ</span>
+              <span>Daha sağlıklı analiz için daha fazla test çözmelisin.</span>
             </li>
           )}
         </ul>
@@ -600,4 +467,3 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
 };
 
 export default OverallAnalytics;
-

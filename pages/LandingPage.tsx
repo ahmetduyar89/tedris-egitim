@@ -111,8 +111,8 @@ const TabsFeature = () => {
             key={idx}
             onClick={() => setActiveTab(idx)}
             className={`text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-4 group ${activeTab === idx
-                ? 'bg-white shadow-lg border border-indigo-100 ring-2 ring-indigo-500/50 scale-105 z-10'
-                : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent'
+              ? 'bg-white shadow-lg border border-indigo-100 ring-2 ring-indigo-500/50 scale-105 z-10'
+              : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent'
               }`}
           >
             <span className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${activeTab === idx ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'
@@ -412,6 +412,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
         </div>
       </div>
 
+      {/* --- Pricing Section --- */}
+      <PricingSection onNavigateToAuth={onNavigateToAuth} />
 
       {/* --- CTA Section --- */}
       <div className="py-32 bg-white text-center px-4 relative overflow-hidden">

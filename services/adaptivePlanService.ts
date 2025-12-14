@@ -56,17 +56,48 @@ export const adaptivePlanService = {
 
   async _generateFallbackPlan(studentId: string, durationDays: number): Promise<AdaptivePlanResult> {
     try {
-      // 1. Get available modules to base the plan on
-      const modules = await knowledgeGraphService.getModules();
+      // 1. Get student grade
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('grade')
+        .eq('id', studentId)
+        .single();
+
+      const studentGrade = studentData?.grade || 5; // Default to 5th grade if not found
+
+      // 2. Get recent failed tests (last 30 days) to identify weaknesses
+      const { data: failedTests } = await supabase
+        .from('tests')
+        .select('title, subject, unit, score')
+        .eq('student_id', studentId)
+        .lt('score', 70)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const weakTopics = new Set(failedTests?.map(t => t.title) || []);
+      const weakUnits = new Set(failedTests?.map(t => t.unit) || []);
+
+      // 3. Get available modules for the student's grade
+      const modules = await knowledgeGraphService.getModules(undefined, studentGrade);
 
       if (modules.length === 0) {
-        throw new Error('No modules available to generate plan');
+        // Try fallback to all modules if no grade-specific modules found
+        const allModules = await knowledgeGraphService.getModules();
+        if (allModules.length === 0) {
+          throw new Error('No modules available to generate plan');
+        }
       }
 
-      // 2. Generate tasks
+      // Filter modules to prioritize
+      const priorityModules = modules.filter(m =>
+        weakTopics.has(m.title) || weakUnits.has(m.unit) || weakTopics.has(m.unit)
+      );
+
+      const otherModules = modules.filter(m => !priorityModules.includes(m));
+
+      // 4. Generate tasks
       const tasksToInsert: any[] = [];
       const today = new Date();
-      const taskTypes = ['learning', 'practice', 'review'] as const;
 
       for (let i = 0; i < durationDays; i++) {
         const date = new Date(today);
@@ -77,42 +108,65 @@ export const adaptivePlanService = {
         const dailyTaskCount = 2 + Math.floor(Math.random() * 2);
 
         for (let j = 0; j < dailyTaskCount; j++) {
-          const randomModule = modules[Math.floor(Math.random() * modules.length)];
-          const taskType = taskTypes[Math.floor(Math.random() * taskTypes.length)];
+          let selectedModule: any;
+          let taskType: 'learning' | 'practice' | 'review' = 'practice';
+          let rationale = '';
 
-          tasksToInsert.push({
-            student_id: studentId,
-            module_id: randomModule.id,
-            planned_date: dateStr,
-            task_type: taskType,
-            priority: j + 1,
-            status: 'pending',
-            ai_generated: true,
-            notes: `AI tarafından oluşturulan ${taskType === 'learning' ? 'öğrenme' : taskType === 'practice' ? 'pratik' : 'tekrar'} görevi.`,
-            created_at: new Date().toISOString()
-          });
+          // Logic to distribute weak topics first, then standard curriculum
+          if (priorityModules.length > 0 && Math.random() < 0.6) {
+            // 60% chance to pick a priority module if available
+            const idx = Math.floor(Math.random() * priorityModules.length);
+            selectedModule = priorityModules[idx];
+            taskType = 'learning'; // Weak topics usually need learning/review
+            rationale = 'Düşük performans gösterilen sınav konularına dayalı.';
+          } else if (otherModules.length > 0) {
+            selectedModule = otherModules[Math.floor(Math.random() * otherModules.length)];
+            taskType = Math.random() > 0.3 ? 'practice' : 'review';
+            rationale = `${studentGrade}. sınıf müfredatına uygun çalışma.`;
+          } else {
+            // Fallback if lists are weirdly empty
+            selectedModule = modules[Math.floor(Math.random() * modules.length)];
+            rationale = 'Genel tekrar.';
+          }
+
+          if (selectedModule) {
+            tasksToInsert.push({
+              student_id: studentId,
+              module_id: selectedModule.id,
+              planned_date: dateStr,
+              task_type: taskType,
+              priority: j + 1,
+              status: 'pending',
+              ai_generated: true,
+              notes: `AI Planı: ${rationale}`,
+              created_at: new Date().toISOString()
+            });
+          }
         }
       }
 
       // 3. Insert into Supabase
-      const { error } = await supabase
-        .from('tedris_plan')
-        .insert(tasksToInsert);
+      if (tasksToInsert.length > 0) {
+        const { error } = await supabase
+          .from('tedris_plan')
+          .insert(tasksToInsert);
 
-      if (error) {
-        console.error('Fallback plan insertion error:', error);
-        throw error;
+        if (error) {
+          console.error('Fallback plan insertion error:', error);
+          throw error;
+        }
       }
 
       return {
         success: true,
         planCreated: true,
         tasksCount: tasksToInsert.length,
-        weakModulesCount: 0,
+        weakModulesCount: priorityModules.length,
         rootCausesCount: 0,
-        message: 'Plan başarıyla oluşturuldu (Çevrimdışı Mod)'
+        message: `Plan başarıyla oluşturuldu (${studentGrade}. Sınıf ve Sınav Analizli)`
       };
     } catch (e: any) {
+      console.error('Fallback plan generation failed:', e);
       return {
         success: false,
         planCreated: false,

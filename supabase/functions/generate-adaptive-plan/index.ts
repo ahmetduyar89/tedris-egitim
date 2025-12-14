@@ -121,10 +121,67 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!weakModules || weakModules.length === 0) {
+    const effectiveWeakModules = [...(weakModules || [])];
+
+    // --- NEW LOGIC START: Integrate Exam Results & Grade Level ---
+    try {
+      const { data: studentData } = await supabaseClient
+        .from('students')
+        .select('grade')
+        .eq('id', studentId)
+        .single();
+
+      const studentGrade = studentData?.grade;
+
+      if (studentGrade) {
+        const { data: failedTests } = await supabaseClient
+          .from('tests')
+          .select('subject, unit')
+          .eq('student_id', studentId)
+          .lt('score', 70);
+
+        if (failedTests && failedTests.length > 0) {
+          // Deduplicate subject+unit pairs
+          const uniqueUnits = new Set(failedTests.map((t: any) => `${t.subject}|${t.unit}`));
+
+          for (const key of uniqueUnits) {
+            const [subj, unit] = (key as string).split('|');
+
+            // Find modules that match this failed test unit + student grade
+            const { data: testModules } = await supabaseClient
+              .from('kg_modules')
+              .select('id, code, title, subject, grade, difficulty_level')
+              .eq('subject', subj)
+              .eq('unit', unit)
+              .eq('grade', studentGrade)
+              .limit(3); // Grab top 3 modules for this unit
+
+            if (testModules) {
+              for (const tm of testModules) {
+                // Avoid duplicates if already in mastery list
+                if (!effectiveWeakModules.find(wm => wm.kg_modules && wm.kg_modules.id === tm.id)) {
+                  effectiveWeakModules.push({
+                    id: `synthetic-test-${tm.id}`,
+                    mastery_score: 0.3, // Assign low mastery for failed test topics
+                    attempts_count: 1,
+                    kg_modules: tm
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error integrating test results:', err);
+      // Continue without test results if this fails
+    }
+    // --- NEW LOGIC END ---
+
+    if (effectiveWeakModules.length === 0) {
       console.log('No weak modules found for student:', studentId);
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           success: true,
           message: 'No weak modules found. Student is performing well!',
           planCreated: false,
@@ -136,12 +193,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('Found weak modules:', weakModules.length);
+    console.log('Found weak modules (including tests):', effectiveWeakModules.length);
 
     const rootCauseModules: Set<string> = new Set();
     const moduleAnalysis: any[] = [];
 
-    for (const weakModule of weakModules) {
+    for (const weakModule of effectiveWeakModules) {
       const module = weakModule.kg_modules;
       if (!module) continue;
 
@@ -206,8 +263,8 @@ Deno.serve(async (req: Request) => {
             content_id: content.id,
             planned_date: currentDate.toISOString().split('T')[0],
             priority: priority++,
-            task_type: content.content_type === 'quiz' ? 'assessment' : 
-                       content.content_type === 'video' ? 'learning' : 'practice',
+            task_type: content.content_type === 'quiz' ? 'assessment' :
+              content.content_type === 'video' ? 'learning' : 'practice',
             status: 'pending',
             ai_generated: true,
             notes: `AI tarafından oluşturuldu - Kök neden analizi`,
@@ -292,9 +349,9 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error('Unexpected error in generate-adaptive-plan:', error);
-    
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
       }),

@@ -66,6 +66,90 @@ const PersonaCard = ({ icon, title, features, color }: { icon: string, title: st
   </div>
 );
 
+const TabsFeature = () => {
+  const [activeTab, setActiveTab] = useState(0);
+
+  const tabs = [
+    {
+      title: "Ders Programı",
+      desc: "Sürükle-bırak özellikli takvim ile tüm özel derslerinizi, etütlerinizi ve okul programınızı tek bir yerden yönetin.",
+      img: "/feature-schedule.png",
+      icon: "📅"
+    },
+    {
+      title: "Soru Bankası",
+      desc: "Kendi sorularınızı ekleyin veya AI ile otomatik soru üretin. Sınırsız filtreleme ile saniyeler içinde quiz oluşturun.",
+      img: "/feature-qbank.png",
+      icon: "📚"
+    },
+    {
+      title: "İçerik Kütüphanesi",
+      desc: "Etkileşimli materyaller, PDF'ler ve video içeriklerini düzenli bir şekilde arşivleyin ve öğrencilere atayın.",
+      img: "/feature-library.png",
+      icon: "🗄️"
+    },
+    {
+      title: "Tanı Testleri",
+      desc: "Öğrencinin seviyesini belirlemek için kapsamlı tanı testleri uygulayın ve detaylı analiz raporları alın.",
+      img: "/feature-diagnosis.png",
+      icon: "🩺"
+    },
+    {
+      title: "Branş Çalışmaları",
+      desc: "Türkçe, Matematik gibi branşlara özel çalışma modülleri ile konu eksiklerini nokta atışı tespit edin.",
+      img: "/feature-subjects.png",
+      icon: "🔬"
+    }
+  ];
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-12 items-start">
+      {/* Sidebar / Tabs */}
+      <div className="w-full lg:w-1/3 flex flex-col gap-2">
+        {tabs.map((tab, idx) => (
+          <button
+            key={idx}
+            onClick={() => setActiveTab(idx)}
+            className={`text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-4 group ${activeTab === idx
+                ? 'bg-white shadow-lg border border-indigo-100 ring-2 ring-indigo-500/50 scale-105 z-10'
+                : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent'
+              }`}
+          >
+            <span className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${activeTab === idx ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'
+              }`}>
+              {tab.icon}
+            </span>
+            <div>
+              <span className={`block font-bold text-lg ${activeTab === idx ? 'text-indigo-900' : ''}`}>{tab.title}</span>
+              {activeTab === idx && (
+                <p className="text-sm text-slate-500 mt-1 animate-fade-in">{tab.desc}</p>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Image Display */}
+      <div className="w-full lg:w-2/3">
+        <div className="relative rounded-2xl bg-white p-2 shadow-2xl border border-slate-200 overflow-hidden min-h-[400px]">
+          {tabs.map((tab, idx) => (
+            <div
+              key={idx}
+              className={`transition-all duration-500 absolute inset-0 p-2 ${activeTab === idx ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-8 z-0 pointer-events-none'
+                }`}
+            >
+              <img
+                src={tab.img}
+                alt={tab.title}
+                className="w-full h-full object-contain object-top rounded-xl shadow-inner border border-slate-100 bg-slate-50"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -268,8 +352,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
         </div>
       </div>
 
+      {/* --- Detailed Modules Showcase (Tabs) --- */}
+      <div className="py-24 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-poppins">Tüm Eğitim Süreçleriniz Tek Ekranda</h2>
+            <p className="text-lg text-slate-600">
+              Karmaşık excel dosyaları ve farklı uygulamalar arasında kaybolmayın. İhtiyacınız olan her şey parmaklarınızın ucunda.
+            </p>
+          </div>
+
+          <TabsFeature />
+        </div>
+      </div>
+
       {/* --- Audience Segmentation (Who is it for?) --- */}
-      <div id="solutions" className="py-24 bg-slate-50">
+      <div id="solutions" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 mb-4 font-poppins">Kimler İçin Uygundur?</h2>

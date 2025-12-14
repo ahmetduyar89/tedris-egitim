@@ -142,108 +142,77 @@ const AssignedTestsManager: React.FC<AssignedTestsManagerProps> = ({ teacherId }
   }
 
   return (
-    <div className="space-y-4">
-      {assignments.map(assignment => {
-        const student = students[assignment.studentId];
-        const qb = questionBanks[assignment.questionBankId];
+    <div className="overflow-x-auto bg-white rounded-xl shadow border border-gray-200">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test / Konu</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Öğrenci</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ders / Sınıf</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarih</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puan</th>
+            <th scope="col" className="relative px-6 py-3">
+              <span className="sr-only">İşlemler</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {assignments.map(assignment => {
+            const student = students[assignment.studentId];
+            const qb = questionBanks[assignment.questionBankId];
 
-        return (
-          <div key={assignment.id} className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  {qb?.title || 'Test'}
-                </h3>
-                <div className="flex flex-wrap gap-2 text-sm text-gray-600">
-                  <span className="flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    {student?.name || 'Öğrenci'}
-                  </span>
-                  <span>•</span>
-                  <span>{qb?.subject}</span>
-                  <span>•</span>
-                  <span>{qb?.grade}. Sınıf</span>
-                  <span>•</span>
-                  <span>{assignment.totalQuestions || qb?.totalQuestions || 0} Soru</span>
-                  {assignment.timeLimitMinutes && (
-                    <>
-                      <span>•</span>
-                      <span>{assignment.timeLimitMinutes} dakika</span>
-                    </>
+            return (
+              <tr key={assignment.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex flex-col">
+                    <div className="text-sm font-medium text-gray-900">{qb?.title || 'Bilinmeyen Test'}</div>
+                    <div className="text-xs text-gray-500">{qb?.unit || '-'}</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="text-sm font-medium text-gray-900">{student?.name || 'Bilinmeyen Öğrenci'}</div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{qb?.subject}</div>
+                  <div className="text-xs text-gray-500">{qb?.grade}. Sınıf</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{new Date(assignment.assignedAt).toLocaleDateString('tr-TR')}</div>
+                  {assignment.completedAt && (
+                    <div className="text-xs text-gray-500">Tamamlandı: {new Date(assignment.completedAt).toLocaleDateString('tr-TR')}</div>
                   )}
-                </div>
-              </div>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadge(assignment.status)}`}>
-                {assignment.status}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
-              <div>
-                <p className="text-gray-500">Atanma Tarihi</p>
-                <p className="font-semibold text-gray-800">
-                  {new Date(assignment.assignedAt).toLocaleDateString('tr-TR')}
-                </p>
-              </div>
-              {assignment.applicationDate && (
-                <div>
-                  <p className="text-gray-500">Uygulama Tarihi</p>
-                  <p className="font-semibold text-gray-800">
-                    {new Date(assignment.applicationDate).toLocaleDateString('tr-TR')}
-                  </p>
-                </div>
-              )}
-              {assignment.startedAt && (
-                <div>
-                  <p className="text-gray-500">Başlangıç</p>
-                  <p className="font-semibold text-gray-800">
-                    {new Date(assignment.startedAt).toLocaleDateString('tr-TR')}
-                  </p>
-                </div>
-              )}
-              {assignment.completedAt && (
-                <div>
-                  <p className="text-gray-500">Tamamlanma</p>
-                  <p className="font-semibold text-gray-800">
-                    {new Date(assignment.completedAt).toLocaleDateString('tr-TR')}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {assignment.status === 'Tamamlandı' && assignment.score !== undefined && (
-              <div className="mb-4 p-4 bg-green-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-medium">Puan:</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    {assignment.score}%
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(assignment.status)}`}>
+                    {assignment.status}
                   </span>
-                </div>
-                <div className="flex justify-between items-center mt-2 text-sm">
-                  <span className="text-gray-600">Doğru Cevap:</span>
-                  <span className="font-semibold text-gray-800">
-                    {assignment.totalCorrect} / {assignment.totalQuestions}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleDelete(assignment.id)}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Sil
-              </button>
-            </div>
-          </div>
-        );
-      })}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {assignment.status === 'Tamamlandı' && assignment.score !== undefined ? (
+                    <span className="font-bold text-gray-900">{assignment.score}%</span>
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => handleDelete(assignment.id)}
+                    className="text-red-600 hover:text-red-900 transition-colors p-2 rounded-full hover:bg-red-50"
+                    title="Sil"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 };

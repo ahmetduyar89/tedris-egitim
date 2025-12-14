@@ -218,42 +218,70 @@ Deno.serve(async (req) => {
 // Helper functions to build prompts
 function buildTestGenerationPrompt(payload: any): string {
     const { subject, unit, grade, questionCount, difficulty, questionType } = payload
-    return `Generate a test with ${questionCount} ${questionType} questions for ${subject} - ${unit} (Grade ${grade}, Difficulty: ${difficulty}). Return as JSON with structure: { questions: [{ id, text, type, options?, correctAnswer, topic }] }`
+    return `Sen bir öğretmensin. ${grade}. sınıf ${subject} dersi "${unit}" ünitesi için zorluk seviyesi ${difficulty} olan ${questionCount} adet ${questionType} sorusu hazırla. Sorular ve şıklar Türkçe olmalı.
+    
+    Yanıt Formatı (JSON):
+    { "questions": [{ "id": "...", "text": "Soru metni", "type": "${questionType}", "options": ["A) ...", "B) ...", ...], "correctAnswer": "A", "topic": "Alt konu" }] }`
 }
 
 function buildTestAnalysisPrompt(payload: any): string {
     const { subject, unit, questions } = payload
-    return `Analyze this test for ${subject} - ${unit}. Questions: ${JSON.stringify(questions)}. Return JSON: { summary: { correct, wrong, scorePercent }, analysis: { weakTopics: [], strongTopics: [], recommendations: [], overallComment: "" }, questionEvaluations: [] }`
+    return `Sen bir öğretmensin. Aşağıdaki "${subject} - ${unit}" testinin sonuçlarını Türkçe olarak analiz et ve öğrenciye hitaben samimi bir dille geri bildirim ver.
+    
+    Test Soruları ve Sonuçları: ${JSON.stringify(questions)}
+
+    Yanıt Formatı (JSON):
+    {
+        "summary": { "correct": number, "wrong": number, "scorePercent": number },
+        "analysis": {
+            "weakTopics": ["zayıf konu 1", "zayıf konu 2"],
+            "strongTopics": ["güçlü konu 1", "güçlü konu 2"],
+            "recommendations": ["öneri 1", "öneri 2"],
+            "overallComment": "Genel değerlendirme yorumu (Türkçe)"
+        },
+        "questionEvaluations": []
+    }
+    
+    Lütfen çıktı dilinin TÜRKÇE olduğundan emin ol.`
 }
 
 function buildWeeklyPlanPrompt(payload: any): string {
     const { grade, subject, analysis } = payload
-    return `Generate a weekly study plan for Grade ${grade} ${subject} based on this analysis: ${JSON.stringify(analysis)}. Return JSON: { days: [{ day: "", tasks: [{ description, duration, subject, type }] }] }`
+    return `Sen bir eğitim koçusun. ${grade}. sınıf ${subject} dersi için aşağıdaki analize dayanarak haftalık bir çalışma planı hazırla. Plan Türkçe olmalı.
+    Analiz: ${JSON.stringify(analysis)}
+    Yanıt Formatı (JSON): { "days": [{ "day": "Pazartesi", "tasks": [{ "description": "Görev açıklaması", "duration": 30, "subject": "${subject}", "type": "study|practice|review" }] }] }`
 }
 
 function buildReviewPackagePrompt(payload: any): string {
     const { topic, grade } = payload
-    return `Create a review package for "${topic}" (Grade ${grade}). Return JSON: { items: [{ type: "introduction|key-concepts|interactive-quiz|summary", content: {} }] }`
+    return `"${topic}" konusu için (${grade}. sınıf) bir konu tekrar paketi hazırla. İçerik Türkçe olmalı.
+    Yanıt Formatı (JSON): { "items": [{ "type": "introduction|key-concepts|interactive-quiz|summary", "content": {} }] }`
 }
 
 function buildExplainTopicPrompt(payload: any): string {
     const { topic, grade } = payload
-    return `Explain "${topic}" for Grade ${grade} students. Return JSON: { topic: "", explanation: "", example: "", hint: "" }`
+    return `"${topic}" konusunu ${grade}. sınıf öğrencisine anlatır gibi Türkçe açıkla.
+    Yanıt Formatı (JSON): { "topic": "${topic}", "explanation": "Konu anlatımı", "example": "Örnek", "hint": "İpucu" }`
 }
 
 function buildRecommendContentPrompt(payload: any): string {
     const { topic, grade } = payload
-    return `Recommend learning content for "${topic}" (Grade ${grade}). Return JSON: { recommendations: [{ title: "", type: "", description: "", source: "" }] }`
+    return `"${topic}" konusu için (${grade}. sınıf) öğrenme kaynakları öner. Öneriler Türkçe olmalı.
+    Yanıt Formatı (JSON): { "recommendations": [{ "title": "Kaynak Adı", "type": "video|article|book", "description": "Açıklama", "source": "Kaynak" }] }`
 }
 
 function buildHomeworkAnalysisPrompt(payload: any): string {
     const { assignment, submission } = payload
-    return `Analyze this homework submission. Assignment: ${assignment.description}. Submission: ${submission.submissionText}. Return JSON: { score: 0-100, feedback: "", weakTopics: [], strongTopics: [] }`
+    return `Aşağıdaki ödev teslimini Türkçe olarak analiz et ve puanla.
+    Ödev: ${assignment.description}
+    Teslim: ${submission.submissionText}
+    Yanıt Formatı (JSON): { "score": 0-100, "feedback": "Türkçe geri bildirim", "weakTopics": [], "strongTopics": [] }`
 }
 
 function buildFlashcardsPrompt(payload: any): string {
     const { topic, grade, subject, count } = payload
-    return `Generate ${count} flashcards for "${topic}" (${subject}, Grade ${grade}). Return JSON: { flashcards: [{ frontContent: "", backContent: "", difficultyLevel: 1-5 }] }`
+    return `"${topic}" konusu için (${subject}, ${grade}. Sınıf) ${count} adet flashcard (bilgi kartı) oluştur. İçerik Türkçe olmalı.
+    Yanıt Formatı (JSON): { "flashcards": [{ "frontContent": "Ön yüz (soru/kavram)", "backContent": "Arka yüz (cevap/açıklama)", "difficultyLevel": 1-5 }] }`
 }
 
 function buildCompletionTasksPrompt(payload: any): string {
@@ -263,7 +291,10 @@ function buildCompletionTasksPrompt(payload: any): string {
 
 function buildProgressReportPrompt(payload: any): string {
     const { lastReport, currentReport } = payload
-    return `Compare these two reports. Last: ${JSON.stringify(lastReport)}. Current: ${JSON.stringify(currentReport)}. Return JSON: { ai_comment: "", focus_topics: [] }`
+    return `Aşağıdaki iki raporu karşılaştırarak öğrencinin gelişimi hakkında Türkçe yorum yap.
+    Önceki Rapor: ${JSON.stringify(lastReport)}
+    Şimdiki Rapor: ${JSON.stringify(currentReport)}
+    Yanıt Formatı (JSON): { "ai_comment": "Gelişim yorumu (Türkçe)", "focus_topics": ["odaklanılması gereken konu 1"] }`
 }
 
 function buildCheckAnswerPrompt(payload: any): string {

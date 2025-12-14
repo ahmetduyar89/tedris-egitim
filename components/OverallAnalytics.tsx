@@ -4,7 +4,7 @@ import { Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssi
 import { PDFTestSubmission } from '../services/pdfTestService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 
-const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell } = Recharts;
+const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LabelList } = Recharts;
 
 const COLORS = {
   primary: '#4F46E5',
@@ -162,39 +162,62 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       .slice(0, 7); // Limit to top 7
   }, [completedTests, completedAssignments, completedQBTests, completedPDFTests, completedDiagnosisTests]);
 
-  const weakTopicsAggregated = useMemo(() => {
-    const topicMap = new Map<string, number>();
-    const invalidTopicPatterns = [/tespit edilememiştir/i, /bulunamadı/i, /yok/i, /bu sınavda/i, /henüz/i, /N\/A/i];
-    const isValidTopic = (topic: string) => topic && typeof topic === 'string' && topic.trim().length >= 3 && !invalidTopicPatterns.some(p => p.test(topic));
+  const normalizeTopic = (topic: string) => {
+    return topic.trim().replace(/['"]/g, '').replace(/\.$/, '');
+  };
 
-    const addTopic = (topic: string) => {
-      if (isValidTopic(topic)) topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
+  const getTopicCounts = useMemo(() => {
+    const weakMap = new Map<string, number>();
+    const strongMap = new Map<string, number>();
+    const invalidTopicPatterns = [/tespit edilememiştir/i, /bulunamadı/i, /yok/i, /bu sınavda/i, /henüz/i, /N\/A/i, /belirtilmemiş/i];
+
+    const isValidTopic = (topic: string) =>
+      topic && typeof topic === 'string' && topic.trim().length >= 3 && !invalidTopicPatterns.some(p => p.test(topic));
+
+    const processTopics = (topics: string[] | undefined, map: Map<string, number>) => {
+      if (!topics || !Array.isArray(topics)) return;
+      topics.forEach(t => {
+        if (isValidTopic(t)) {
+          const normalized = normalizeTopic(t);
+          map.set(normalized, (map.get(normalized) || 0) + 1);
+        }
+      });
     };
 
-    completedTests.forEach(t => t.analysis?.analysis?.weakTopics?.forEach(addTopic));
-    completedAssignments.forEach(a => a.submission?.aiAnalysis?.weakTopics?.forEach(addTopic));
-    completedQBTests.forEach(q => q.aiFeedback?.weaknesses?.forEach(addTopic));
-    completedDiagnosisTests.forEach(d => d.aiAnalysis?.weakAreas?.forEach((area: any) => addTopic(typeof area === 'string' ? area : (area.moduleName || area.name))));
+    completedTests.forEach(t => {
+      processTopics(t.analysis?.analysis?.weakTopics, weakMap);
+      processTopics(t.analysis?.analysis?.strongTopics, strongMap);
+    });
 
-    return Array.from(topicMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([topic, count]) => ({ topic, count }));
+    completedAssignments.forEach(a => {
+      processTopics(a.submission?.aiAnalysis?.weakTopics, weakMap);
+      processTopics(a.submission?.aiAnalysis?.strongTopics, strongMap);
+    });
+
+    completedQBTests.forEach(q => {
+      processTopics(q.aiFeedback?.weaknesses, weakMap);
+      processTopics(q.aiFeedback?.strengths, strongMap);
+    });
+
+    completedDiagnosisTests.forEach(d => {
+      if (d.aiAnalysis?.weakAreas) {
+        const topics = d.aiAnalysis.weakAreas.map((area: any) => typeof area === 'string' ? area : (area.moduleName || area.name));
+        processTopics(topics, weakMap);
+      }
+      if (d.aiAnalysis?.strongAreas) {
+        const topics = d.aiAnalysis.strongAreas.map((area: any) => typeof area === 'string' ? area : (area.moduleName || area.name));
+        processTopics(topics, strongMap);
+      }
+    });
+
+    const getSorted = (map: Map<string, number>) =>
+      Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([topic, count]) => ({ topic, count }));
+
+    return { weak: getSorted(weakMap), strong: getSorted(strongMap) };
   }, [completedTests, completedAssignments, completedQBTests, completedDiagnosisTests]);
 
-  const strongTopicsAggregated = useMemo(() => {
-    const topicMap = new Map<string, number>();
-    const invalidTopicPatterns = [/tespit edilememiştir/i, /bulunamadı/i, /yok/i, /bu sınavda/i, /henüz/i, /N\/A/i];
-    const isValidTopic = (topic: string) => topic && typeof topic === 'string' && topic.trim().length >= 3 && !invalidTopicPatterns.some(p => p.test(topic));
-
-    const addTopic = (topic: string) => {
-      if (isValidTopic(topic)) topicMap.set(topic, (topicMap.get(topic) || 0) + 1);
-    };
-
-    completedTests.forEach(t => t.analysis?.analysis?.strongTopics?.forEach(addTopic));
-    completedAssignments.forEach(a => a.submission?.aiAnalysis?.strongTopics?.forEach(addTopic));
-    completedQBTests.forEach(q => q.aiFeedback?.strengths?.forEach(addTopic));
-    completedDiagnosisTests.forEach(d => d.aiAnalysis?.strongAreas?.forEach((area: any) => addTopic(typeof area === 'string' ? area : (area.moduleName || area.name))));
-
-    return Array.from(topicMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([topic, count]) => ({ topic, count }));
-  }, [completedTests, completedAssignments, completedQBTests, completedDiagnosisTests]);
+  const weakTopicsAggregated = getTopicCounts.weak;
+  const strongTopicsAggregated = getTopicCounts.strong;
 
   const weightedAverage = useMemo(() => {
     let totalScore = 0;
@@ -219,6 +242,73 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
     if (weightedAverage >= 50) return { label: 'Gelişmekte', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-200' };
     return { label: 'Destek Gerekli', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200' };
   }, [weightedAverage]);
+
+  // Synthesize AI Recommendations
+  const aiRecommendations = useMemo(() => {
+    const recs: { type: 'warning' | 'success' | 'info' | 'critical', text: string }[] = [];
+
+    // 1. Critical Performance Check
+    if (weightedAverage < 50 && overallStats.totalActivities > 2) {
+      recs.push({
+        type: 'critical',
+        text: `Genel başarı oranın kritik seviyede (%${weightedAverage}). Temel konulara geri dönüp "Sıfırdan Tekrar" programı uygulamalısın.`
+      });
+    }
+
+    // 2. Specific Weakness Focus
+    if (weakTopicsAggregated.length > 0) {
+      const topWeakness = weakTopicsAggregated[0].topic;
+      const count = weakTopicsAggregated[0].count;
+      recs.push({
+        type: 'warning',
+        text: `"${topWeakness}" konusunda ${count} farklı aktivitede eksiklik tespit edildi. Bu konuya özel bir çalışma planı oluşturuldu.`
+      });
+    }
+
+    // 3. Diagnosis Test Insight
+    if (overallStats.totalDiagnosisTests > 0 && overallStats.avgDiagnosisTestScore < 60) {
+      recs.push({
+        type: 'info',
+        text: 'Tanı testleri sonuçlarına göre akademik altyapıda eksikler var. Konu anlatımlı videolara ağırlık vermelisin.'
+      });
+    }
+
+    // 4. Strength Reinforcement
+    if (strongTopicsAggregated.length > 0) {
+      const topStrength = strongTopicsAggregated[0].topic;
+      recs.push({
+        type: 'success',
+        text: `"${topStrength}" konusunda çok iyisin! Zorluk seviyesini artırarak bu başarını perçinleyebilirsin.`
+      });
+    }
+
+    // 5. Activity Balance
+    if (overallStats.totalTests > 0 && overallStats.totalAssignments === 0) {
+      recs.push({
+        type: 'info',
+        text: 'Sadece test çözmek yeterli olmayabilir. Öğretmeninin verdiği ödevleri de tamamlamalısın.'
+      });
+    }
+
+    // 6. Consistency
+    if (overallStats.totalActivities > 10 && weightedAverage > 70) {
+      recs.push({
+        type: 'success',
+        text: 'İstikrarlı bir ilerleme kaydediyorsun. Bu tempoyu koru!'
+      });
+    }
+
+    // Fallback if empty
+    if (recs.length === 0) {
+      if (overallStats.totalActivities === 0) {
+        recs.push({ type: 'info', text: 'Analiz yapabilmem için test veya ödev tamamlamalısın.' });
+      } else {
+        recs.push({ type: 'info', text: 'Mevcut performansın dengeli görünüyor. Çalışmaya devam et' });
+      }
+    }
+
+    return recs.slice(0, 4); // Limit to top 4 recommendations
+  }, [weightedAverage, overallStats, weakTopicsAggregated, strongTopicsAggregated]);
 
   if (completedTests.length === 0 && completedAssignments.length === 0 && completedDiagnosisTests.length === 0 && completedPDFTests.length === 0 && completedQBTests.length === 0) {
     return (
@@ -344,9 +434,9 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
           {subjectPerformance.length > 0 ? (
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectPerformance} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f3f4f6" />
-                  <XAxis type="number" domain={[0, 100]} hide />
+                <BarChart data={subjectPerformance} layout="vertical" margin={{ top: 0, right: 50, left: 20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#f3f4f6" />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                   <YAxis dataKey="subject" type="category" width={110} tick={{ fontSize: 11, fill: '#4b5563', fontWeight: 500 }} axisLine={false} tickLine={false} />
                   <Tooltip
                     cursor={{ fill: '#f9fafb' }}
@@ -354,6 +444,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
                     formatter={(value: number) => [`%${value}`, 'Ortalama']}
                   />
                   <Bar dataKey="ortalama" radius={[0, 6, 6, 0]} barSize={24}>
+                    <LabelList dataKey="ortalama" position="right" formatter={(value: number) => `%${value}`} style={{ fontSize: '12px', fontWeight: 'bold', fill: '#4b5563' }} />
                     {subjectPerformance.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={SUBJECT_COLORS[index % SUBJECT_COLORS.length]} />
                     ))}
@@ -372,7 +463,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 transition-transform hover:scale-[1.01] duration-300">
           <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-500 text-xs">⚠️</span>
-            Gelişim Alanları
+            Gelişim Alanları (Ortak Eksikler)
           </h3>
           {weakTopicsAggregated.length > 0 ? (
             <div className="space-y-3">
@@ -383,13 +474,15 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
                     <span className="text-sm font-medium text-gray-700 truncate">{item.topic}</span>
                   </div>
                   <span className="text-[10px] px-2 py-1 bg-white rounded-md border border-red-100 text-red-500 font-bold shadow-sm whitespace-nowrap">
-                    {item.count} tekrar
+                    {item.count} aktivite
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">Tespit edilen eksik konu yok</p>
+            <p className="text-sm text-gray-400 text-center py-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+              Şu an için ortak bir eksik konu tespit edilmedi. Harika!
+            </p>
           )}
         </div>
 
@@ -397,7 +490,7 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 transition-transform hover:scale-[1.01] duration-300">
           <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
             <span className="flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-500 text-xs">💪</span>
-            Güçlü Yönler
+            Güçlü Yönler (En Başarılı Konular)
           </h3>
           {strongTopicsAggregated.length > 0 ? (
             <div className="space-y-3">
@@ -414,7 +507,9 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">Veri bekleniyor</p>
+            <p className="text-sm text-gray-400 text-center py-6 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+              Veri bekleniyor...
+            </p>
           )}
         </div>
       </div>
@@ -427,39 +522,23 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          AI Önerileri
+          Akıllı AI Analiz & Öneriler
         </h3>
         <ul className="space-y-3">
-          {overallStats.avgDiagnosisTestScore < 60 && overallStats.totalDiagnosisTests > 0 && (
-            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
-              <span className="mt-1 text-orange-500 text-[10px]">●</span>
-              <span>Tanı testlerinde temel eksikler var (%{overallStats.avgDiagnosisTestScore}). Yeni bir çalışma planı oluştur.</span>
+          {aiRecommendations.map((rec, idx) => (
+            <li key={idx} className={`flex items-start gap-3 text-sm p-3 rounded-xl border ${rec.type === 'critical' ? 'bg-red-50 border-red-100 text-red-900' :
+                rec.type === 'warning' ? 'bg-orange-50 border-orange-100 text-orange-900' :
+                  rec.type === 'success' ? 'bg-green-50 border-green-100 text-green-900' :
+                    'bg-white/60 border-indigo-50 text-indigo-900/80'
+              }`}>
+              <span className={`mt-1 text-[10px] ${rec.type === 'critical' ? 'text-red-600' :
+                  rec.type === 'warning' ? 'text-orange-500' :
+                    rec.type === 'success' ? 'text-green-500' :
+                      'text-indigo-400'
+                }`}>●</span>
+              <span>{rec.text}</span>
             </li>
-          )}
-          {weightedAverage < 70 && weightedAverage > 0 && (
-            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
-              <span className="mt-1 text-orange-500 text-[10px]">●</span>
-              <span>Genel ortalama hedefin altında (%{weightedAverage}). Konu tekrarlarına ağırlık verilmeli.</span>
-            </li>
-          )}
-          {weakTopicsAggregated.length > 0 && (
-            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
-              <span className="mt-1 text-red-500 text-[10px]">●</span>
-              <span><strong>{weakTopicsAggregated[0].topic}</strong> konusunda yoğunlaşmalısın.</span>
-            </li>
-          )}
-          {strongTopicsAggregated.length > 0 && (
-            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
-              <span className="mt-1 text-green-500 text-[10px]">●</span>
-              <span><strong>{strongTopicsAggregated[0].topic}</strong> konusundaki başarını korumaya devam et.</span>
-            </li>
-          )}
-          {overallStats.totalActivities < 5 && (
-            <li className="flex items-start gap-3 text-sm text-indigo-900/80 bg-white/60 p-3 rounded-xl border border-indigo-50">
-              <span className="mt-1 text-blue-400">ℹ</span>
-              <span>Daha sağlıklı analiz için daha fazla test çözmelisin.</span>
-            </li>
-          )}
+          ))}
         </ul>
       </div>
     </div>

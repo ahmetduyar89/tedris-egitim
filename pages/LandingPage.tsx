@@ -151,6 +151,144 @@ const TabsFeature = () => {
   );
 };
 
+const PricingCard = ({
+  title,
+  price,
+  period,
+  features,
+  recommended = false,
+  buttonText = "Başla",
+  onAction
+}: {
+  title: string,
+  price: string,
+  period?: string,
+  features: string[],
+  recommended?: boolean,
+  buttonText?: string,
+  onAction?: () => void
+}) => (
+  <div className={`relative p-8 rounded-3xl border flex flex-col h-full transition-all duration-300 ${recommended
+      ? 'bg-slate-900 text-white border-slate-800 shadow-2xl scale-105 z-10'
+      : 'bg-white text-slate-900 border-slate-200 hover:border-indigo-100 hover:shadow-xl'
+    }`}>
+    {recommended && (
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+        En Popüler
+      </div>
+    )}
+
+    <div className="mb-8">
+      <h3 className={`text-xl font-bold mb-2 ${recommended ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h3>
+      <div className="flex items-end gap-1">
+        <span className="text-4xl font-extrabold">{price}</span>
+        {period && <span className={`text-sm mb-1 ${recommended ? 'text-slate-400' : 'text-slate-500'}`}>{period}</span>}
+      </div>
+    </div>
+
+    <ul className="space-y-4 mb-8 flex-1">
+      {features.map((feature, idx) => (
+        <li key={idx} className="flex items-start gap-3 text-sm">
+          <svg className={`w-5 h-5 shrink-0 ${recommended ? 'text-indigo-400' : 'text-indigo-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span className={recommended ? 'text-slate-300' : 'text-slate-600'}>{feature}</span>
+        </li>
+      ))}
+    </ul>
+
+    <button
+      onClick={onAction}
+      className={`w-full py-4 rounded-xl font-bold transition-all duration-200 ${recommended
+          ? 'bg-white text-slate-900 hover:bg-indigo-50'
+          : 'bg-slate-100 text-slate-900 hover:bg-slate-200 hover:text-indigo-600'
+        }`}
+    >
+      {buttonText}
+    </button>
+  </div>
+);
+
+const PricingSection = ({ onNavigateToAuth }: { onNavigateToAuth: (mode?: 'login' | 'register') => void }) => {
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  return (
+    <div id="pricing" className="py-24 bg-slate-50 border-t border-slate-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4 font-poppins">Şeffaf Fiyatlandırma</h2>
+          <p className="text-slate-600 mb-8">Gizli ücret yok. İhtiyacınıza uygun planı seçin.</p>
+
+          <div className="inline-flex bg-white rounded-full p-1 border border-slate-200 shadow-sm">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Aylık
+            </button>
+            <button
+              onClick={() => setBillingCycle('yearly')}
+              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'yearly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+            >
+              Yıllık <span className="text-green-500 text-xs ml-1">(-20%)</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-center">
+          <PricingCard
+            title="Başlangıç"
+            price="Ücretsiz"
+            features={[
+              "3 Öğrenci Kapasitesi",
+              "Temel Ders Planlama",
+              "Sınırlı Soru Bankası (100 Soru)",
+              "Basit Raporlama",
+              "Veli Uygulaması (Görüntüleme)"
+            ]}
+            buttonText="Ücretsiz Dene"
+            onAction={() => onNavigateToAuth('register')}
+          />
+
+          <PricingCard
+            title="Profesyonel"
+            price={billingCycle === 'monthly' ? "₺499" : "₺399"}
+            period="/ay"
+            recommended={true}
+            features={[
+              "Sınırsız Öğrenci",
+              "Tam Yapay Zeka (AI) Erişimi",
+              "Sınırsız Soru Bankası & PDF Analizi",
+              "Otomatik Eksik Konu Tamamlama",
+              "Aralıklı Tekrar Sistemi (SRS)",
+              "Gelişmiş Finansal Takip",
+              "WhatsApp Entegrasyonu"
+            ]}
+            buttonText="Hemen Başla"
+            onAction={() => onNavigateToAuth('register')}
+          />
+
+          <PricingCard
+            title="Kurumsal"
+            price="Özel"
+            features={[
+              "Çoklu Öğretmen Yönetimi",
+              "Şube ve Sınıf Yapısı",
+              "Gelişmiş Yetkilendirme",
+              "Özel Domain (kurumunuz.com)",
+              "API Erişimi",
+              "Öncelikli 7/24 Destek",
+              "Kuruma Özel Eğitim"
+            ]}
+            buttonText="İletişime Geç"
+            onAction={() => window.location.href = 'mailto:satis@tedris.com'}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
   const [scrolled, setScrolled] = useState(false);
 

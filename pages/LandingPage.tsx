@@ -124,12 +124,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8 font-poppins max-w-5xl mx-auto">
-            Eğitim Süreçlerinizi <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 animate-gradient-x">Yapay Zeka ile Yönetin</span>
+            Öğrenci Başarısını <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 animate-gradient-x">Veri ve Yapay Zeka ile Artırın</span>
           </h1>
 
           <p className="text-lg md:text-xl text-slate-500 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Öğretmenler, kurs merkezleri ve eğitim koçları için; öğrenci takibi, ders planlama, içerik yönetimi ve finansal analizi tek platformda birleştirdik.
+            Öğrenme haritaları, yapay zeka destekli eksik giderme ve aralıklı tekrar sistemi ile öğrencilerinizi potansiyellerinin zirvesine taşıyın.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 px-4 sm:px-0">
@@ -152,46 +152,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
 
           {/* New Hero Visual - Dashboard Abstract */}
           <div className="relative max-w-6xl mx-auto mt-12 perspective-2000">
-            <div className="relative bg-slate-900 rounded-2xl p-2 shadow-2xl border border-slate-700/50 overflow-hidden transform rotate-x-6 hover:rotate-x-0 transition-transform duration-1000">
-              <div className="absolute top-0 left-0 w-full h-full bg-slate-900/50 z-10 backdrop-blur-sm flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-                <span
-                  onClick={() => onNavigateToAuth('login')}
-                  className="text-white font-bold text-lg bg-indigo-600 px-6 py-2 rounded-full cursor-pointer hover:bg-indigo-700 transition"
-                >
-                  Arayüzü Keşfet
-                </span>
+            <div className="relative bg-white rounded-2xl p-2 shadow-2xl border border-slate-200 overflow-hidden transform rotate-x-6 hover:rotate-x-0 transition-transform duration-1000 group">
+              {/* Click overlay */}
+              <div className="absolute top-0 left-0 w-full h-full bg-slate-900/10 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
               </div>
-              <img src="/hero-dashboard.png" alt="Tedris Dashboard" onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = `
-                         <div class="aspect-[16/9] bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl flex items-center justify-center border border-slate-700/50">
-                           <div class="text-center p-10">
-                             <div class="text-6xl mb-4">🚀</div>
-                             <div class="text-2xl font-bold text-slate-200 mb-2">Profesyonel Yönetim Paneli</div>
-                             <div class="text-slate-400">Tüm verileriniz tek ekranda</div>
-                           </div>
-                         </div>
-                       `;
-              }} className="w-full rounded-xl shadow-lg" />
+
+              <img src="/showcase-hero.png" alt="Knowledge Graph Dashboard" className="w-full rounded-xl shadow-inner border border-slate-100" />
             </div>
 
             {/* Floating Elements for Context */}
             <div className="absolute -right-8 top-20 bg-white/90 backdrop-blur shadow-xl p-4 rounded-xl border border-slate-200 hidden lg:block animate-bounce" style={{ animationDuration: '4s' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">💵</div>
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">🚀</div>
                 <div>
-                  <div className="text-xs text-slate-500 font-bold uppercase">Aylık Tahsilat</div>
-                  <div className="text-sm font-bold text-slate-900">₺142.500 <span className="text-green-500 text-xs">↑%12</span></div>
+                  <div className="text-xs text-slate-500 font-bold uppercase">Gelişim Hızı</div>
+                  <div className="text-sm font-bold text-slate-900">%47 Artış <span className="text-green-500 text-xs">bu hafta</span></div>
                 </div>
               </div>
             </div>
 
             <div className="absolute -left-8 bottom-40 bg-white/90 backdrop-blur shadow-xl p-4 rounded-xl border border-slate-200 hidden lg:block animate-bounce" style={{ animationDuration: '5s' }}>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-xl">🤖</div>
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-xl">🧠</div>
                 <div>
-                  <div className="text-xs text-slate-500 font-bold uppercase">AI Asistan</div>
-                  <div className="text-sm font-bold text-slate-900">3 Test Hazırlandı</div>
+                  <div className="text-xs text-slate-500 font-bold uppercase">AI Analizi</div>
+                  <div className="text-sm font-bold text-slate-900">3 Eksik Konu Belirlendi</div>
                 </div>
               </div>
             </div>
@@ -203,73 +188,82 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
       <div id="features" className="py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 font-poppins">Her İhtiyaca Yönelik Çözümler</h2>
-            <p className="text-lg text-slate-600">Dağınık araçlardan kurtulun. Tek bir işletim sistemi ile tüm süreçlerinizi yönetin.</p>
+            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 font-poppins">Eğitimde Teknoloji Devrimi</h2>
+            <p className="text-lg text-slate-600">Sadece bir yönetim paneli değil, öğrencinizin en yakın çalışma arkadaşı.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[300px]">
-            {/* Large Card 1 */}
-            <BentoCard
-              title="Yapay Zeka Destekli İçerik Üretimi"
-              description="Saniyeler içinde sınav hazırlayın, konu anlatımı metinleri oluşturun veya öğrenciye özel çalışma programı çıkartın."
-              icon="✨"
-              className="md:col-span-2 bg-gradient-to-br from-indigo-50 to-white"
-              visual={
-                <div className="w-full h-32 bg-white rounded-t-xl border border-slate-200 shadow-sm p-4 mx-4 mt-2">
-                  <div className="flex gap-2 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Col 1 */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Feature 1: Spaced Repetition */}
+              <div className="group relative overflow-hidden rounded-3xl bg-indigo-600 text-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+                <div className="absolute top-0 right-0 p-12 opacity-10">
+                  <svg className="w-64 h-64" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
+                </div>
+                <div className="relative z-10 p-8 md:p-10 flex flex-col md:flex-row items-center gap-8">
+                  <div className="flex-1">
+                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl mb-6">🧠</div>
+                    <h3 className="text-2xl font-bold mb-3">Aralıklı Tekrar Sistemi (SRS)</h3>
+                    <p className="text-indigo-100 leading-relaxed mb-6">
+                      Bilimsel olarak kanıtlanmış algoritma ile öğrencilerin unutmaya başladığı anı tespit eder ve konuları tam zamanında tekrar ettirir.
+                    </p>
+                    <ul className="space-y-2 mb-6">
+                      <li className="flex items-center gap-2 text-sm text-indigo-100"><span className="bg-white/20 p-1 rounded-full text-xs">✓</span> Günlük mini quizler</li>
+                      <li className="flex items-center gap-2 text-sm text-indigo-100"><span className="bg-white/20 p-1 rounded-full text-xs">✓</span> Ustalık seviyesi takibi</li>
+                    </ul>
                   </div>
-                  <div className="h-2 w-3/4 bg-slate-100 rounded mb-2"></div>
-                  <div className="h-2 w-1/2 bg-slate-100 rounded mb-2"></div>
-                  <div className="h-2 w-full bg-indigo-50 rounded mt-4"></div>
+                  <div className="w-full md:w-1/2">
+                    <img src="/showcase-srs.png" alt="Aralıklı Tekrar Sistemi" className="rounded-xl shadow-lg border border-white/10 transform group-hover:scale-105 transition-transform duration-500" />
+                  </div>
                 </div>
-              }
-            />
+              </div>
 
-            {/* Card 2 */}
-            <BentoCard
-              title="Akıllı Takvim"
-              description="Ders çakışmalarını önleyin, sürükle-bırak ile programınızı yönetin."
-              icon="📅"
-              className="md:row-span-2 bg-slate-50"
-              visual={
-                <div className="grid grid-cols-7 gap-1 px-4 mt-4 opacity-70">
-                  {[...Array(28)].map((_, i) => (
-                    <div key={i} className={`h-6 rounded-md ${[5, 12, 18, 20].includes(i) ? 'bg-indigo-400' : 'bg-slate-200'}`}></div>
-                  ))}
+              {/* Feature 2: Performance Analysis */}
+              <div className="group relative overflow-hidden rounded-3xl bg-slate-50 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+                <div className="p-8 md:p-10">
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-2xl mb-4">📊</div>
+                      <h3 className="text-xl font-bold text-slate-900">360° Performans Takibi</h3>
+                    </div>
+                    <button className="text-indigo-600 font-semibold text-sm hover:underline">Raporu İncele →</button>
+                  </div>
+                  <p className="text-slate-600 mb-8 max-w-lg">
+                    Test sonuçları, ödev tamamlama oranları ve konu bazlı eksiklik analizi ile öğrencinin durumununtam fotoğrafını çekin.
+                  </p>
+                  <img src="/showcase-performance.png" alt="Performans Analizi" className="w-full rounded-xl shadow-md border border-slate-200" />
                 </div>
-              }
-            />
+              </div>
+            </div>
 
-            {/* Card 3 */}
-            <BentoCard
-              title="Finansal Yönetim"
-              description="Öğrenci ödemelerini, gelir/gider dengesini ve bekleyen tahsilatları raporlayın."
-              icon="📊"
-            />
-
-            {/* Card 4 */}
-            <BentoCard
-              title="Veli & Öğrenci Paneli"
-              description="İletişimi şeffaflaştırın. Veliler gelişimi anlık takip etsin."
-              icon="📱"
-            />
-
-            {/* Wide Card 5 */}
-            <BentoCard
-              title="Geniş İçerik Kütüphanesi & Soru Bankası"
-              description="Kendi sorularınızı ekleyin veya binlerce soruluk havuzu kullanın. PDF testlerinizi dijitalleştirin."
-              icon="📚"
-              className="md:col-span-2 bg-gradient-to-tr from-blue-50 to-white"
-              visual={
-                <div className="flex gap-4 px-8 mt-4">
-                  <div className="flex-1 h-24 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center text-2xl">📐</div>
-                  <div className="flex-1 h-24 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center text-2xl">🔬</div>
-                  <div className="flex-1 h-24 bg-white rounded-lg border border-slate-200 shadow-sm flex items-center justify-center text-2xl">🌍</div>
+            {/* Col 2 */}
+            <div className="space-y-8">
+              {/* Feature 3: Planning */}
+              <div className="group relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 h-full flex flex-col">
+                <div className="p-8 flex-1">
+                  <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl mb-4">📅</div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Akıllı Planlama</h3>
+                  <p className="text-slate-600 text-sm mb-6">
+                    Yapay zeka, öğrencinin zayıf olduğu konuları tespit eder ve haftalık programa otomatik olarak ekler.
+                  </p>
+                  <div className="rounded-xl overflow-hidden shadow-inner border border-slate-100 bg-slate-50 p-2">
+                    <img src="/showcase-planning.png" alt="Akıllı Planlama" className="w-full rounded-lg shadow-sm" />
+                  </div>
                 </div>
-              }
-            />
+              </div>
+
+              {/* Feature 4: Online Classes/General */}
+              <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+                <div className="p-8">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mb-4">🎥</div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Canlı Ders Yönetimi</h3>
+                  <p className="text-slate-600 text-sm mb-4">
+                    Online derslerinizi planlayın, linkleri paylaşın ve yoklama alın.
+                  </p>
+                  <img src="/showcase-classes.png" alt="Online Dersler" className="w-full rounded-lg shadow-md mt-2" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

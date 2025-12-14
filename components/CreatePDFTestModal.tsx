@@ -169,7 +169,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Ders *</label>
                   <select
@@ -223,7 +223,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Toplam Soru Sayısı *</label>
                   <input
@@ -295,7 +295,7 @@ const CreatePDFTestModal: React.FC<CreatePDFTestModalProps> = ({ student, teache
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2">
                 {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((questionNum) => (
                   <div key={questionNum} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <label className="block text-xs font-semibold text-gray-600 mb-2">Soru {questionNum}</label>

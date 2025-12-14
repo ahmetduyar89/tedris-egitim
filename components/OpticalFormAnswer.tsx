@@ -137,9 +137,8 @@ const OpticalFormAnswer: React.FC<OpticalFormAnswerProps> = ({
                     key={option}
                     onClick={() => !readonly && onAnswerChange(questionNum, option)}
                     disabled={readonly}
-                    className={`w-10 h-10 rounded-lg font-bold text-sm border-2 transition-all ${getOptionStyle(questionNum, option)} ${
-                      readonly ? 'cursor-default' : 'cursor-pointer active:scale-95'
-                    }`}
+                    className={`w-8 h-8 md:w-10 md:h-10 rounded-lg font-bold text-sm border-2 transition-all ${getOptionStyle(questionNum, option)} ${readonly ? 'cursor-default' : 'cursor-pointer active:scale-95'
+                      }`}
                   >
                     {option}
                   </button>

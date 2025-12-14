@@ -105,16 +105,16 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
             {/* ============================================ */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Section Header */}
-                <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        📖 Kelime, Deyim ve Atasözü Kütüphanesi
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 md:px-6 py-4">
+                    <h2 className="text-lg font-bold text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span>📖 Kelime, Deyim ve Atasözü Kütüphanesi</span>
                     </h2>
                     <p className="text-purple-100 text-sm mt-1">İçerik ekleyin, düzenleyin ve öğrencilerinize atayın</p>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                     {/* Stats */}
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-3">
                             <div className="flex items-center gap-2">
                                 <span className="text-2xl">📖</span>
@@ -145,10 +145,10 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-2 mb-4">
                         <button
                             onClick={() => setShowAddModal(true)}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
+                            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 sm:py-2 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                         >
                             <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -157,7 +157,7 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                         </button>
                         <button
                             onClick={() => setShowBulkImportModal(true)}
-                            className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
+                            className="flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-3 sm:py-2 rounded-lg text-sm font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                         >
                             <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
@@ -166,7 +166,7 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                         </button>
                         <button
                             onClick={() => setShowNewAssignModal(true)}
-                            className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
+                            className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-3 sm:py-2 rounded-lg text-sm font-semibold hover:from-purple-700 hover:to-purple-800 transition-all shadow-sm hover:shadow flex items-center justify-center gap-2"
                         >
                             <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
@@ -178,12 +178,12 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                     {/* Content Tabs */}
                     <div className="bg-gray-50 rounded-lg border border-gray-200">
                         <div className="border-b border-gray-200">
-                            <div className="flex">
+                            <div className="flex flex-col sm:flex-row">
                                 <button
                                     onClick={() => setActiveTab('vocabulary')}
                                     className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${activeTab === 'vocabulary'
-                                            ? 'border-b-2 border-purple-500 text-purple-700 bg-white'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        ? 'border-l-4 sm:border-l-0 sm:border-b-2 border-purple-500 text-purple-700 bg-white'
+                                        : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
                                     📖 Kelimeler ({vocabularyItems.length})
@@ -191,8 +191,8 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                                 <button
                                     onClick={() => setActiveTab('idiom')}
                                     className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${activeTab === 'idiom'
-                                            ? 'border-b-2 border-blue-500 text-blue-700 bg-white'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        ? 'border-l-4 sm:border-l-0 sm:border-b-2 border-blue-500 text-blue-700 bg-white'
+                                        : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
                                     💬 Deyimler ({idiomItems.length})
@@ -200,8 +200,8 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
                                 <button
                                     onClick={() => setActiveTab('proverb')}
                                     className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors ${activeTab === 'proverb'
-                                            ? 'border-b-2 border-green-500 text-green-700 bg-white'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        ? 'border-l-4 sm:border-l-0 sm:border-b-2 border-green-500 text-green-700 bg-white'
+                                        : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
                                     🎯 Atasözleri ({proverbItems.length})
@@ -271,9 +271,9 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
             {/* ============================================ */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Section Header */}
-                <div className="bg-gradient-to-r from-orange-600 to-red-600 px-6 py-4">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        📚 Kitap Yönetimi
+                <div className="bg-gradient-to-r from-orange-600 to-red-600 px-4 md:px-6 py-4">
+                    <h2 className="text-lg font-bold text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span>📚 Kitap Yönetimi</span>
                     </h2>
                     <p className="text-orange-100 text-sm mt-1">Kitap ekleyin, soru oluşturun ve öğrencilerinize atayın</p>
                 </div>
@@ -291,9 +291,9 @@ const TurkishLearningPage: React.FC<TurkishLearningPageProps> = ({ user, student
             {/* ============================================ */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Section Header */}
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        ✍️ Kompozisyon Yönetimi
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 md:px-6 py-4">
+                    <h2 className="text-lg font-bold text-white flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span>✍️ Kompozisyon Yönetimi</span>
                     </h2>
                     <p className="text-indigo-100 text-sm mt-1">Kompozisyon konuları oluşturun ve öğrencilerinize atayın</p>
                 </div>

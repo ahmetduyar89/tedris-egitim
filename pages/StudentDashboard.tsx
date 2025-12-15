@@ -869,7 +869,40 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     setActiveView('viewReport');
   };
 
+  const handleOpenAssignment = async (assignment: Assignment) => {
+    if (!assignment.viewedByStudent) {
+      try {
+        await db.collection('assignments').doc(assignment.id).update({ viewedByStudent: true });
+        setAssignments(prev => prev.map(a => a.id === assignment.id ? { ...a, viewedByStudent: true } : a));
+      } catch (error) {
+        console.error("Error marking assignment as viewed:", error);
+      }
+    }
+    setActiveAssignment(assignment);
+    setActiveView('submitHomework');
+  };
+
+  const handleTaskToggle = async (task: Task) => {
+    if (task.metadata?.assignmentId) {
+      setToast({ message: "Ödevi tamamlamak için lütfen teslim ediniz.", type: "info" });
+      const assignment = assignments.find(a => a.id === task.metadata.assignmentId);
+      if (assignment) {
+        handleOpenAssignment(assignment);
+      }
+      return;
+    }
+    await handleTaskStatusChange(task);
+  };
+
   const handleTaskClick = async (task: Task) => {
+    if (task.metadata?.assignmentId) {
+      const assignment = assignments.find(a => a.id === task.metadata.assignmentId);
+      if (assignment) {
+        handleOpenAssignment(assignment);
+      }
+      return;
+    }
+
     if (task.reviewPackageId) {
       const pkgDoc = await db.collection('reviewPackages').doc(task.reviewPackageId).get();
       if (pkgDoc.exists) {
@@ -885,9 +918,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     } else if (task.type === 'Test' && (task.metadata?.questionBankAssignmentId || task.metadata?.question_bank_assignment_id)) {
       setActiveTask(task);
       setActiveView('takingTest');
-    } else {
-      // Regular task, mark as complete/incomplete
-      await handleTaskStatusChange(task);
     }
   };
 
@@ -969,18 +999,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     setActiveTask(null);
   };
 
-  const handleOpenAssignment = async (assignment: Assignment) => {
-    if (!assignment.viewedByStudent) {
-      try {
-        await db.collection('assignments').doc(assignment.id).update({ viewedByStudent: true });
-        setAssignments(prev => prev.map(a => a.id === assignment.id ? { ...a, viewedByStudent: true } : a));
-      } catch (error) {
-        console.error("Error marking assignment as viewed:", error);
-      }
-    }
-    setActiveAssignment(assignment);
-    setActiveView('submitHomework');
-  };
+
 
   const handleHomeworkSubmit = async (submission: Submission) => {
     try {
@@ -1148,6 +1167,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
               <WeeklySchedule
                 program={mergedWeeklyProgram}
                 onTaskClick={handleTaskClick}
+                onTaskToggle={handleTaskToggle}
                 isInteractive={true}
               />
             </div>

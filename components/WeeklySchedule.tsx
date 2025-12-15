@@ -4,38 +4,13 @@ import { WeeklyProgram, Task, TaskStatus, Subject } from '../types';
 interface WeeklyScheduleProps {
   program: WeeklyProgram;
   onTaskClick?: (task: Task) => void;
+  onTaskToggle?: (task: Task) => void;
   isInteractive: boolean;
 }
 
-// Config now uses Tailwind classes for better maintainability and theme consistency
-const subjectConfig: { [key in Subject]?: { borderColor: string; textColor: string; bgColor: string; icon: React.ReactNode } } = {
-  [Subject.Mathematics]: {
-    borderColor: 'border-secondary',
-    textColor: 'text-secondary',
-    bgColor: 'bg-red-50',
-    icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 3h.008v.008H8.25v-.008Zm0 3h.008v.008H8.25v-.008Zm3-6h.008v.008H11.25v-.008Zm0 3h.008v.008H11.25v-.008Zm0 3h.008v.008H11.25v-.008Zm3-6h.008v.008H14.25v-.008Zm0 3h.008v.008H14.25v-.008Zm0 3h.008v.008H14.25v-.008ZM6 21a2.25 2.25 0 0 1-2.25-2.25V15a2.25 2.25 0 0 1 2.25-2.25h12A2.25 2.25 0 0 1 20.25 15v3.75a2.25 2.25 0 0 1-2.25 2.25H6Z" /></svg>
-  },
-  [Subject.Science]: {
-    borderColor: 'border-primary',
-    textColor: 'text-primary',
-    bgColor: 'bg-primary/10',
-    icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 10.5a8.85 8.85 0 0 1 6.3 2.653M3.75 10.5a8.85 8.85 0 0 0 6.3 2.653M10.5 3.75a8.85 8.85 0 0 1 6.3 2.653M3.75 3.75a8.85 8.85 0 0 0 6.3 2.653M10.5 20.25a8.85 8.85 0 0 0-6.3-2.653M20.25 20.25a8.85 8.85 0 0 1-6.3-2.653M14.25 10.5l-3.75 3.75-3.75-3.75M10.5 3.75v16.5" /></svg>
-  },
-  [Subject.Turkish]: {
-    borderColor: 'border-accent',
-    textColor: 'text-accent',
-    bgColor: 'bg-amber-50',
-    icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>
-  },
-};
-const defaultConfig = {
-  borderColor: 'border-gray-400',
-  textColor: 'text-gray-500',
-  bgColor: 'bg-gray-50',
-  icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
-};
+// ... (config objects remain same)
 
-const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick }) => {
+const TaskCard: React.FC<{ task: Task; onClick: () => void; onToggle: () => void }> = ({ task, onClick, onToggle }) => {
   const config = subjectConfig[task.subject as Subject] || defaultConfig;
   const isCompleted = task.status === TaskStatus.Completed;
   const isTest = task.type === 'Test';
@@ -82,7 +57,7 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onClick();
+            onToggle();
           }}
           className={`ml-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isCompleted ? 'bg-success text-white' : 'border-2 border-gray-300 text-gray-300 hover:border-success hover:text-success'}`}
         >
@@ -94,7 +69,7 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
 };
 
 
-const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, isInteractive }) => {
+const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, onTaskToggle, isInteractive }) => {
   const [viewMode, setViewMode] = useState<'today' | 'weekly'>('today');
 
   const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];

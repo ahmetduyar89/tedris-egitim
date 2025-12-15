@@ -246,6 +246,21 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 console.log('[WhatsApp Homework] Fetching homework for student:', selectedStudentId);
                 console.log('[WhatsApp Homework] Week range:', startOfWeek, 'to', endOfWeek);
 
+                // Helper to translate day names to Turkish
+                const translateDay = (day: string) => {
+                    const englishToTr: Record<string, string> = {
+                        'Monday': 'Pazartesi', 'Tuesday': 'Salı', 'Wednesday': 'Çarşamba', 'Thursday': 'Perşembe', 'Friday': 'Cuma', 'Saturday': 'Cumartesi', 'Sunday': 'Pazar',
+                        'monday': 'Pazartesi', 'tuesday': 'Salı', 'wednesday': 'Çarşamba', 'thursday': 'Perşembe', 'friday': 'Cuma', 'saturday': 'Cumartesi', 'sunday': 'Pazar'
+                    };
+
+                    // Simple normalization
+                    const cleanDay = day.trim();
+                    if (englishToTr[cleanDay]) return englishToTr[cleanDay];
+
+                    // Capitalize first letter properly for Turkish (e.g. salı -> Salı)
+                    return cleanDay.charAt(0).toLocaleUpperCase('tr-TR') + cleanDay.slice(1).toLocaleLowerCase('tr-TR');
+                };
+
                 // Map to store merged homeworks: { "Subject": { "Day": "task" } }
                 const homeworkMap: Record<string, Record<string, string>> = {};
 
@@ -280,13 +295,14 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                         try {
                             const parsed = JSON.parse(l.homework);
                             Object.entries(parsed).forEach(([day, task]) => {
+                                const trDay = translateDay(day);
                                 if (typeof task === 'string' && task.trim()) {
-                                    if (homeworkMap[l.subject][day]) {
-                                        if (!homeworkMap[l.subject][day].includes(task.trim())) {
-                                            homeworkMap[l.subject][day] += ` | ${task.trim()}`;
+                                    if (homeworkMap[l.subject][trDay]) {
+                                        if (!homeworkMap[l.subject][trDay].includes(task.trim())) {
+                                            homeworkMap[l.subject][trDay] += ` | ${task.trim()}`;
                                         }
                                     } else {
-                                        homeworkMap[l.subject][day] = task.trim();
+                                        homeworkMap[l.subject][trDay] = task.trim();
                                     }
                                 }
                             });
@@ -295,12 +311,12 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                             if (typeof l.homework === 'string' && l.homework.trim()) {
                                 const lessonDate = new Date(l.start_time);
                                 const dayName = lessonDate.toLocaleDateString('tr-TR', { weekday: 'long' });
-                                const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+                                const trDay = translateDay(dayName);
 
-                                if (homeworkMap[l.subject][normalizedDay]) {
-                                    homeworkMap[l.subject][normalizedDay] += ` | ${l.homework.trim()}`;
+                                if (homeworkMap[l.subject][trDay]) {
+                                    homeworkMap[l.subject][trDay] += ` | ${l.homework.trim()}`;
                                 } else {
-                                    homeworkMap[l.subject][normalizedDay] = l.homework.trim();
+                                    homeworkMap[l.subject][trDay] = l.homework.trim();
                                 }
                             }
                         }
@@ -324,7 +340,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                         const subject = assignment.subject || 'Genel';
                         const dueDate = new Date(assignment.due_date);
                         const dayName = dueDate.toLocaleDateString('tr-TR', { weekday: 'long' });
-                        const normalizedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1).toLowerCase();
+                        const trDay = translateDay(dayName);
 
                         if (!homeworkMap[subject]) {
                             homeworkMap[subject] = {};
@@ -332,12 +348,12 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                         const taskText = assignment.description || assignment.title;
                         if (taskText && taskText.trim()) {
-                            if (homeworkMap[subject][normalizedDay]) {
-                                if (!homeworkMap[subject][normalizedDay].includes(taskText.trim())) {
-                                    homeworkMap[subject][normalizedDay] += ` | ${taskText.trim()}`;
+                            if (homeworkMap[subject][trDay]) {
+                                if (!homeworkMap[subject][trDay].includes(taskText.trim())) {
+                                    homeworkMap[subject][trDay] += ` | ${taskText.trim()}`;
                                 }
                             } else {
-                                homeworkMap[subject][normalizedDay] = taskText.trim();
+                                homeworkMap[subject][trDay] = taskText.trim();
                             }
                         }
                     });
@@ -368,6 +384,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                             days.forEach((day: any) => {
                                 const dayName = day.day;
+                                const trDay = translateDay(dayName);
                                 const tasks = day.tasks || [];
 
                                 tasks.forEach((task: any) => {
@@ -381,12 +398,12 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                         }
 
                                         if (taskText && taskText.trim()) {
-                                            if (homeworkMap[subject][dayName]) {
-                                                if (!homeworkMap[subject][dayName].includes(taskText.trim())) {
-                                                    homeworkMap[subject][dayName] += ` | ${taskText.trim()}`;
+                                            if (homeworkMap[subject][trDay]) {
+                                                if (!homeworkMap[subject][trDay].includes(taskText.trim())) {
+                                                    homeworkMap[subject][trDay] += ` | ${taskText.trim()}`;
                                                 }
                                             } else {
-                                                homeworkMap[subject][dayName] = taskText.trim();
+                                                homeworkMap[subject][trDay] = taskText.trim();
                                             }
                                         }
                                     }

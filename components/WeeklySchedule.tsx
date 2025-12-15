@@ -8,7 +8,33 @@ interface WeeklyScheduleProps {
   isInteractive: boolean;
 }
 
-// ... (config objects remain same)
+// Config now uses Tailwind classes for better maintainability and theme consistency
+const subjectConfig: { [key in Subject]?: { borderColor: string; textColor: string; bgColor: string; icon: React.ReactNode } } = {
+  [Subject.Mathematics]: {
+    borderColor: 'border-secondary',
+    textColor: 'text-secondary',
+    bgColor: 'bg-red-50',
+    icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 3h.008v.008H8.25v-.008Zm0 3h.008v.008H8.25v-.008Zm3-6h.008v.008H11.25v-.008Zm0 3h.008v.008H11.25v-.008Zm0 3h.008v.008H11.25v-.008Zm3-6h.008v.008H14.25v-.008Zm0 3h.008v.008H14.25v-.008Zm0 3h.008v.008H14.25v-.008ZM6 21a2.25 2.25 0 0 1-2.25-2.25V15a2.25 2.25 0 0 1 2.25-2.25h12A2.25 2.25 0 0 1 20.25 15v3.75a2.25 2.25 0 0 1-2.25 2.25H6Z" /></svg>
+  },
+  [Subject.Science]: {
+    borderColor: 'border-primary',
+    textColor: 'text-primary',
+    bgColor: 'bg-primary/10',
+    icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 10.5a8.85 8.85 0 0 1 6.3 2.653M3.75 10.5a8.85 8.85 0 0 0 6.3 2.653M10.5 3.75a8.85 8.85 0 0 1 6.3 2.653M3.75 3.75a8.85 8.85 0 0 0 6.3 2.653M10.5 20.25a8.85 8.85 0 0 0-6.3-2.653M20.25 20.25a8.85 8.85 0 0 1-6.3-2.653M14.25 10.5l-3.75 3.75-3.75-3.75M10.5 3.75v16.5" /></svg>
+  },
+  [Subject.Turkish]: {
+    borderColor: 'border-accent',
+    textColor: 'text-accent',
+    bgColor: 'bg-amber-50',
+    icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" /></svg>
+  },
+};
+const defaultConfig = {
+  borderColor: 'border-gray-400',
+  textColor: 'text-gray-500',
+  bgColor: 'bg-gray-50',
+  icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
+};
 
 const TaskCard: React.FC<{ task: Task; onClick: () => void; onToggle: () => void }> = ({ task, onClick, onToggle }) => {
   const config = subjectConfig[task.subject as Subject] || defaultConfig;
@@ -197,7 +223,14 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, o
               Bugün
             </h3>
             {todaysTasks.length > 0 ? (
-              todaysTasks.map(task => <TaskCard key={task.id} task={task} onClick={() => isInteractive && onTaskClick?.(task)} />)
+              todaysTasks.map(task => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={() => isInteractive && onTaskClick?.(task)}
+                  onToggle={() => isInteractive && onTaskToggle?.(task)}
+                />
+              ))
             ) : (
               <p className="text-gray-500 p-8 bg-gray-50 rounded-xl text-center border border-dashed border-gray-200">
                 <span className="block text-4xl mb-2">🎉</span>
@@ -224,29 +257,14 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, o
                   </div>
                   {tasks.length > 0 ? (
                     <div className="space-y-2">
-                      {tasks.map(task => {
-                        const isCompleted = task.status === TaskStatus.Completed;
-                        const config = subjectConfig[task.subject as Subject] || defaultConfig;
-                        const displayTitle = task.title || task.description || 'Başlıksız Görev';
-                        const displayType = task.type || '';
-                        return (
-                          <div key={task.id} onClick={() => isInteractive && onTaskClick?.(task)} className={`flex items-center justify-between p-3 rounded-lg border border-transparent hover:border-blue-200 hover:shadow-sm transition-all ${isCompleted ? 'bg-gray-50' : 'bg-white border-gray-100 shadow-sm'} ${isInteractive ? 'cursor-pointer' : ''}`}>
-                            <div className="flex items-center space-x-3">
-                              <div className={`w-2 h-2 rounded-full ${isCompleted ? 'bg-gray-400' : 'bg-blue-500'}`}></div>
-                              <div>
-                                <span className={`block font-medium text-sm ${isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                                  {displayType && `${displayType}: `}{displayTitle}
-                                </span>
-                                <span className="text-xs text-gray-400">{task.duration} dk · {task.subject}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {task.isCompletionTask && <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100">AI</span>}
-                              {isCompleted && <span className="text-green-500 text-lg">✓</span>}
-                            </div>
-                          </div>
-                        )
-                      })}
+                      {tasks.map(task => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          onClick={() => isInteractive && onTaskClick?.(task)}
+                          onToggle={() => isInteractive && onTaskToggle?.(task)}
+                        />
+                      ))}
                     </div>
                   ) : (
                     <p className="text-xs text-gray-400 italic">Görev yok.</p>

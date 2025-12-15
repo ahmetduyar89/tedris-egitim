@@ -532,26 +532,44 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
     }
 
     return (
-        <>
-            <div className="mb-8 pl-2">
+        <div className="flex flex-col h-full">
+            <div className="mb-10 pl-3 pt-2">
                 <TedrisLogo />
             </div>
-            <nav className="flex flex-col space-y-2">
-                {navItems.map(item => (
-                    <button
-                        key={item.id}
-                        onClick={() => setView(item.id as View)}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold transition-all duration-200 ${isActive(item.id as any)
-                            ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                            : 'text-text-secondary hover:bg-gray-100 hover:text-primary'
-                            }`}
-                    >
-                        <span>{item.icon}</span>
-                        <span>{item.label}</span>
-                    </button>
-                ))}
+            <nav className="flex flex-col space-y-3 px-2">
+                {navItems.map(item => {
+                    const active = isActive(item.id as View);
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => setView(item.id as View)}
+                            className={`flex items-center space-x-3 px-4 py-3.5 rounded-2xl font-poppins font-medium transition-all duration-300 group ${active
+                                ? 'bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
+                                : 'text-gray-500 hover:bg-slate-50 hover:text-indigo-600 hover:shadow-sm'
+                                }`}
+                        >
+                            <span className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+                                {item.icon}
+                            </span>
+                            <span className="tracking-wide">{item.label}</span>
+
+                            {/* Visual indicator for active item */}
+                            {active && (
+                                <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white opacity-50 animate-pulse"></div>
+                            )}
+                        </button>
+                    );
+                })}
             </nav>
-        </>
+
+            {/* Bottom decoration or spacer */}
+            <div className="mt-auto p-4 opacity-50 pointer-events-none">
+                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-4 border border-indigo-100">
+                    <div className="h-1.5 w-12 bg-indigo-200 rounded-full mb-2"></div>
+                    <div className="h-1.5 w-8 bg-indigo-100 rounded-full"></div>
+                </div>
+            </div>
+        </div>
     );
 };
 

@@ -7,6 +7,7 @@ import NotificationTestPage from './pages/NotificationTestPage';
 const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const PublicSharePage = lazy(() => import('./pages/PublicSharePage'));
 const ContentViewerPage = lazy(() => import('./pages/ContentViewerPage'));
 import { supabase } from './services/dbAdapter';
@@ -366,6 +367,8 @@ const App: React.FC = () => {
               onLogout={handleLogout}
               onNavigateToContent={handleNavigateToContent}
             />;
+          case UserRole.Parent:
+            return <ParentDashboard user={currentUser} onLogout={handleLogout} />;
           default:
             // This case might happen if role is not set, log them out.
             handleLogout();

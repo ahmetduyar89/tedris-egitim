@@ -2,6 +2,7 @@ export enum UserRole {
   Tutor = 'tutor',
   Student = 'student',
   Admin = 'admin',
+  Parent = 'parent',
 }
 
 export interface User {
@@ -12,6 +13,24 @@ export interface User {
   role: UserRole;
   status?: 'pending' | 'approved' | 'rejected';
   is_admin?: boolean;
+}
+
+// --- Parent Portal ---
+export interface Parent {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ParentStudentRelation {
+  id: string;
+  parentId: string;
+  studentId: string;
+  relationshipType: 'anne' | 'baba' | 'vasi';
+  createdAt: string;
 }
 
 export interface Badge {
@@ -992,26 +1011,26 @@ export interface CompositionAssignment {
   dueDate?: string;
   status: CompositionStatus;
   isMandatory: boolean;
-  
+
   // Submission
   studentText?: string;
   wordCount?: number;
   startedAt?: string;
   submittedAt?: string;
-  
+
   // AI Evaluation
   aiScore?: number;
   aiFeedback?: AICompositionFeedback;
   aiEvaluatedAt?: string;
-  
+
   // Teacher Evaluation
   teacherScore?: number;
   teacherFeedback?: string;
   teacherReviewedAt?: string;
-  
+
   createdAt: string;
   updatedAt: string;
-  
+
   // Populated fields
   composition?: Composition;
 }

@@ -15,6 +15,7 @@ const TedrisLogo = () => (
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, initialMode = 'login' }) => {
   const [isRegisterView, setIsRegisterView] = useState(initialMode === 'register');
+  const [loginType, setLoginType] = useState<'teacher' | 'parent'>('teacher');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -83,56 +84,101 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
           onLogin({ ...newUser, password: '' });
         }
       } else {
-        const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password.trim(),
-        });
+        // Giriş işlemi
+        if (loginType === 'parent') {
+          // Veli girişi - ad-soyad ve şifre ile
+          try {
+            // Parents tablosundan veli bilgilerini al
+            const { data: parentData, error: parentError } = await supabase
+              .from('parents')
+              .select('*')
+              .eq('name', name.trim())
+              .single();
 
-        if (signInError) throw signInError;
-
-        if (authData.user) {
-          // Verify user exists in our users table
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authData.user.id)
-            .maybeSingle();
-
-          if (userError) throw userError;
-
-          if (!userData) {
-            // User record missing – probably deleted. Sign out and show error.
-            await supabase.auth.signOut();
-            setAuthError('Kullanıcı hesabı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
-            return;
-          }
-
-          if (userData.role === 'tutor' && userData.status !== 'approved') {
-            if (userData.status === 'pending') {
-              setAuthError('Hesabınız henüz onaylanmadı. Lütfen yönetici onayını bekleyin.');
-            } else if (userData.status === 'rejected') {
-              setAuthError('Hesap kaydınız reddedildi. Lütfen yönetici ile iletişime geçin.');
+            if (parentError || !parentData) {
+              setAuthError('Veli bilgileri bulunamadı. Lütfen ad-soyad bilgilerinizi kontrol edin.');
+              setIsLoading(false);
+              return;
             }
-            await supabase.auth.signOut();
-            return;
-          }
 
-          // For students, also ensure a student record exists
-          if (userData.role === 'student') {
-            const { data: studentData, error: studentError } = await supabase
-              .from('students')
+            // Şifre kontrolü için Supabase Auth kullan
+            const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: parentData.email || `parent_${parentData.id}@tedris.local`,
+              password: password.trim(),
+            });
+
+            if (signInError) {
+              setAuthError('Şifre hatalı. Lütfen tekrar deneyin.');
+              setIsLoading(false);
+              return;
+            }
+
+            // Veli olarak giriş yap
+            onLogin({
+              id: parentData.id,
+              name: parentData.name,
+              email: parentData.email || '',
+              password: '',
+              role: UserRole.Parent
+            });
+          } catch (error) {
+            console.error('Parent login error:', error);
+            setAuthError('Giriş yapılırken bir hata oluştu.');
+            setIsLoading(false);
+          }
+        } else {
+          // Öğretmen/Öğrenci girişi - email ve şifre ile
+          const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: password.trim(),
+          });
+
+          if (signInError) throw signInError;
+
+          if (authData.user) {
+            // Verify user exists in our users table
+            const { data: userData, error: userError } = await supabase
+              .from('users')
               .select('*')
               .eq('id', authData.user.id)
               .maybeSingle();
-            if (studentError) throw studentError;
-            if (!studentData) {
+
+            if (userError) throw userError;
+
+            if (!userData) {
+              // User record missing – probably deleted. Sign out and show error.
               await supabase.auth.signOut();
-              setAuthError('Öğrenci kaydı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
+              setAuthError('Kullanıcı hesabı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
               return;
             }
-          }
 
-          onLogin(userData as User);
+            if (userData.role === 'tutor' && userData.status !== 'approved') {
+              if (userData.status === 'pending') {
+                setAuthError('Hesabınız henüz onaylanmadı. Lütfen yönetici onayını bekleyin.');
+              } else if (userData.status === 'rejected') {
+                setAuthError('Hesap kaydınız reddedildi. Lütfen yönetici ile iletişime geçin.');
+              }
+              await supabase.auth.signOut();
+              return;
+            }
+
+            // For students, also ensure a student record exists
+            if (userData.role === 'student') {
+              const { data: studentData, error: studentError } = await supabase
+                .from('students')
+                .select('*')
+                .eq('id', authData.user.id)
+                .maybeSingle();
+              if (studentError) throw studentError;
+              if (!studentData) {
+                await supabase.auth.signOut();
+                setAuthError('Öğrenci kaydı bulunamadı. Lütfen yöneticinizle iletişime geçin.');
+                return;
+              }
+            }
+
+            onLogin(userData as User);
+          }
         }
       }
     } catch (error: any) {
@@ -175,6 +221,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
           {isRegisterView ? 'Eğitimde yeni bir deneyim başlıyor' : 'Hesabınıza giriş yapın'}
         </p>
 
+        {/* Öğretmen / Veli Seçimi (Sadece Giriş Ekranında) */}
+        {!isRegisterView && (
+          <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setLoginType('teacher')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${loginType === 'teacher'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+              👨‍🏫 Öğretmen
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginType('parent')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${loginType === 'parent'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
+            >
+              👨‍👩‍👧 Veli
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleAuth} className="space-y-5">
           {isRegisterView && (
             <div className="space-y-2">
@@ -189,17 +261,37 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
               />
             </div>
           )}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700">E-posta</label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none"
-              placeholder="ornek@email.com"
-            />
-          </div>
+
+          {/* Veli girişi için Ad Soyad */}
+          {!isRegisterView && loginType === 'parent' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">Ad Soyad</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none"
+                placeholder="Adınız ve soyadınız"
+              />
+            </div>
+          )}
+
+          {/* Öğretmen girişi için E-posta */}
+          {(isRegisterView || (!isRegisterView && loginType === 'teacher')) && (
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-700">E-posta</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                className="mt-1 block w-full border-2 border-gray-200 rounded-xl shadow-sm py-3 px-4 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 outline-none"
+                placeholder="ornek@email.com"
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-gray-700">Şifre</label>
             <input

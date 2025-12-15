@@ -113,9 +113,13 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
 
                 // Veli hesabı oluştur (eğer veli bilgileri girilmişse)
                 if (parentName.trim() && parentPassword.trim()) {
+                    console.log('🔵 Veli hesabı oluşturuluyor...', { parentName: parentName.trim() });
                     try {
-                        // Veli için Supabase Auth hesabı oluştur
-                        const parentEmail = `parent_${userId}@tedris.local`; // Otomatik email
+                        // Veli için unique email oluştur
+                        const timestamp = Date.now();
+                        const parentEmail = `parent.${userId}.${timestamp}@tedris.app`;
+                        console.log('🔵 Veli email:', parentEmail);
+
                         const parentAuthResponse = await fetch(authUrl, {
                             method: 'POST',
                             headers: {
@@ -129,9 +133,11 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                         });
 
                         const parentAuthData = await parentAuthResponse.json();
+                        console.log('🔵 Veli auth response:', parentAuthResponse.ok, parentAuthData);
 
                         if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
                             const parentId = parentAuthData.user?.id || parentAuthData.id;
+                            console.log('✅ Veli Auth hesabı oluşturuldu, ID:', parentId);
 
                             // Parents tablosuna ekle
                             const { error: parentInsertError } = await tempClient
@@ -145,8 +151,11 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                                 }]);
 
                             if (parentInsertError) {
-                                console.error('Parent insert error:', parentInsertError);
+                                console.error('❌ Parent insert error:', parentInsertError);
+                                alert('Veli kaydı oluşturulamadı: ' + parentInsertError.message);
                             } else {
+                                console.log('✅ Veli parents tablosuna eklendi');
+
                                 // Veli-öğrenci ilişkisi oluştur
                                 const { error: relationError } = await tempClient
                                     .from('parent_student_relations')
@@ -157,12 +166,20 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                                     }]);
 
                                 if (relationError) {
-                                    console.error('Parent-student relation error:', relationError);
+                                    console.error('❌ Parent-student relation error:', relationError);
+                                    alert('Veli-öğrenci ilişkisi oluşturulamadı: ' + relationError.message);
+                                } else {
+                                    console.log('✅ Veli-öğrenci ilişkisi oluşturuldu');
+                                    alert(`✅ Veli hesabı başarıyla oluşturuldu!\n\nGiriş Bilgileri:\nAd-Soyad: ${parentName.trim()}\nŞifre: ${parentPassword.trim()}`);
                                 }
                             }
+                        } else {
+                            console.error('❌ Veli Auth hesabı oluşturulamadı:', parentAuthData);
+                            alert('Veli Auth hesabı oluşturulamadı: ' + (parentAuthData.error_description || parentAuthData.msg || 'Bilinmeyen hata'));
                         }
-                    } catch (parentError) {
-                        console.error('Parent account creation error:', parentError);
+                    } catch (parentError: any) {
+                        console.error('❌ Parent account creation error:', parentError);
+                        alert('Veli hesabı oluşturulurken hata: ' + parentError.message);
                         // Veli hesabı oluşturulamazsa devam et, öğrenci kaydı başarılı
                     }
                 }
@@ -396,7 +413,8 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                     } else {
                         // Veli yoksa yeni hesap oluştur
                         const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
-                        const parentEmail = `parent_${student.id}@tedris.local`;
+                        const timestamp = Date.now();
+                        const parentEmail = `parent.${student.id}.${timestamp}@tedris.app`;
 
                         const response = await fetch(authUrl, {
                             method: 'POST',

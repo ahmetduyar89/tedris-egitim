@@ -87,6 +87,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
         // Giriş işlemi
         if (loginType === 'parent') {
           // Veli girişi - ad-soyad ve şifre ile
+          console.log('🔵 Veli girişi deneniyor...', { name: name.trim() });
           try {
             // Parents tablosundan veli bilgilerini al
             const { data: parentData, error: parentError } = await supabase
@@ -95,23 +96,43 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
               .eq('name', name.trim())
               .single();
 
+            console.log('🔵 Parents tablosu sorgusu:', { parentData, parentError });
+
             if (parentError || !parentData) {
+              console.error('❌ Veli bulunamadı:', parentError);
               setAuthError('Veli bilgileri bulunamadı. Lütfen ad-soyad bilgilerinizi kontrol edin.');
               setIsLoading(false);
               return;
             }
 
+            console.log('✅ Veli bulundu:', parentData);
+
             // Şifre kontrolü için Supabase Auth kullan
+            const authEmail = parentData.email;
+            console.log('🔵 Auth giriş deneniyor, email:', authEmail);
+
+            if (!authEmail) {
+              console.error('❌ Veli email bulunamadı');
+              setAuthError('Veli hesabı email bilgisi eksik. Lütfen öğretmeninizle iletişime geçin.');
+              setIsLoading(false);
+              return;
+            }
+
             const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-              email: parentData.email || `parent_${parentData.id}@tedris.local`,
+              email: authEmail,
               password: password.trim(),
             });
 
+            console.log('🔵 Auth giriş sonucu:', { success: !signInError, error: signInError });
+
             if (signInError) {
+              console.error('❌ Şifre hatalı:', signInError);
               setAuthError('Şifre hatalı. Lütfen tekrar deneyin.');
               setIsLoading(false);
               return;
             }
+
+            console.log('✅ Veli girişi başarılı!');
 
             // Veli olarak giriş yap
             onLogin({
@@ -122,7 +143,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
               role: UserRole.Parent
             });
           } catch (error) {
-            console.error('Parent login error:', error);
+            console.error('❌ Parent login error:', error);
             setAuthError('Giriş yapılırken bir hata oluştu.');
             setIsLoading(false);
           }

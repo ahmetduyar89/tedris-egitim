@@ -543,15 +543,15 @@ const SidebarContent: React.FC<{ currentView: View, setView: (view: View) => voi
                         <button
                             key={item.id}
                             onClick={() => setView(item.id as View)}
-                            className={`flex items-center space-x-3 px-4 py-3.5 rounded-2xl font-poppins font-medium transition-all duration-300 group ${active
+                            className={`flex items-center space-x-3 px-4 py-3.5 rounded-2xl font-poppins font-medium transition-all duration-300 group text-left ${active
                                 ? 'bg-gradient-to-r from-primary to-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
                                 : 'text-gray-500 hover:bg-slate-50 hover:text-indigo-600 hover:shadow-sm'
                                 }`}
                         >
-                            <span className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+                            <span className={`transition-transform duration-300 flex-shrink-0 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
                                 {item.icon}
                             </span>
-                            <span className="tracking-wide">{item.label}</span>
+                            <span className="tracking-wide text-left leading-tight flex-1">{item.label}</span>
 
                             {/* Visual indicator for active item */}
                             {active && (

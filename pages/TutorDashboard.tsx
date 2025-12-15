@@ -26,6 +26,7 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
     const [phone, setPhone] = useState('');
     const [parentName, setParentName] = useState('');
     const [parentPhone, setParentPhone] = useState('');
+    const [parentPassword, setParentPassword] = useState(''); // Yeni: Veli şifresi
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -109,6 +110,62 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                     }]);
 
                 if (studentError) throw studentError;
+
+                // Veli hesabı oluştur (eğer veli bilgileri girilmişse)
+                if (parentName.trim() && parentPassword.trim()) {
+                    try {
+                        // Veli için Supabase Auth hesabı oluştur
+                        const parentEmail = `parent_${userId}@tedris.local`; // Otomatik email
+                        const parentAuthResponse = await fetch(authUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                            },
+                            body: JSON.stringify({
+                                email: parentEmail,
+                                password: parentPassword.trim(),
+                            })
+                        });
+
+                        const parentAuthData = await parentAuthResponse.json();
+
+                        if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
+                            const parentId = parentAuthData.user?.id || parentAuthData.id;
+
+                            // Parents tablosuna ekle
+                            const { error: parentInsertError } = await tempClient
+                                .from('parents')
+                                .insert([{
+                                    id: parentId,
+                                    name: parentName.trim(),
+                                    phone: parentPhone.trim(),
+                                    email: parentEmail,
+                                    password_hash: 'managed_by_auth' // Şifre Supabase Auth'da
+                                }]);
+
+                            if (parentInsertError) {
+                                console.error('Parent insert error:', parentInsertError);
+                            } else {
+                                // Veli-öğrenci ilişkisi oluştur
+                                const { error: relationError } = await tempClient
+                                    .from('parent_student_relations')
+                                    .insert([{
+                                        parent_id: parentId,
+                                        student_id: userId,
+                                        relationship_type: 'vasi' // Varsayılan olarak vasi
+                                    }]);
+
+                                if (relationError) {
+                                    console.error('Parent-student relation error:', relationError);
+                                }
+                            }
+                        }
+                    } catch (parentError) {
+                        console.error('Parent account creation error:', parentError);
+                        // Veli hesabı oluşturulamazsa devam et, öğrenci kaydı başarılı
+                    }
+                }
 
                 const newStudent: Student = {
                     id: userId,
@@ -210,6 +267,22 @@ const AddStudentModal: React.FC<{ tutor: User; onClose: () => void; onStudentAdd
                             />
                         </div>
                     </div>
+                    {/* Veli Şifresi */}
+                    {parentName.trim() && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <label className="block text-sm font-medium text-blue-900 mb-1">Veli Şifresi (Veli Portalı Girişi İçin)</label>
+                            <input
+                                type="password"
+                                value={parentPassword}
+                                onChange={e => setParentPassword(e.target.value)}
+                                className="w-full border border-blue-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
+                                placeholder="Veli için şifre belirleyin"
+                            />
+                            <p className="text-xs text-blue-700 mt-2">
+                                💡 Veli bu şifre ile ad-soyad kullanarak giriş yapabilecek
+                            </p>
+                        </div>
+                    )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci E-posta (Giriş için)</label>
                         <input
@@ -273,6 +346,7 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
     const [phone, setPhone] = useState(student.contact || '');
     const [parentName, setParentName] = useState(student.parentName || '');
     const [parentPhone, setParentPhone] = useState(student.parentPhone || '');
+    const [parentPassword, setParentPassword] = useState(''); // Yeni: Veli şifresi güncelleme
     const [isAiAssistantEnabled, setIsAiAssistantEnabled] = useState(student.isAiAssistantEnabled ?? true);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -283,6 +357,7 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
         setIsSubmitting(true);
 
         try {
+            // Öğrenci bilgilerini güncelle
             const { error: updateError } = await supabase
                 .from('students')
                 .update({
@@ -296,6 +371,76 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                 .eq('id', student.id);
 
             if (updateError) throw updateError;
+
+            // Veli şifresi güncelleme (eğer girilmişse)
+            if (parentName.trim() && parentPassword.trim()) {
+                try {
+                    // Önce veli kaydını bul
+                    const { data: existingParent } = await supabase
+                        .from('parents')
+                        .select('id, email')
+                        .eq('name', parentName.trim())
+                        .maybeSingle();
+
+                    if (existingParent) {
+                        // Veli varsa şifresini güncelle
+                        const { error: passwordError } = await supabase.auth.admin.updateUserById(
+                            existingParent.id,
+                            { password: parentPassword.trim() }
+                        );
+
+                        if (passwordError) {
+                            console.error('Password update error:', passwordError);
+                            setError('Veli şifresi güncellenirken hata oluştu. Öğrenci bilgileri güncellendi.');
+                        }
+                    } else {
+                        // Veli yoksa yeni hesap oluştur
+                        const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
+                        const parentEmail = `parent_${student.id}@tedris.local`;
+
+                        const response = await fetch(authUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                            },
+                            body: JSON.stringify({
+                                email: parentEmail,
+                                password: parentPassword.trim(),
+                            })
+                        });
+
+                        const authData = await response.json();
+
+                        if (response.ok && (authData.user || authData.id)) {
+                            const parentId = authData.user?.id || authData.id;
+
+                            // Parents tablosuna ekle
+                            await supabase
+                                .from('parents')
+                                .insert([{
+                                    id: parentId,
+                                    name: parentName.trim(),
+                                    phone: parentPhone.trim(),
+                                    email: parentEmail,
+                                    password_hash: 'managed_by_auth'
+                                }]);
+
+                            // Veli-öğrenci ilişkisi oluştur
+                            await supabase
+                                .from('parent_student_relations')
+                                .insert([{
+                                    parent_id: parentId,
+                                    student_id: student.id,
+                                    relationship_type: 'vasi'
+                                }]);
+                        }
+                    }
+                } catch (parentError) {
+                    console.error('Parent update error:', parentError);
+                    // Veli güncellemesi başarısız olsa bile devam et
+                }
+            }
 
             const updatedStudent = {
                 ...student,
@@ -369,6 +514,22 @@ const EditStudentModal: React.FC<{ student: Student; onClose: () => void; onStud
                             />
                         </div>
                     </div>
+                    {/* Veli Şifresi Güncelleme */}
+                    {parentName.trim() && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                            <label className="block text-sm font-medium text-amber-900 mb-1">Veli Şifresini Güncelle (Opsiyonel)</label>
+                            <input
+                                type="password"
+                                value={parentPassword}
+                                onChange={e => setParentPassword(e.target.value)}
+                                className="w-full border border-amber-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all bg-white"
+                                placeholder="Yeni şifre (boş bırakılırsa değişmez)"
+                            />
+                            <p className="text-xs text-amber-700 mt-2">
+                                ⚠️ Sadece şifreyi değiştirmek istiyorsanız doldurun
+                            </p>
+                        </div>
+                    )}
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                         <label className="flex items-center space-x-3 cursor-pointer">
                             <div className="relative flex items-center">

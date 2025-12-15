@@ -461,7 +461,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
             {/* Col 2 */}
             <div className="space-y-8">
               {/* Feature 3: Planning */}
-              <div className="group relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 h-full flex flex-col">
+              <div className="group relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col">
                 <div className="p-8 flex-1">
                   <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl mb-4">📅</div>
                   <h3 className="text-xl font-bold text-slate-900 mb-2">Akıllı Planlama</h3>
@@ -483,8 +483,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
                     Online derslerinizi planlayın, linkleri paylaşın ve yoklama alın.
                   </p>
 
-                  <div className="relative rounded-t-xl overflow-hidden shadow-lg border-t border-x border-slate-200 bg-white">
-                    <div className="absolute top-0 left-0 w-full h-8 bg-slate-50 border-b border-slate-100 flex items-center px-3 gap-1.5 pl-4 z-10">
+                  <div className="relative rounded-t-xl overflow-hidden shadow-lg border-t border-x border-slate-200 bg-white flex flex-col">
+                    <div className="w-full h-8 bg-slate-50 border-b border-slate-100 flex items-center px-3 gap-1.5 pl-4 z-10 shrink-0">
                       <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
                       <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
                       <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
@@ -492,7 +492,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
                     <img
                       src="/showcase-classes.png"
                       alt="Online Dersler"
-                      className="w-full h-48 object-cover object-left-top pt-8"
+                      className="w-full h-48 object-cover object-left-top"
                     />
                   </div>
                 </div>

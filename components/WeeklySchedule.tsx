@@ -91,16 +91,22 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
 const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, isInteractive }) => {
   const [viewMode, setViewMode] = useState<'today' | 'weekly'>('today');
 
+  const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+
   const { weeklyTotal, dailyTotals, completedCount, todaysTasks, completionPercentage, dailyCompletionPercentage, todayCompletedCount, todayTotalCount } = useMemo(() => {
     let totalTasks = 0;
     let completedTasks = 0;
     const daily: { [day: string]: { total: number, completed: number } } = {};
-    const dayOfWeek = new Date().toLocaleString('tr-TR', { weekday: 'long' });
+
+    // Calculate current day index (0=Monday, ... 6=Sunday)
+    // getDay(): 0=Sunday, 1=Monday...
+    const todayIndex = (new Date().getDay() + 6) % 7;
+
     let today: Task[] = [];
     let todayCompleted = 0;
     let todayTotal = 0;
 
-    (program.days || []).forEach(day => {
+    (program.days || []).forEach((day, index) => {
       const tasks = day.tasks || [];
       let dayTotal = 0;
       let dayCompleted = 0;
@@ -110,11 +116,16 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
           dayCompleted++;
         }
       });
-      daily[day.day] = { total: dayTotal, completed: dayCompleted };
+
+      // Use the Turkish day name for the key
+      const dayName = dayNames[index] || day.day;
+      daily[dayName] = { total: dayTotal, completed: dayCompleted };
+
       totalTasks += dayTotal;
       completedTasks += dayCompleted;
 
-      if (day.day.toLowerCase() === dayOfWeek.toLowerCase()) {
+      // Check if this is today based on index
+      if (index === todayIndex) {
         today = tasks;
         todayCompleted = dayCompleted;
         todayTotal = dayTotal;
@@ -217,15 +228,16 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ program, onTaskClick, i
 
         {viewMode === 'weekly' && (
           <div className="space-y-6 animate-fade-in">
-            {program.days.map((day) => {
+            {program.days.map((day, index) => {
               const tasks = day.tasks || [];
+              const dayName = dayNames[index] || day.day;
               return (
-                <div key={day.day}>
+                <div key={index}>
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold font-poppins text-md text-gray-700">{day.day}</h3>
-                    {dailyTotals[day.day]?.total > 0 && (
+                    <h3 className="font-bold font-poppins text-md text-gray-700">{dayName}</h3>
+                    {dailyTotals[dayName]?.total > 0 && (
                       <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
-                        {dailyTotals[day.day].completed} / {dailyTotals[day.day].total} Görev
+                        {dailyTotals[dayName].completed} / {dailyTotals[dayName].total} Görev
                       </span>
                     )}
                   </div>

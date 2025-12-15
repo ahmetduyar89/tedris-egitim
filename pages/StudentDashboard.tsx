@@ -446,12 +446,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
       if (!assignment.dueDate) return;
 
       const date = new Date(assignment.dueDate);
-      const dayName = date.toLocaleDateString('tr-TR', { weekday: 'long' });
 
-      // Find the day in the program (case-insensitive)
-      const dayIndex = programWithAssignments.days.findIndex(d => d.day.toLowerCase() === dayName.toLowerCase());
+      // Calculate day index (0=Monday, ..., 6=Sunday) to match weekly program structure
+      // getDay(): 0=Sunday, 1=Monday...
+      const dayIndex = (date.getDay() + 6) % 7;
 
-      if (dayIndex !== -1) {
+      if (programWithAssignments.days[dayIndex]) {
         // Check if this assignment is already added to avoid duplicates
         const existingTask = programWithAssignments.days[dayIndex].tasks.find(t => t.id === `assignment_${assignment.id}`);
 

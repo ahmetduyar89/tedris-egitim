@@ -894,10 +894,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   const handleTaskStatusChange = async (taskToUpdate: Task) => {
     if (!weeklyProgram || !studentData) return;
 
+    console.log('Task status toggling:', taskToUpdate.id, taskToUpdate.title);
+
+    // Optimistic Update Preparation
     let studentToUpdate = { ...studentData };
     let newLevel = false;
 
     const newStatus = taskToUpdate.status === TaskStatus.Completed ? TaskStatus.Assigned : TaskStatus.Completed;
+    console.log('New Status:', newStatus);
+
     if (newStatus === TaskStatus.Completed) {
       const { updatedStudent, newLevel: levelUp } = awardXpForTask(studentData);
       studentToUpdate = updatedStudent;
@@ -913,6 +918,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     };
 
     const { updatedStudent: studentWithBadges, newBadges } = checkAndAwardBadges(studentToUpdate, updatedProgram, completedTests);
+
+    // OPTIMISTIC UPDATE: Update UI immediately
+    setStudentData(studentWithBadges);
+    setWeeklyProgram(updatedProgram);
+
+    // Provide immediate feedback
+    if (newLevel) {
+      setToast({ message: `Tebrikler! Seviye ${calculateLevel(studentWithBadges.xp).level} oldun!`, type: 'success' });
+    }
+    if (newBadges.length > 0) {
+      setToast({ message: `Yeni rozet kazandın: ${newBadges.map(b => b.title).join(', ')}!`, type: 'info' });
+    }
 
     try {
       await db.collection('students').doc(user.id).update({
@@ -935,17 +952,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         });
       }
 
-      setStudentData(studentWithBadges);
-      setWeeklyProgram(updatedProgram);
-
-      if (newLevel) {
-        setToast({ message: `Tebrikler! Seviye ${calculateLevel(studentWithBadges.xp).level} oldun!`, type: 'success' });
-      }
-      if (newBadges.length > 0) {
-        setToast({ message: `Yeni rozet kazandın: ${newBadges.map(b => b.title).join(', ')}!`, type: 'info' });
-      }
+      console.log('Task status updated in DB successfully');
     } catch (error) {
       console.error("Error updating task status:", error);
+      // Revert in case of error (optional, for now we keep it simple)
+      setToast({ message: 'Bir hata oluştu, değişiklikler kaydedilemedi.', type: 'info' });
     }
   };
 

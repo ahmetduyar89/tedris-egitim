@@ -62,7 +62,7 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
         <div className={`flex-shrink-0 ${iconColorClass}`}>{isTest ? testIcon : config.icon}</div>
         <div className="min-w-0 flex-1">
           <p className={`font-semibold truncate ${isCompleted ? 'line-through text-gray-500' : 'text-text-primary'}`}>
-            {displayType && `${displayType}: `}'{displayTitle}'
+            {displayType && `${displayType}: `}{displayTitle}
           </p>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             {isTest && task.metadata?.totalQuestions && (
@@ -79,7 +79,13 @@ const TaskCard: React.FC<{ task: Task; onClick: () => void }> = ({ task, onClick
           Başla
         </button>
       ) : (
-        <button className={`ml-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isCompleted ? 'bg-success text-white' : 'border-2 border-gray-300 text-gray-300 hover:border-success hover:text-success'}`}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick();
+          }}
+          className={`ml-2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${isCompleted ? 'bg-success text-white' : 'border-2 border-gray-300 text-gray-300 hover:border-success hover:text-success'}`}
+        >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
         </button>
       )}

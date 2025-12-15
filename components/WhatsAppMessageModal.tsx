@@ -267,20 +267,9 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                         return d >= startOfWeek && d < endOfWeek;
                     });
 
-                    // If we have lessons this week with homework, we prioritize them
-                    let lessonsToProcess = thisWeekLessons.filter(l => l.homework);
-
-                    if (lessonsToProcess.length === 0) {
-                        // Fallback: Group by subject and take the latest lesson for each
-                        const latestBySubject: Record<string, any> = {};
-                        lessonsData.forEach(l => {
-                            if (!l.homework) return;
-                            if (!latestBySubject[l.subject] || new Date(l.start_time) > new Date(latestBySubject[l.subject].start_time)) {
-                                latestBySubject[l.subject] = l;
-                            }
-                        });
-                        lessonsToProcess = Object.values(latestBySubject);
-                    }
+                    // Only process lessons from THIS WEEK that have homework
+                    // We REMOVED the fallback to historical lessons to prevent "ghost" homeworks appearing
+                    const lessonsToProcess = thisWeekLessons.filter(l => l.homework);
 
                     // Process the selected lessons
                     lessonsToProcess.forEach(l => {

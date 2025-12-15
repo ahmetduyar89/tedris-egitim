@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { WeeklyProgram, Task, TaskStatus, Subject } from '../types';
+import { WeeklyProgram, Task, TaskStatus, Subject, Assignment } from '../types';
 import { db } from '../services/dbAdapter';
 
 interface EditableWeeklyScheduleProps {
   program: WeeklyProgram;
+  assignments?: Assignment[];
   onProgramUpdate: (program: WeeklyProgram) => void;
 }
 
@@ -34,7 +35,7 @@ const defaultConfig = {
   icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
 };
 
-const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program, onProgramUpdate }) => {
+const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program, assignments, onProgramUpdate }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDayForAdd, setSelectedDayForAdd] = useState<number>(0);
@@ -44,11 +45,50 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
 
   const dayNames = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
+  const displayProgram = useMemo(() => {
+    if (!program) return null;
+
+    // Deep clone to avoid mutating props and to serve as base for display
+    const p = { ...program, days: program.days.map(d => ({ ...d, tasks: [...d.tasks] })) };
+
+    if (assignments && assignments.length > 0) {
+      assignments.forEach(assignment => {
+        if (!assignment.dueDate) return;
+
+        const date = new Date(assignment.dueDate);
+        const dayIndex = (date.getDay() + 6) % 7;
+
+        if (p.days[dayIndex]) {
+          // Avoid duplicates if already exists (via ID convention)
+          const existingTask = p.days[dayIndex].tasks.find(t => t.id === `assignment_${assignment.id}`);
+
+          if (!existingTask) {
+            const assignmentTask: Task = {
+              id: `assignment_${assignment.id}`,
+              title: assignment.title,
+              description: assignment.description,
+              type: 'Ödev',
+              subject: assignment.subject,
+              status: assignment.submission ? TaskStatus.Completed : TaskStatus.Assigned,
+              duration: 30,
+              // Mark as assignment via metadata
+              metadata: { assignmentId: assignment.id }
+            };
+            p.days[dayIndex].tasks.push(assignmentTask);
+          }
+        }
+      });
+    }
+
+    return p;
+  }, [program, assignments]);
+
   const { weeklyTotal, completedCount, completionPercentage } = useMemo(() => {
     let totalTasks = 0;
     let completedTasks = 0;
 
-    (program.days || []).forEach(day => {
+    // Use displayProgram so stats reflect what is shown
+    ((displayProgram || program).days || []).forEach(day => {
       const tasks = day.tasks || [];
       tasks.forEach(task => {
         totalTasks++;
@@ -60,15 +100,29 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
 
     const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     return { weeklyTotal: totalTasks, completedCount: completedTasks, completionPercentage: percentage };
-  }, [program]);
+  }, [displayProgram, program]);
 
-  const progressColor = completionPercentage > 80 ? 'var(--tw-color-success)' : completionPercentage > 40 ? 'var(--tw-color-accent)' : 'var(--tw-color-secondary)';
+  const deleteTask = async (dayIndex: number, taskIndex: number) => {
+    // Determine if this is a readonly assignment
+    const taskToDelete = displayProgram?.days[dayIndex].tasks[taskIndex];
+    if (taskToDelete?.metadata?.assignmentId) {
+      alert("Bu bir ödevdir, buradan silemezsiniz. Lütfen ödevler listesini kullanın.");
+      return;
+    }
 
-  const handleDeleteTask = async (dayIndex: number, taskIndex: number) => {
     if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
 
     try {
       const updatedDays = [...program.days];
+
+      // Safety check: Ensure we are deleting a valid task from the persisted program
+      // This implicitly assumes that assignments are appended AT THE END of the array
+      // So original indices 0..N-1 align.
+      if (taskIndex >= updatedDays[dayIndex].tasks.length) {
+        console.error("Task index out of bounds for persisted program.");
+        return;
+      }
+
       updatedDays[dayIndex].tasks.splice(taskIndex, 1);
 
       await db.collection('weeklyPrograms').doc(program.id).update({
@@ -82,13 +136,19 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     }
   };
 
-  const handleStartEdit = (dayIndex: number, taskIndex: number) => {
-    const task = program.days[dayIndex].tasks[taskIndex];
+  const startEdit = (dayIndex: number, taskIndex: number) => {
+    const task = displayProgram?.days[dayIndex].tasks[taskIndex];
+    if (task?.metadata?.assignmentId) return;
+
+    // Use original program task for editing form default values
+    const originalTask = program.days[dayIndex].tasks[taskIndex];
+    if (!originalTask) return;
+
     setEditingTask({ dayIndex, taskIndex });
-    setEditForm({ ...task });
+    setEditForm({ ...originalTask });
   };
 
-  const handleSaveEdit = async () => {
+  const saveEdit = async () => {
     if (!editingTask) return;
 
     try {
@@ -111,7 +171,7 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     }
   };
 
-  const handleAddTask = async () => {
+  const addTask = async () => {
     if (!addForm.title || !addForm.type || !addForm.subject) {
       alert('Lütfen tüm gerekli alanları doldurun.');
       return;
@@ -148,18 +208,11 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   const TaskCard: React.FC<{ task: Task; dayIndex: number; taskIndex: number }> = ({ task, dayIndex, taskIndex }) => {
     const config = subjectConfig[task.subject as Subject] || defaultConfig;
     const isCompleted = task.status === TaskStatus.Completed;
-    const isTest = task.type === 'Test';
     const isEditing = editingTask?.dayIndex === dayIndex && editingTask?.taskIndex === taskIndex;
+    const isAssignment = !!task.metadata?.assignmentId;
 
     const borderClass = isCompleted ? 'border-gray-400' : config.borderColor;
-    const iconColorClass = isCompleted ? 'text-gray-400' : config.textColor;
     const bgColorClass = isCompleted ? 'bg-gray-100' : config.bgColor;
-
-    const testIcon = (
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
-      </svg>
-    );
 
     if (isEditing) {
       return (
@@ -201,7 +254,7 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
             </div>
             <div className="flex gap-2 pt-1">
               <button
-                onClick={handleSaveEdit}
+                onClick={saveEdit}
                 className="flex-1 px-3 py-2 text-sm bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark"
               >
                 Kaydet
@@ -222,37 +275,44 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     const displayType = task.type || '';
 
     return (
-      <div className={`p-4 rounded-xl transition-all shadow-sm ${bgColorClass} mb-2`}>
+      <div className={`p-4 rounded-xl transition-all shadow-sm ${bgColorClass} mb-2 relative group-task`}>
         <div className="flex items-start justify-between">
           <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              {isAssignment && <span className="bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full ring-1 ring-purple-200">ÖDEV</span>}
+            </div>
             <p className={`text-base ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
-              {displayType && `${displayType}: `}'{displayTitle}'
+              {displayType && `${displayType}: `}{displayTitle}
             </p>
           </div>
-          <div className="flex items-center gap-2 ml-4">
-            <button
-              onClick={() => handleStartEdit(dayIndex, taskIndex)}
-              className="w-6 h-6 rounded flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
-              title="Düzenle"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-              </svg>
-            </button>
-            <button
-              onClick={() => handleDeleteTask(dayIndex, taskIndex)}
-              className="w-6 h-6 rounded flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
-              title="Sil"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-              </svg>
-            </button>
-          </div>
+          {!isAssignment && (
+            <div className="flex items-center gap-2 ml-4">
+              <button
+                onClick={() => startEdit(dayIndex, taskIndex)}
+                className="w-8 h-8 rounded flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+                title="Düzenle"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+              </button>
+              <button
+                onClick={() => deleteTask(dayIndex, taskIndex)}
+                className="w-8 h-8 rounded flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+                title="Sil"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
   };
+
+  if (!displayProgram) return null;
 
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden transition-all duration-300">
@@ -296,7 +356,7 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
 
       {isExpanded && (
         <div className="p-6 space-y-6 bg-card-background animate-fade-in-down">
-          {program.days.map((day, dayIndex) => (
+          {displayProgram.days.map((day, dayIndex) => (
             <div key={dayIndex}>
               <div className="flex justify-between items-center mb-3">
                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -374,7 +434,7 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
             </div>
             <div className="p-5 bg-gray-50 rounded-b-2xl flex gap-3">
               <button
-                onClick={handleAddTask}
+                onClick={addTask}
                 className="flex-1 px-4 py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary-dark"
               >
                 Ekle

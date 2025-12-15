@@ -486,6 +486,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                         weeklyProgram ? (
                             <EditableWeeklySchedule
                                 program={weeklyProgram}
+                                assignments={assignments}
                                 onProgramUpdate={onUpdateWeeklyProgram}
                             />
                         ) : (

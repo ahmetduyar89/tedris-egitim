@@ -110,14 +110,14 @@ const App: React.FC = () => {
             if (error) {
               console.error('Error fetching user data:', error);
               await supabase.auth.signOut();
-              setView('website');
+              setView('auth');
               return;
             }
 
             if (userData) {
               if (userData.role === 'tutor' && userData.status !== 'approved') {
                 await supabase.auth.signOut();
-                setView('website');
+                setView('auth');
                 return;
               }
               setCurrentUser(userData as User);
@@ -125,19 +125,19 @@ const App: React.FC = () => {
             } else {
               console.error('User data not found in database!');
               await supabase.auth.signOut();
-              setView('website');
+              setView('auth');
             }
           } catch (error) {
             console.error('Error fetching user data:', error);
             await supabase.auth.signOut();
-            setView('website');
+            setView('auth');
           }
         } else {
-          setView('website');
+          setView('auth');
         }
       } catch (error) {
         console.error('Error in initializeAuth:', error);
-        setView('website');
+        setView('auth');
       }
     };
 
@@ -161,7 +161,7 @@ const App: React.FC = () => {
         if (currentUser) {
           setView('dashboard');
         } else {
-          setView('website');
+          setView('auth');
         }
       }
     };
@@ -193,7 +193,7 @@ const App: React.FC = () => {
 
           if (event === 'SIGNED_OUT') {
             setCurrentUser(null);
-            setView('website');
+            setView('auth');
             return;
           }
 
@@ -208,7 +208,7 @@ const App: React.FC = () => {
               if (error) {
                 console.error('[Auth] Error fetching user data:', error);
                 setCurrentUser(null);
-                setView('website');
+                setView('auth');
                 return;
               }
 
@@ -216,7 +216,7 @@ const App: React.FC = () => {
                 if (userData.role === 'tutor' && userData.status !== 'approved') {
                   console.log('[Auth] Tutor not approved');
                   setCurrentUser(null);
-                  setView('website');
+                  setView('auth');
                   return;
                 }
                 setCurrentUser(userData as User);
@@ -224,16 +224,16 @@ const App: React.FC = () => {
               } else {
                 console.error('[Auth] User data not found in database!');
                 setCurrentUser(null);
-                setView('website');
+                setView('auth');
               }
             } catch (error) {
               console.error('[Auth] Error fetching user data:', error);
               setCurrentUser(null);
-              setView('website');
+              setView('auth');
             }
           } else {
             setCurrentUser(null);
-            setView('website');
+            setView('auth');
           }
         } catch (error) {
           console.error('[Auth] Error in auth state change:', error);
@@ -288,7 +288,7 @@ const App: React.FC = () => {
     } finally {
       // Her durumda local state'i temizle
       setCurrentUser(null);
-      setView('website');
+      setView('auth');
 
       console.log('[Security] Redirecting to home...');
 
@@ -304,7 +304,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleNavigateToWebsite = useCallback(() => {
-    setView('website');
+    setView('auth');
   }, []);
 
   const handleNavigateToContent = useCallback((id: string) => {
@@ -346,7 +346,7 @@ const App: React.FC = () => {
         }
         return <ContentViewerPage contentId={contentId} user={currentUser} onBack={handleBackFromContent} />;
       case 'website':
-        return <LandingPage onNavigateToAuth={handleNavigateToAuth} />;
+        return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
       case 'auth':
         return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
       case 'dashboard':
@@ -373,7 +373,7 @@ const App: React.FC = () => {
         }
       default:
         // Default to website view if something is wrong.
-        return <LandingPage onNavigateToAuth={handleNavigateToAuth} />;
+        return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
     }
   };
 

@@ -169,8 +169,8 @@ const PricingCard = ({
   onAction?: () => void
 }) => (
   <div className={`relative p-8 rounded-3xl border flex flex-col h-full transition-all duration-300 ${recommended
-      ? 'bg-slate-900 text-white border-slate-800 shadow-2xl scale-105 z-10'
-      : 'bg-white text-slate-900 border-slate-200 hover:border-indigo-100 hover:shadow-xl'
+    ? 'bg-slate-900 text-white border-slate-800 shadow-2xl scale-105 z-10'
+    : 'bg-white text-slate-900 border-slate-200 hover:border-indigo-100 hover:shadow-xl'
     }`}>
     {recommended && (
       <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
@@ -200,8 +200,8 @@ const PricingCard = ({
     <button
       onClick={onAction}
       className={`w-full py-4 rounded-xl font-bold transition-all duration-200 ${recommended
-          ? 'bg-white text-slate-900 hover:bg-indigo-50'
-          : 'bg-slate-100 text-slate-900 hover:bg-slate-200 hover:text-indigo-600'
+        ? 'bg-white text-slate-900 hover:bg-indigo-50'
+        : 'bg-slate-100 text-slate-900 hover:bg-slate-200 hover:text-indigo-600'
         }`}
     >
       {buttonText}
@@ -476,13 +476,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
 
               {/* Feature 4: Online Classes/General */}
               <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
-                <div className="p-8">
+                <div className="p-8 pb-0">
                   <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mb-4">🎥</div>
                   <h3 className="text-xl font-bold text-slate-900 mb-2">Canlı Ders Yönetimi</h3>
-                  <p className="text-slate-600 text-sm mb-4">
+                  <p className="text-slate-600 text-sm mb-6">
                     Online derslerinizi planlayın, linkleri paylaşın ve yoklama alın.
                   </p>
-                  <img src="/showcase-classes.png" alt="Online Dersler" className="w-full rounded-lg shadow-md mt-2" />
+
+                  <div className="relative rounded-t-xl overflow-hidden shadow-lg border-t border-x border-slate-200 bg-white">
+                    <div className="absolute top-0 left-0 w-full h-8 bg-slate-50 border-b border-slate-100 flex items-center px-3 gap-1.5 pl-4 z-10">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+                    </div>
+                    <img
+                      src="/showcase-classes.png"
+                      alt="Online Dersler"
+                      className="w-full h-48 object-cover object-left-top pt-8"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

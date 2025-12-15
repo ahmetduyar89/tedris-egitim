@@ -35,6 +35,7 @@ const defaultConfig = {
 };
 
 const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program, onProgramUpdate }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDayForAdd, setSelectedDayForAdd] = useState<number>(0);
   const [addForm, setAddForm] = useState<Partial<Task>>({});
@@ -254,8 +255,11 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 flex justify-between items-center">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden transition-all duration-300">
+      <div
+        className="bg-gradient-to-r from-blue-600 to-cyan-600 p-6 flex justify-between items-center cursor-pointer hover:brightness-110 transition-all group"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div>
           <h2 className="text-2xl font-bold font-poppins text-white flex items-center gap-2">
             <span className="bg-white/20 p-1.5 rounded-lg text-white">📅</span>
@@ -263,50 +267,65 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
           </h2>
           <p className="text-blue-100 mt-1">{completedCount} / {weeklyTotal} görev tamamlandı.</p>
         </div>
-        <div className="text-center">
-          <div className="relative w-24 h-24">
-            <svg className="w-full h-full" viewBox="0 0 36 36">
-              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="3" />
-              <path className="transition-all duration-500 ease-in-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="white" strokeWidth="3" strokeDasharray={`${completionPercentage}, 100`} strokeLinecap="round" />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold font-poppins text-white">{completionPercentage}%</span>
-              <span className="text-[10px] text-blue-100 uppercase tracking-wider">Tamamlandı</span>
+        <div className="flex items-center gap-6">
+          <div className="text-center hidden sm:block">
+            <div className="relative w-16 h-16">
+              <svg className="w-full h-full" viewBox="0 0 36 36">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255, 255, 255, 0.2)" strokeWidth="3" />
+                <path className="transition-all duration-500 ease-in-out" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="white" strokeWidth="3" strokeDasharray={`${completionPercentage}, 100`} strokeLinecap="round" />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-sm font-bold font-poppins text-white">{completionPercentage}%</span>
+              </div>
             </div>
+          </div>
+          <div className="bg-white/20 rounded-full p-2 group-hover:bg-white/30 transition-colors">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2.5}
+              stroke="currentColor"
+              className={`w-6 h-6 text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
           </div>
         </div>
       </div>
 
-      <div className="p-6 space-y-6 bg-card-background">
-        {program.days.map((day, dayIndex) => (
-          <div key={dayIndex}>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <span className="w-2 h-8 rounded-full bg-blue-500"></span>
-                {dayNames[dayIndex]}
-              </h3>
-              <button
-                onClick={() => {
-                  setSelectedDayForAdd(dayIndex);
-                  setShowAddModal(true);
-                }}
-                className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
-              >
-                + Ekle
-              </button>
+      {isExpanded && (
+        <div className="p-6 space-y-6 bg-card-background animate-fade-in-down">
+          {program.days.map((day, dayIndex) => (
+            <div key={dayIndex}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <span className="w-2 h-8 rounded-full bg-blue-500"></span>
+                  {dayNames[dayIndex]}
+                </h3>
+                <button
+                  onClick={() => {
+                    setSelectedDayForAdd(dayIndex);
+                    setShowAddModal(true);
+                  }}
+                  className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
+                >
+                  + Ekle
+                </button>
+              </div>
+              <div className="space-y-2">
+                {day.tasks.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">Bu gün için görev yok</p>
+                ) : (
+                  day.tasks.map((task, taskIndex) => (
+                    <TaskCard key={taskIndex} task={task} dayIndex={dayIndex} taskIndex={taskIndex} />
+                  ))
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              {day.tasks.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">Bu gün için görev yok</p>
-              ) : (
-                day.tasks.map((task, taskIndex) => (
-                  <TaskCard key={taskIndex} task={task} dayIndex={dayIndex} taskIndex={taskIndex} />
-                ))
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">

@@ -28,10 +28,12 @@ const ParentWeeklyPlanView: React.FC<ParentWeeklyPlanViewProps> = ({ student }) 
                     .maybeSingle();
 
                 if (fetchError) {
-                    console.error('Error fetching weekly program:', fetchError);
+                    console.error('❌ Error fetching weekly program:', fetchError);
                     setError('Haftalık program yüklenirken hata oluştu');
                     return;
                 }
+
+                console.log('📅 Weekly program data:', data);
 
                 if (data) {
                     // Transform database data to WeeklyProgram type
@@ -41,8 +43,10 @@ const ParentWeeklyPlanView: React.FC<ParentWeeklyPlanViewProps> = ({ student }) 
                         week: data.week || 1,
                         days: data.days || []
                     };
+                    console.log('✅ Weekly program loaded:', program);
                     setWeeklyProgram(program);
                 } else {
+                    console.log('⚠️ No weekly program found for student:', student.id);
                     setWeeklyProgram(null);
                 }
             } catch (error) {

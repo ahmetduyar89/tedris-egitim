@@ -90,11 +90,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
           console.log('🔵 Veli girişi deneniyor...', { name: name.trim() });
           try {
             // Parents tablosundan veli bilgilerini al
+            // Not: Aynı isimde birden fazla veli olabilir, en son oluşturulanı al
             const { data: parentData, error: parentError } = await supabase
               .from('parents')
               .select('*')
               .ilike('name', name.trim()) // Case-insensitive arama
-              .maybeSingle(); // single() yerine maybeSingle() kullan
+              .order('created_at', { ascending: false }) // En son oluşturulanı al
+              .limit(1)
+              .maybeSingle(); // Tek kayıt al
 
             console.log('🔵 Parents tablosu sorgusu:', {
               parentData,

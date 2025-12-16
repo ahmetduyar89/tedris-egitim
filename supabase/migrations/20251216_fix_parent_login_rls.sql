@@ -10,6 +10,9 @@
 -- Eski politikayı kaldır
 DROP POLICY IF EXISTS "Parents can view own data" ON public.parents;
 
+-- Yeni politikayı da kaldır (eğer varsa)
+DROP POLICY IF EXISTS "Allow read access to parents for login" ON public.parents;
+
 -- Yeni politika: Giriş yapmamış kullanıcılar da parents tablosunu okuyabilir
 -- (Sadece SELECT için, INSERT/UPDATE/DELETE için hala auth gerekli)
 CREATE POLICY "Allow read access to parents for login"

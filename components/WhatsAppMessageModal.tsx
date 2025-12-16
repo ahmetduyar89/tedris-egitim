@@ -403,23 +403,26 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                 const tasks = day.tasks || [];
 
                                 tasks.forEach((task: any) => {
-                                    // Only include tasks that are of type "Ödev" (homework)
-                                    if (task.type === 'Ödev') {
-                                        const subject = task.subject || 'Genel';
-                                        const taskText = task.description || task.title;
+                                    // Include ALL tasks, not just 'Ödev'
+                                    // If type is not 'Ödev', append it to the task text for clarity
+                                    const subject = task.subject || 'Genel';
+                                    let taskText = task.description || task.title;
 
-                                        if (!homeworkMap[subject]) {
-                                            homeworkMap[subject] = {};
-                                        }
+                                    if (task.type && task.type !== 'Ödev' && taskText) {
+                                        taskText += ` (${task.type})`;
+                                    }
 
-                                        if (taskText && taskText.trim()) {
-                                            if (homeworkMap[subject][trDay]) {
-                                                if (!homeworkMap[subject][trDay].includes(taskText.trim())) {
-                                                    homeworkMap[subject][trDay] += ` | ${taskText.trim()}`;
-                                                }
-                                            } else {
-                                                homeworkMap[subject][trDay] = taskText.trim();
+                                    if (!homeworkMap[subject]) {
+                                        homeworkMap[subject] = {};
+                                    }
+
+                                    if (taskText && taskText.trim()) {
+                                        if (homeworkMap[subject][trDay]) {
+                                            if (!homeworkMap[subject][trDay].includes(taskText.trim())) {
+                                                homeworkMap[subject][trDay] += ` | ${taskText.trim()}`;
                                             }
+                                        } else {
+                                            homeworkMap[subject][trDay] = taskText.trim();
                                         }
                                     }
                                 });
@@ -921,18 +924,22 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                                         const dayName = day.day;
                                         const tasks = day.tasks || [];
                                         tasks.forEach((task: any) => {
-                                            if (task.type === 'Ödev') {
-                                                const subject = task.subject || 'Genel';
-                                                const taskText = task.description || task.title;
-                                                if (!homeworkMap[subject]) homeworkMap[subject] = {};
-                                                if (taskText && taskText.trim()) {
-                                                    if (homeworkMap[subject][dayName]) {
-                                                        if (!homeworkMap[subject][dayName].includes(taskText.trim())) {
-                                                            homeworkMap[subject][dayName] += ` | ${taskText.trim()}`;
-                                                        }
-                                                    } else {
-                                                        homeworkMap[subject][dayName] = taskText.trim();
+                                            // Include ALL tasks, not just 'Ödev'
+                                            const subject = task.subject || 'Genel';
+                                            let taskText = task.description || task.title;
+
+                                            if (task.type && task.type !== 'Ödev' && taskText) {
+                                                taskText += ` (${task.type})`;
+                                            }
+
+                                            if (!homeworkMap[subject]) homeworkMap[subject] = {};
+                                            if (taskText && taskText.trim()) {
+                                                if (homeworkMap[subject][dayName]) {
+                                                    if (!homeworkMap[subject][dayName].includes(taskText.trim())) {
+                                                        homeworkMap[subject][dayName] += ` | ${taskText.trim()}`;
                                                     }
+                                                } else {
+                                                    homeworkMap[subject][dayName] = taskText.trim();
                                                 }
                                             }
                                         });

@@ -49,39 +49,11 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     if (!program) return null;
 
     // Deep clone to avoid mutating props and to serve as base for display
+    // We NO LONGER merge assignments automatically. Teacher manages everything manually.
     const p = { ...program, days: program.days.map(d => ({ ...d, tasks: [...d.tasks] })) };
 
-    if (assignments && assignments.length > 0) {
-      assignments.forEach(assignment => {
-        if (!assignment.dueDate) return;
-
-        const date = new Date(assignment.dueDate);
-        const dayIndex = (date.getDay() + 6) % 7;
-
-        if (p.days[dayIndex]) {
-          // Avoid duplicates if already exists (via ID convention)
-          const existingTask = p.days[dayIndex].tasks.find(t => t.id === `assignment_${assignment.id}`);
-
-          if (!existingTask) {
-            const assignmentTask: Task = {
-              id: `assignment_${assignment.id}`,
-              title: assignment.title,
-              description: assignment.description,
-              type: 'Ödev',
-              subject: assignment.subject,
-              status: assignment.submission ? TaskStatus.Completed : TaskStatus.Assigned,
-              duration: 30,
-              // Mark as assignment via metadata
-              metadata: { assignmentId: assignment.id }
-            };
-            p.days[dayIndex].tasks.push(assignmentTask);
-          }
-        }
-      });
-    }
-
     return p;
-  }, [program, assignments]);
+  }, [program]);
 
   const { weeklyTotal, completedCount, completionPercentage } = useMemo(() => {
     let totalTasks = 0;
@@ -104,11 +76,14 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
 
   const deleteTask = async (dayIndex: number, taskIndex: number) => {
     // Determine if this is a readonly assignment
+    // REMOVED RESTRICTION: Teachers can now delete any task, even if it was originally an assignment.
+    /*
     const taskToDelete = displayProgram?.days[dayIndex].tasks[taskIndex];
     if (taskToDelete?.metadata?.assignmentId) {
       alert("Bu bir ödevdir, buradan silemezsiniz. Lütfen ödevler listesini kullanın.");
       return;
     }
+    */
 
     if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
 
@@ -137,8 +112,11 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   };
 
   const startEdit = (dayIndex: number, taskIndex: number) => {
+    // REMOVED RESTRICTION: Teachers can now edit any task.
+    /*
     const task = displayProgram?.days[dayIndex].tasks[taskIndex];
     if (task?.metadata?.assignmentId) return;
+    */
 
     // Use original program task for editing form default values
     const originalTask = program.days[dayIndex].tasks[taskIndex];
@@ -205,15 +183,18 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     }
   };
 
-  const toggleTaskStatus = async (dayIndex: number, taskIndex: number, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card expansion toggle if inside a clickable area
+  const updateTaskStatus = async (dayIndex: number, taskIndex: number, newStatus: TaskStatus, e: React.MouseEvent) => {
+    e.stopPropagation();
 
     try {
       const updatedDays = [...program.days];
-      const currentStatus = updatedDays[dayIndex].tasks[taskIndex].status;
-      const newStatus = currentStatus === TaskStatus.Completed ? TaskStatus.Assigned : TaskStatus.Completed;
+      const currentTask = updatedDays[dayIndex].tasks[taskIndex];
 
-      updatedDays[dayIndex].tasks[taskIndex].status = newStatus;
+      // If clicking the same status, revert to 'Assigned' (toggle off)
+      // Otherwise set to the new status
+      const finalStatus = currentTask.status === newStatus ? TaskStatus.Assigned : newStatus;
+
+      updatedDays[dayIndex].tasks[taskIndex].status = finalStatus;
 
       await db.collection('weeklyPrograms').doc(program.id).update({
         days: updatedDays
@@ -228,12 +209,29 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
 
   const TaskCard: React.FC<{ task: Task; dayIndex: number; taskIndex: number }> = ({ task, dayIndex, taskIndex }) => {
     const config = subjectConfig[task.subject as Subject] || defaultConfig;
-    const isCompleted = task.status === TaskStatus.Completed;
-    const isEditing = editingTask?.dayIndex === dayIndex && editingTask?.taskIndex === taskIndex;
-    const isAssignment = !!task.metadata?.assignmentId;
 
-    const borderClass = isCompleted ? 'border-green-400' : config.borderColor; // Green border if completed
-    const bgColorClass = isCompleted ? 'bg-green-50' : config.bgColor; // Green bg if completed
+    // Status checks
+    // Handle both enum values and potential string variants just in case
+    const status = task.status ? (task.status as string).toLowerCase() : '';
+    const isCompleted = status === 'tamamlandı' || status === 'completed';
+    const isFailed = status === 'yapılmadı' || status === 'failed' || status === 'yapilmadi';
+
+    const isEditing = editingTask?.dayIndex === dayIndex && editingTask?.taskIndex === taskIndex;
+
+    // Logic: assignments prop is removed from logic, so these are all manual tasks now.
+    // We keep the isAssignment check just in case there's legacy metadata, but we allow editing now.
+    // User wanted "old layout" where teacher has full control.
+
+    let borderClass = config.borderColor;
+    let bgColorClass = config.bgColor;
+
+    if (isCompleted) {
+      borderClass = 'border-green-500';
+      bgColorClass = 'bg-green-50';
+    } else if (isFailed) {
+      borderClass = 'border-red-500';
+      bgColorClass = 'bg-red-50';
+    }
 
     if (isEditing) {
       return (
@@ -299,50 +297,69 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     return (
       <div className={`p-4 rounded-xl transition-all shadow-sm ${bgColorClass} mb-2 relative group-task border-l-4 ${borderClass}`}>
         <div className="flex items-start justify-between gap-3">
-          {/* Status Toggle Button */}
-          <button
-            onClick={(e) => toggleTaskStatus(dayIndex, taskIndex, e)}
-            className={`flex-shrink-0 w-6 h-6 mt-0.5 rounded-full border-2 flex items-center justify-center transition-colors ${isCompleted ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 bg-white hover:border-green-400'
-              }`}
-            title={isCompleted ? "Tamamlanmadı olarak işaretle" : "Tamamlandı olarak işaretle"}
-          >
-            {isCompleted && (
+
+          {/* Status Buttons */}
+          <div className="flex flex-col gap-1 mt-0.5">
+            {/* Approve Button (Check) */}
+            <button
+              onClick={(e) => updateTaskStatus(dayIndex, taskIndex, TaskStatus.Completed, e)}
+              className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${isCompleted
+                ? 'bg-green-500 border-green-500 text-white shadow-md scale-110'
+                : 'border-gray-300 bg-white text-gray-300 hover:border-green-400 hover:text-green-500'
+                }`}
+              title="Tamamlandı olarak işaretle"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                 <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
               </svg>
-            )}
-          </button>
+            </button>
+
+            {/* Reject Button (Cross) */}
+            <button
+              onClick={(e) => updateTaskStatus(dayIndex, taskIndex, 'Yapılmadı' as TaskStatus, e)}
+              className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${isFailed
+                ? 'bg-red-500 border-red-500 text-white shadow-md scale-110'
+                : 'border-gray-300 bg-white text-gray-300 hover:border-red-400 hover:text-red-500'
+                }`}
+              title="Yapılmadı olarak işaretle"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
+            </button>
+          </div>
 
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              {isAssignment && <span className="bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full ring-1 ring-purple-200">ÖDEV</span>}
+              {/* Removed assignment check for editing lock. Teacher controls everything. */}
             </div>
-            <p className={`text-base ${isCompleted ? 'line-through text-gray-500' : 'text-gray-800'}`}>
+            <p className={`text-base ${(isCompleted || isFailed) ? 'text-gray-500' : 'text-gray-800'} ${isCompleted ? 'line-through' : ''}`}>
               {displayType && `${displayType}: `}{displayTitle}
+              {isFailed && <span className="ml-2 text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">YAPILMADI</span>}
             </p>
           </div>
-          {!isAssignment && !isCompleted && (
-            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => startEdit(dayIndex, taskIndex)}
-                className="w-8 h-8 rounded flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
-                title="Düzenle"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                </svg>
-              </button>
-              <button
-                onClick={() => deleteTask(dayIndex, taskIndex)}
-                className="w-8 h-8 rounded flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
-                title="Sil"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                </svg>
-              </button>
-            </div>
-          )}
+
+          {/* Always show edit/delete buttons now */}
+          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => startEdit(dayIndex, taskIndex)}
+              className="w-8 h-8 rounded flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Düzenle"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+              </svg>
+            </button>
+            <button
+              onClick={() => deleteTask(dayIndex, taskIndex)}
+              className="w-8 h-8 rounded flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
+              title="Sil"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     );

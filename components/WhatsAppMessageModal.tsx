@@ -51,11 +51,11 @@ type Honorific = 'Sayın' | 'Hanım' | 'Bey';
 
 import { supabase, db } from '../services/dbAdapter';
 
-const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string, latestTestInfo?: string) => string }> = {
+const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string, latestTestInfo?: string, missingTasksInfo?: string) => string }> = {
     general: {
         label: 'Genel Bilgilendirme',
         subject: 'Bilgilendirme',
-        body: (s, target, honorific) => {
+        body: (s, target, honorific, homeworkInfo, testResultInfo, latestTestInfo, missingTasksInfo) => {
             let prefix = '';
             if (target === 'parent') {
                 const pName = s.parentName ? toTitleCase(s.parentName) : '';
@@ -68,7 +68,17 @@ const TEMPLATES: Record<MessageTemplateType, { label: string; subject: string; b
 
             const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
 
-            return `${prefix},\n\n${studentRef} ile yaptığımız derslerde işlenilen konular ve ödev takibi hakkında sizi bilgilendirmek isterim.\n\nÖğrencimizin derse katılımı ve ödevlerini yapma durumu sürecin verimliliği açısından çok önemlidir. Bu konuda desteğinizi rica ederim.\n\nİyi günler dilerim.`;
+            let message = `${prefix},\n\n${studentRef} ile yaptığımız derslerde işlenilen konular ve ödev takibi hakkında sizi bilgilendirmek isterim.\n\n`;
+
+            if (missingTasksInfo) {
+                message += `⚠️ *Tamamlanmayan Görevler:*\nBu hafta yapılması gereken ancak henüz tamamlanmamış çalışmalar aşağıdadır:\n${missingTasksInfo}\n\n`;
+                message += `Bu çalışmaların tamamlanması öğrenme sürecinin devamlılığı için kritiktir. Desteğinizi rica ederim.\n\n`;
+            } else {
+                message += `Öğrencimizin derse katılımı ve ödevlerini yapma durumu sürecin verimliliği açısından çok önemlidir. Bu konuda desteğinizi rica ederim.\n\n`;
+            }
+
+            message += `İyi günler dilerim.`;
+            return message;
         }
     },
     homework: {
@@ -218,6 +228,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
     const [testResultInfo, setTestResultInfo] = useState<string>('');
     const [latestTestInfo, setLatestTestInfo] = useState<string>('');
+    const [missingTasksInfo, setMissingTasksInfo] = useState<string>('');
     const [isBulkSend, setIsBulkSend] = useState(false);
     const [bulkSendProgress, setBulkSendProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -730,6 +741,79 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
         fetchLatestAssignedTest();
     }, [selectedStudentId, templateType]);
 
+    // Fetch missing tasks when student changes or template becomes general
+    useEffect(() => {
+        const fetchMissingTasks = async () => {
+            if (!selectedStudentId || templateType !== 'general') {
+                setMissingTasksInfo('');
+                return;
+            }
+
+            try {
+                const programSnapshot = await db.collection('weeklyPrograms')
+                    .where('studentId', '==', selectedStudentId)
+                    .limit(1)
+                    .get();
+
+                if (!programSnapshot.empty) {
+                    const weeklyProgramData = programSnapshot.docs[0].data();
+                    if (weeklyProgramData && weeklyProgramData.days) {
+                        const missingTasksByCategory: Record<string, string[]> = {};
+
+                        weeklyProgramData.days.forEach((day: any) => {
+                            const dayName = day.day;
+                            const tasks = day.tasks || [];
+
+                            tasks.forEach((task: any) => {
+                                const isCompleted = task.status === 'Tamamlandı' || task.status === 'Completed' || task.status === 'tamamlandı'; // Handle both possibilities
+
+                                if (!isCompleted) {
+                                    const subject = task.subject || 'Genel';
+                                    let taskText = task.description || task.title;
+                                    if (task.type && task.type !== 'Ödev' && taskText) {
+                                        taskText += ` (${task.type})`;
+                                    }
+
+                                    if (taskText && taskText.trim()) {
+                                        if (!missingTasksByCategory[subject]) missingTasksByCategory[subject] = [];
+                                        missingTasksByCategory[subject].push(`${dayName}: ${taskText.trim()}`);
+                                    }
+                                }
+                            });
+                        });
+
+                        // Format the output
+                        const allMissing: string[] = [];
+                        const subjectEmojis: Record<string, string> = {
+                            'Matematik': '🔢', 'Fizik': '⚛️', 'Kimya': '🧪', 'Biyoloji': '🧬',
+                            'Türkçe': '📖', 'İngilizce': '🇬🇧', 'Tarih': '📜', 'Coğrafya': '🌍',
+                            'Geometri': '📐', 'Edebiyat': '✍️'
+                        };
+
+                        Object.keys(missingTasksByCategory).sort().forEach(subject => {
+                            const tasks = missingTasksByCategory[subject];
+                            if (tasks.length > 0) {
+                                const emoji = subjectEmojis[subject] || '📝';
+                                allMissing.push(`${emoji} *${subject}*`);
+                                tasks.forEach(t => allMissing.push(`  • ${t}`));
+                                allMissing.push(''); // spacer
+                            }
+                        });
+
+                        setMissingTasksInfo(allMissing.join('\n').trim());
+                    }
+                } else {
+                    setMissingTasksInfo('');
+                }
+            } catch (error) {
+                console.error('Error fetching missing tasks:', error);
+                setMissingTasksInfo('');
+            }
+        };
+
+        fetchMissingTasks();
+    }, [selectedStudentId, templateType]);
+
 
     // Update message body whenever dependencies change
     useEffect(() => {
@@ -746,19 +830,19 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
             const previewStudent = students[0];
             // When bulk sending or 'both' is selected, we just need a valid preview target type
             const previewTarget = targetPhone === 'both' ? 'parent' : targetPhone;
-            const previewMessage = TEMPLATES[templateType].body(previewStudent, previewTarget, honorific, homeworkInfo, testResultInfo, latestTestInfo);
+            const previewMessage = TEMPLATES[templateType].body(previewStudent, previewTarget, honorific, homeworkInfo, testResultInfo, latestTestInfo, missingTasksInfo);
             setMessageBody(`📝 ÖNIZLEME (${previewStudent.name} için):\n\n${previewMessage}\n\n---\n\nℹ️ Her öğrenci için mesaj kişiselleştirilecektir.`);
         } else {
             const student = students.find(s => s.id === selectedStudentId);
             if (student) {
                 // When 'both' is selected for single student, show parent version as preview (or both? stick to parent for now to fix type)
                 const previewTarget = targetPhone === 'both' ? 'parent' : targetPhone;
-                setMessageBody(TEMPLATES[templateType].body(student, previewTarget, honorific, homeworkInfo, testResultInfo, latestTestInfo));
+                setMessageBody(TEMPLATES[templateType].body(student, previewTarget, honorific, homeworkInfo, testResultInfo, latestTestInfo, missingTasksInfo));
             } else {
                 setMessageBody('');
             }
         }
-    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, latestTestInfo, initialStudentId, students, isBulkSend]);
+    }, [isOpen, selectedStudentId, templateType, targetPhone, honorific, homeworkInfo, testResultInfo, latestTestInfo, missingTasksInfo, initialStudentId, students, isBulkSend]);
 
 
     const handleStudentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -800,6 +884,63 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
 
                 // Get personalized homework info for this student if template is homework
                 let personalizedHomework = '';
+                // Get personalized missing tasks info for this student if template is general
+                let personalizedMissingTasks = '';
+
+                if (templateType === 'general') {
+                    try {
+                        const programSnapshot = await db.collection('weeklyPrograms')
+                            .where('studentId', '==', student.id)
+                            .limit(1)
+                            .get();
+
+                        if (!programSnapshot.empty) {
+                            const weeklyProgramData = programSnapshot.docs[0].data();
+                            if (weeklyProgramData && weeklyProgramData.days) {
+                                const missingTasksByCategory: Record<string, string[]> = {};
+                                weeklyProgramData.days.forEach((day: any) => {
+                                    const dayName = day.day;
+                                    const tasks = day.tasks || [];
+                                    tasks.forEach((task: any) => {
+                                        const isCompleted = task.status === 'Tamamlandı' || task.status === 'Completed' || task.status === 'tamamlandı';
+                                        if (!isCompleted) {
+                                            const subject = task.subject || 'Genel';
+                                            let taskText = task.description || task.title;
+                                            if (task.type && task.type !== 'Ödev' && taskText) {
+                                                taskText += ` (${task.type})`;
+                                            }
+                                            if (taskText && taskText.trim()) {
+                                                if (!missingTasksByCategory[subject]) missingTasksByCategory[subject] = [];
+                                                missingTasksByCategory[subject].push(`${dayName}: ${taskText.trim()}`);
+                                            }
+                                        }
+                                    });
+                                });
+
+                                const allMissing: string[] = [];
+                                const subjectEmojis: Record<string, string> = {
+                                    'Matematik': '🔢', 'Fizik': '⚛️', 'Kimya': '🧪', 'Biyoloji': '🧬',
+                                    'Türkçe': '📖', 'İngilizce': '🇬🇧', 'Tarih': '📜', 'Coğrafya': '🌍',
+                                    'Geometri': '📐', 'Edebiyat': '✍️'
+                                };
+
+                                Object.keys(missingTasksByCategory).sort().forEach(subject => {
+                                    const tasks = missingTasksByCategory[subject];
+                                    if (tasks.length > 0) {
+                                        const emoji = subjectEmojis[subject] || '📝';
+                                        allMissing.push(`${emoji} *${subject}*`);
+                                        tasks.forEach(t => allMissing.push(`  • ${t}`));
+                                        allMissing.push('');
+                                    }
+                                });
+                                personalizedMissingTasks = allMissing.join('\n').trim();
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error fetching missing tasks for bulk send:', err);
+                    }
+                }
+
                 if (templateType === 'homework') {
                     try {
                         // Fetch homework for this specific student
@@ -999,7 +1140,8 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                         honorific,
                         personalizedHomework || homeworkInfo,
                         testResultInfo,
-                        latestTestInfo
+                        latestTestInfo,
+                        personalizedMissingTasks || missingTasksInfo
                     );
 
                     // Get phone number
@@ -1058,7 +1200,7 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 // If sending to "Both", we MUST regenerate the message for each target to ensure correct names/salutations
                 // Otherwise simpler edits might effectively send "Sayın Veli" to the student.
                 if (targetPhone === 'both') {
-                    messageToSend = TEMPLATES[templateType].body(student, target, honorific, homeworkInfo, testResultInfo);
+                    messageToSend = TEMPLATES[templateType].body(student, target, honorific, homeworkInfo, testResultInfo, latestTestInfo, missingTasksInfo);
                 }
 
                 let rawPhone = '';

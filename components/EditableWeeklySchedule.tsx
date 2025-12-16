@@ -205,18 +205,40 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     }
   };
 
+  const toggleTaskStatus = async (dayIndex: number, taskIndex: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card expansion toggle if inside a clickable area
+
+    try {
+      const updatedDays = [...program.days];
+      const currentStatus = updatedDays[dayIndex].tasks[taskIndex].status;
+      const newStatus = currentStatus === TaskStatus.Completed ? TaskStatus.Assigned : TaskStatus.Completed;
+
+      updatedDays[dayIndex].tasks[taskIndex].status = newStatus;
+
+      await db.collection('weeklyPrograms').doc(program.id).update({
+        days: updatedDays
+      });
+
+      onProgramUpdate({ ...program, days: updatedDays });
+    } catch (error) {
+      console.error('Error updating task status:', error);
+      alert('Durum güncellenirken bir hata oluştu.');
+    }
+  };
+
   const TaskCard: React.FC<{ task: Task; dayIndex: number; taskIndex: number }> = ({ task, dayIndex, taskIndex }) => {
     const config = subjectConfig[task.subject as Subject] || defaultConfig;
     const isCompleted = task.status === TaskStatus.Completed;
     const isEditing = editingTask?.dayIndex === dayIndex && editingTask?.taskIndex === taskIndex;
     const isAssignment = !!task.metadata?.assignmentId;
 
-    const borderClass = isCompleted ? 'border-gray-400' : config.borderColor;
-    const bgColorClass = isCompleted ? 'bg-gray-100' : config.bgColor;
+    const borderClass = isCompleted ? 'border-green-400' : config.borderColor; // Green border if completed
+    const bgColorClass = isCompleted ? 'bg-green-50' : config.bgColor; // Green bg if completed
 
     if (isEditing) {
       return (
         <div className="p-4 rounded-xl bg-blue-50 border-2 border-primary shadow-sm mb-2">
+          {/* Edit form implementation remains same */}
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -275,8 +297,22 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     const displayType = task.type || '';
 
     return (
-      <div className={`p-4 rounded-xl transition-all shadow-sm ${bgColorClass} mb-2 relative group-task`}>
-        <div className="flex items-start justify-between">
+      <div className={`p-4 rounded-xl transition-all shadow-sm ${bgColorClass} mb-2 relative group-task border-l-4 ${borderClass}`}>
+        <div className="flex items-start justify-between gap-3">
+          {/* Status Toggle Button */}
+          <button
+            onClick={(e) => toggleTaskStatus(dayIndex, taskIndex, e)}
+            className={`flex-shrink-0 w-6 h-6 mt-0.5 rounded-full border-2 flex items-center justify-center transition-colors ${isCompleted ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 bg-white hover:border-green-400'
+              }`}
+            title={isCompleted ? "Tamamlanmadı olarak işaretle" : "Tamamlandı olarak işaretle"}
+          >
+            {isCompleted && (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+              </svg>
+            )}
+          </button>
+
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               {isAssignment && <span className="bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full ring-1 ring-purple-200">ÖDEV</span>}
@@ -285,8 +321,8 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
               {displayType && `${displayType}: `}{displayTitle}
             </p>
           </div>
-          {!isAssignment && (
-            <div className="flex items-center gap-2 ml-4">
+          {!isAssignment && !isCompleted && (
+            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => startEdit(dayIndex, taskIndex)}
                 className="w-8 h-8 rounded flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"

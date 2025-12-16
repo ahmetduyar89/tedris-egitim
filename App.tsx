@@ -102,6 +102,7 @@ const App: React.FC = () => {
 
         if (session?.user) {
           try {
+            // Önce users tablosunda kontrol et (öğretmen/öğrenci)
             const { data: userData, error } = await supabase
               .from('users')
               .select('*')
@@ -116,6 +117,7 @@ const App: React.FC = () => {
             }
 
             if (userData) {
+              // Users tablosunda bulundu (öğretmen veya öğrenci)
               if (userData.role === 'tutor' && userData.status !== 'approved') {
                 await supabase.auth.signOut();
                 setView('auth');
@@ -124,9 +126,37 @@ const App: React.FC = () => {
               setCurrentUser(userData as User);
               setView('dashboard');
             } else {
-              console.error('User data not found in database!');
-              await supabase.auth.signOut();
-              setView('auth');
+              // Users tablosunda bulunamadı, parents tablosunda kontrol et
+              console.log('User not found in users table, checking parents table...');
+              const { data: parentData, error: parentError } = await supabase
+                .from('parents')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+              if (parentError) {
+                console.error('Error fetching parent data:', parentError);
+                await supabase.auth.signOut();
+                setView('auth');
+                return;
+              }
+
+              if (parentData) {
+                // Veli bulundu
+                console.log('Parent user found:', parentData.name);
+                setCurrentUser({
+                  id: parentData.id,
+                  name: parentData.name,
+                  email: parentData.email || '',
+                  password: '',
+                  role: UserRole.Parent
+                } as User);
+                setView('dashboard');
+              } else {
+                console.error('User data not found in database!');
+                await supabase.auth.signOut();
+                setView('auth');
+              }
             }
           } catch (error) {
             console.error('Error fetching user data:', error);
@@ -200,6 +230,7 @@ const App: React.FC = () => {
 
           if (session?.user) {
             try {
+              // Önce users tablosunda kontrol et (öğretmen/öğrenci)
               const { data: userData, error } = await supabase
                 .from('users')
                 .select('*')
@@ -214,6 +245,7 @@ const App: React.FC = () => {
               }
 
               if (userData) {
+                // Users tablosunda bulundu (öğretmen veya öğrenci)
                 if (userData.role === 'tutor' && userData.status !== 'approved') {
                   console.log('[Auth] Tutor not approved');
                   setCurrentUser(null);
@@ -223,9 +255,37 @@ const App: React.FC = () => {
                 setCurrentUser(userData as User);
                 setView('dashboard');
               } else {
-                console.error('[Auth] User data not found in database!');
-                setCurrentUser(null);
-                setView('auth');
+                // Users tablosunda bulunamadı, parents tablosunda kontrol et
+                console.log('[Auth] User not found in users table, checking parents table...');
+                const { data: parentData, error: parentError } = await supabase
+                  .from('parents')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
+
+                if (parentError) {
+                  console.error('[Auth] Error fetching parent data:', parentError);
+                  setCurrentUser(null);
+                  setView('auth');
+                  return;
+                }
+
+                if (parentData) {
+                  // Veli bulundu
+                  console.log('[Auth] Parent user found:', parentData.name);
+                  setCurrentUser({
+                    id: parentData.id,
+                    name: parentData.name,
+                    email: parentData.email || '',
+                    password: '',
+                    role: UserRole.Parent
+                  } as User);
+                  setView('dashboard');
+                } else {
+                  console.error('[Auth] User data not found in database!');
+                  setCurrentUser(null);
+                  setView('auth');
+                }
               }
             } catch (error) {
               console.error('[Auth] Error fetching user data:', error);

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { User, Student } from '../types';
 import * as parentService from '../services/parentService';
 import ParentLessonNotesView from '../components/ParentLessonNotesView';
+import ParentPerformanceView from '../components/ParentPerformanceView';
+import ParentAssignmentsView from '../components/ParentAssignmentsView';
 
 interface ParentDashboardProps {
     user: User;
@@ -144,8 +146,8 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 <button
                                     onClick={() => setActiveTab('lessons')}
                                     className={`flex-1 px-6 py-4 text-sm font-medium transition ${activeTab === 'lessons'
-                                            ? 'text-primary border-b-2 border-primary bg-primary/5'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                         }`}
                                 >
                                     📖 Ders Notları
@@ -153,8 +155,8 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 <button
                                     onClick={() => setActiveTab('performance')}
                                     className={`flex-1 px-6 py-4 text-sm font-medium transition ${activeTab === 'performance'
-                                            ? 'text-primary border-b-2 border-primary bg-primary/5'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                         }`}
                                 >
                                     📊 Performans
@@ -162,8 +164,8 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 <button
                                     onClick={() => setActiveTab('assignments')}
                                     className={`flex-1 px-6 py-4 text-sm font-medium transition ${activeTab === 'assignments'
-                                            ? 'text-primary border-b-2 border-primary bg-primary/5'
-                                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                         }`}
                                 >
                                     ✏️ Ödevler
@@ -175,16 +177,10 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                     <ParentLessonNotesView student={selectedStudent} />
                                 )}
                                 {activeTab === 'performance' && (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <div className="text-6xl mb-4">📊</div>
-                                        <p>Performans takibi yakında eklenecek</p>
-                                    </div>
+                                    <ParentPerformanceView student={selectedStudent} />
                                 )}
                                 {activeTab === 'assignments' && (
-                                    <div className="text-center py-12 text-gray-500">
-                                        <div className="text-6xl mb-4">✏️</div>
-                                        <p>Ödev takibi yakında eklenecek</p>
-                                    </div>
+                                    <ParentAssignmentsView student={selectedStudent} />
                                 )}
                             </div>
                         </div>

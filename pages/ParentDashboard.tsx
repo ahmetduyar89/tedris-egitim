@@ -4,6 +4,7 @@ import * as parentService from '../services/parentService';
 import ParentLessonNotesView from '../components/ParentLessonNotesView';
 import ParentPerformanceView from '../components/ParentPerformanceView';
 import ParentAssignmentsView from '../components/ParentAssignmentsView';
+import ParentWeeklyPlanView from '../components/ParentWeeklyPlanView';
 
 interface ParentDashboardProps {
     user: User;
@@ -14,7 +15,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments'>('lessons');
+    const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments' | 'weekly_plan'>('lessons');
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -170,6 +171,15 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 >
                                     ✏️ Ödevler
                                 </button>
+                                <button
+                                    onClick={() => setActiveTab('weekly_plan')}
+                                    className={`flex-1 px-6 py-4 text-sm font-medium transition ${activeTab === 'weekly_plan'
+                                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    📅 Haftalık Plan
+                                </button>
                             </div>
 
                             <div className="p-6">
@@ -181,6 +191,9 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 )}
                                 {activeTab === 'assignments' && (
                                     <ParentAssignmentsView student={selectedStudent} />
+                                )}
+                                {activeTab === 'weekly_plan' && (
+                                    <ParentWeeklyPlanView student={selectedStudent} />
                                 )}
                             </div>
                         </div>

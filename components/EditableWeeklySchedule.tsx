@@ -75,30 +75,21 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   }, [displayProgram, program]);
 
   const deleteTask = async (dayIndex: number, taskIndex: number) => {
-    // Determine if this is a readonly assignment
-    // REMOVED RESTRICTION: Teachers can now delete any task, even if it was originally an assignment.
-    /*
-    const taskToDelete = displayProgram?.days[dayIndex].tasks[taskIndex];
-    if (taskToDelete?.metadata?.assignmentId) {
-      alert("Bu bir ödevdir, buradan silemezsiniz. Lütfen ödevler listesini kullanın.");
-      return;
-    }
-    */
+    // REMOVED RESTRICTION: Teachers can now delete any task.
 
     if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
 
     try {
-      const updatedDays = [...program.days];
-
-      // Safety check: Ensure we are deleting a valid task from the persisted program
-      // This implicitly assumes that assignments are appended AT THE END of the array
-      // So original indices 0..N-1 align.
-      if (taskIndex >= updatedDays[dayIndex].tasks.length) {
-        console.error("Task index out of bounds for persisted program.");
-        return;
-      }
-
-      updatedDays[dayIndex].tasks.splice(taskIndex, 1);
+      // Create a deep copy of the days to avoid mutating props
+      const updatedDays = program.days.map((day, dIndex) => {
+        if (dIndex === dayIndex) {
+          return {
+            ...day,
+            tasks: day.tasks.filter((_, tIndex) => tIndex !== taskIndex)
+          };
+        }
+        return day;
+      });
 
       await db.collection('weeklyPrograms').doc(program.id).update({
         days: updatedDays
@@ -130,11 +121,20 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     if (!editingTask) return;
 
     try {
-      const updatedDays = [...program.days];
-      updatedDays[editingTask.dayIndex].tasks[editingTask.taskIndex] = {
-        ...updatedDays[editingTask.dayIndex].tasks[editingTask.taskIndex],
-        ...editForm
-      };
+      const updatedDays = program.days.map((day, dIndex) => {
+        if (dIndex === editingTask.dayIndex) {
+          return {
+            ...day,
+            tasks: day.tasks.map((task, tIndex) => {
+              if (tIndex === editingTask.taskIndex) {
+                return { ...task, ...editForm };
+              }
+              return task;
+            })
+          };
+        }
+        return day;
+      });
 
       await db.collection('weeklyPrograms').doc(program.id).update({
         days: updatedDays
@@ -167,8 +167,15 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
         metadata: addForm.metadata || {}
       };
 
-      const updatedDays = [...program.days];
-      updatedDays[selectedDayForAdd].tasks.push(newTask);
+      const updatedDays = program.days.map((day, dIndex) => {
+        if (dIndex === selectedDayForAdd) {
+          return {
+            ...day,
+            tasks: [...day.tasks, newTask]
+          };
+        }
+        return day;
+      });
 
       await db.collection('weeklyPrograms').doc(program.id).update({
         days: updatedDays
@@ -187,14 +194,22 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     e.stopPropagation();
 
     try {
-      const updatedDays = [...program.days];
-      const currentTask = updatedDays[dayIndex].tasks[taskIndex];
-
-      // If clicking the same status, revert to 'Assigned' (toggle off)
-      // Otherwise set to the new status
-      const finalStatus = currentTask.status === newStatus ? TaskStatus.Assigned : newStatus;
-
-      updatedDays[dayIndex].tasks[taskIndex].status = finalStatus;
+      const updatedDays = program.days.map((day, dIndex) => {
+        if (dIndex === dayIndex) {
+          return {
+            ...day,
+            tasks: day.tasks.map((task, tIndex) => {
+              if (tIndex === taskIndex) {
+                // Toggle logic if same status clicked
+                const finalStatus = task.status === newStatus ? TaskStatus.Assigned : newStatus;
+                return { ...task, status: finalStatus };
+              }
+              return task;
+            })
+          };
+        }
+        return day;
+      });
 
       await db.collection('weeklyPrograms').doc(program.id).update({
         days: updatedDays

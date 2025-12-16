@@ -93,41 +93,81 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
             const { data: parentData, error: parentError } = await supabase
               .from('parents')
               .select('*')
-              .eq('name', name.trim())
-              .single();
+              .ilike('name', name.trim()) // Case-insensitive arama
+              .maybeSingle(); // single() yerine maybeSingle() kullan
 
-            console.log('🔵 Parents tablosu sorgusu:', { parentData, parentError });
+            console.log('🔵 Parents tablosu sorgusu:', {
+              parentData,
+              parentError,
+              searchedName: name.trim()
+            });
 
-            if (parentError || !parentData) {
-              console.error('❌ Veli bulunamadı:', parentError);
-              setAuthError('Veli bilgileri bulunamadı. Lütfen ad-soyad bilgilerinizi kontrol edin.');
+            // Hata kontrolü
+            if (parentError) {
+              console.error('❌ Veritabanı hatası:', parentError);
+              setAuthError('Veritabanı hatası oluştu. Lütfen tekrar deneyin.');
               setIsLoading(false);
               return;
             }
 
-            console.log('✅ Veli bulundu:', parentData);
+            // Veli bulunamadı
+            if (!parentData) {
+              console.error('❌ Veli bulunamadı. Aranan ad:', name.trim());
 
-            // Şifre kontrolü için Supabase Auth kullan
+              // Tüm velileri göster (debug için)
+              const { data: allParents } = await supabase
+                .from('parents')
+                .select('name');
+              console.log('📋 Sistemdeki tüm veliler:', allParents);
+
+              setAuthError(
+                'Veli bilgileri bulunamadı.\n\n' +
+                '✓ Ad-soyadınızı tam olarak girdiğinizden emin olun.\n' +
+                '✓ Öğretmeninizin sizin için bir veli hesabı oluşturduğundan emin olun.\n\n' +
+                'Sorun devam ederse öğretmeninizle iletişime geçin.'
+              );
+              setIsLoading(false);
+              return;
+            }
+
+            console.log('✅ Veli bulundu:', {
+              id: parentData.id,
+              name: parentData.name,
+              email: parentData.email,
+              phone: parentData.phone
+            });
+
+            // Email kontrolü
             const authEmail = parentData.email;
-            console.log('🔵 Auth giriş deneniyor, email:', authEmail);
-
             if (!authEmail) {
               console.error('❌ Veli email bulunamadı');
-              setAuthError('Veli hesabı email bilgisi eksik. Lütfen öğretmeninizle iletişime geçin.');
+              setAuthError(
+                'Veli hesabınızda email bilgisi eksik.\n\n' +
+                'Lütfen öğretmeninizle iletişime geçerek hesabınızın düzgün oluşturulduğundan emin olun.'
+              );
               setIsLoading(false);
               return;
             }
 
+            console.log('🔵 Auth giriş deneniyor, email:', authEmail);
+
+            // Şifre kontrolü için Supabase Auth kullan
             const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
               email: authEmail,
               password: password.trim(),
             });
 
-            console.log('🔵 Auth giriş sonucu:', { success: !signInError, error: signInError });
+            console.log('🔵 Auth giriş sonucu:', {
+              success: !signInError,
+              error: signInError?.message
+            });
 
             if (signInError) {
               console.error('❌ Şifre hatalı:', signInError);
-              setAuthError('Şifre hatalı. Lütfen tekrar deneyin.');
+              setAuthError(
+                'Şifre hatalı.\n\n' +
+                'Şifrenizi unuttuysanız öğretmeninizden yeni bir şifre talep edebilirsiniz.'
+              );
               setIsLoading(false);
               return;
             }
@@ -142,9 +182,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
               password: '',
               role: UserRole.Parent
             });
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ Parent login error:', error);
-            setAuthError('Giriş yapılırken bir hata oluştu.');
+            setAuthError(
+              'Giriş yapılırken beklenmeyen bir hata oluştu.\n\n' +
+              'Hata: ' + (error.message || 'Bilinmeyen hata')
+            );
             setIsLoading(false);
           }
         } else {
@@ -343,7 +386,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 flex-shrink-0 mt-0.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
-              <span>{authError}</span>
+              <span className="whitespace-pre-line text-left">{authError}</span>
             </div>
           )}
           <button

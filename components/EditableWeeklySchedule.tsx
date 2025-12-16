@@ -75,8 +75,6 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   }, [displayProgram, program]);
 
   const deleteTask = async (dayIndex: number, taskIndex: number) => {
-    // REMOVED RESTRICTION: Teachers can now delete any task.
-
     if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
 
     try {
@@ -103,13 +101,6 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
   };
 
   const startEdit = (dayIndex: number, taskIndex: number) => {
-    // REMOVED RESTRICTION: Teachers can now edit any task.
-    /*
-    const task = displayProgram?.days[dayIndex].tasks[taskIndex];
-    if (task?.metadata?.assignmentId) return;
-    */
-
-    // Use original program task for editing form default values
     const originalTask = program.days[dayIndex].tasks[taskIndex];
     if (!originalTask) return;
 
@@ -200,8 +191,12 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
             ...day,
             tasks: day.tasks.map((task, tIndex) => {
               if (tIndex === taskIndex) {
-                // Toggle logic if same status clicked
-                const finalStatus = task.status === newStatus ? TaskStatus.Assigned : newStatus;
+                // Toggle logic if same status clicked (case-insensitive check)
+                const currentStatus = (task.status || '').toLowerCase();
+                const targetStatus = (newStatus as string).toLowerCase();
+
+                // If clicking the same status, revert to 'Assigned' (toggle off)
+                const finalStatus = currentStatus === targetStatus ? TaskStatus.Assigned : newStatus;
                 return { ...task, status: finalStatus };
               }
               return task;
@@ -232,10 +227,6 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
     const isFailed = status === 'yapılmadı' || status === 'failed' || status === 'yapilmadi';
 
     const isEditing = editingTask?.dayIndex === dayIndex && editingTask?.taskIndex === taskIndex;
-
-    // Logic: assignments prop is removed from logic, so these are all manual tasks now.
-    // We keep the isAssignment check just in case there's legacy metadata, but we allow editing now.
-    // User wanted "old layout" where teacher has full control.
 
     let borderClass = config.borderColor;
     let bgColorClass = config.bgColor;
@@ -345,17 +336,14 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
           </div>
 
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              {/* Removed assignment check for editing lock. Teacher controls everything. */}
-            </div>
             <p className={`text-base ${(isCompleted || isFailed) ? 'text-gray-500' : 'text-gray-800'} ${isCompleted ? 'line-through' : ''}`}>
               {displayType && `${displayType}: `}{displayTitle}
               {isFailed && <span className="ml-2 text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">YAPILMADI</span>}
             </p>
           </div>
 
-          {/* Always show edit/delete buttons now */}
-          <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          {/* Always show edit/delete buttons - REMOVED opacity logic to ensure visibility */}
+          <div className="flex items-center gap-1">
             <button
               onClick={() => startEdit(dayIndex, taskIndex)}
               className="w-8 h-8 rounded flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"

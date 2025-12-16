@@ -326,17 +326,32 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                 // ========================================
                 // 2. Fetch from ASSIGNMENTS (Tedris Plan - Öğrenci Sayfası)
                 // ========================================
+                // Fetch ALL pending assignments (not completed), not just this week
                 const { data: assignmentsData, error: assignmentsError } = await supabase
                     .from('assignments')
-                    .select('title, description, subject, due_date, status')
+                    .select('id, title, description, subject, due_date, status')
                     .eq('student_id', selectedStudentId)
-                    .gte('due_date', startOfWeek.toISOString())
-                    .lt('due_date', endOfWeek.toISOString());
+                    .gte('due_date', new Date().toISOString()); // Only future/current assignments
 
                 console.log('[WhatsApp Homework] Assignments query result:', { data: assignmentsData, error: assignmentsError });
 
                 if (!assignmentsError && assignmentsData && assignmentsData.length > 0) {
+                    // Filter out completed assignments (check if there's a submission)
+                    // We'll need to check submissions table
+                    const { data: submissions } = await supabase
+                        .from('submissions')
+                        .select('assignment_id, status')
+                        .eq('student_id', selectedStudentId)
+                        .in('status', ['submitted', 'graded']);
+
+                    const completedAssignmentIds = new Set(submissions?.map(s => s.assignment_id) || []);
+
                     assignmentsData.forEach(assignment => {
+                        // Skip completed assignments
+                        if (completedAssignmentIds.has(assignment.id)) {
+                            return;
+                        }
+
                         const subject = assignment.subject || 'Genel';
                         const dueDate = new Date(assignment.due_date);
                         const dayName = dueDate.toLocaleDateString('tr-TR', { weekday: 'long' });
@@ -851,16 +866,29 @@ const WhatsAppMessageModal: React.FC<WhatsAppMessageModalProps> = ({ isOpen, onC
                             });
                         }
 
-                        // Fetch from assignments
+                        // Fetch from assignments - ALL pending assignments
                         const { data: assignmentsData } = await supabase
                             .from('assignments')
-                            .select('title, description, subject, due_date, status')
+                            .select('id, title, description, subject, due_date, status')
                             .eq('student_id', student.id)
-                            .gte('due_date', startOfWeek.toISOString())
-                            .lt('due_date', endOfWeek.toISOString());
+                            .gte('due_date', new Date().toISOString()); // Only future/current assignments
 
                         if (assignmentsData && assignmentsData.length > 0) {
+                            // Filter out completed assignments
+                            const { data: submissions } = await supabase
+                                .from('submissions')
+                                .select('assignment_id, status')
+                                .eq('student_id', student.id)
+                                .in('status', ['submitted', 'graded']);
+
+                            const completedAssignmentIds = new Set(submissions?.map(s => s.assignment_id) || []);
+
                             assignmentsData.forEach(assignment => {
+                                // Skip completed assignments
+                                if (completedAssignmentIds.has(assignment.id)) {
+                                    return;
+                                }
+
                                 const subject = assignment.subject || 'Genel';
                                 const dueDate = new Date(assignment.due_date);
                                 const dayName = dueDate.toLocaleDateString('tr-TR', { weekday: 'long' });

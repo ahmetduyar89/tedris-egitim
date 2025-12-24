@@ -281,6 +281,14 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     };
     const handleLessonClick = async (lesson: PrivateLesson) => {
         setSelectedLesson(lesson);
+        // Reset states immediately to show a clean modal while loading
+        setCurrentWeeklyProgram(null);
+        setPastWeeklyProgram(null);
+        setAiSummary('');
+        setAiHomeworkSuggestions('');
+        setAiLoading(false);
+        setIsStudentDetailModalOpen(true);
+
         const student = allStudents.find(s => s.id === lesson.studentId);
         if (student) {
             setSelectedStudent(student);
@@ -443,8 +451,6 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             } catch (error) {
                 console.error('Error loading attendance:', error);
             }
-
-            setIsStudentDetailModalOpen(true);
         }
     };
 

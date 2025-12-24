@@ -414,23 +414,24 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
       {isExpanded && (
         <div className="p-6 space-y-6 bg-card-background animate-fade-in-down">
           {displayProgram.days
-            .filter(day => !focusDay || day.day === focusDay)
             .map((day, filteredIndex) => {
               // Find the original index for dayNames and updates
               const dayIndex = dayNames.indexOf(day.day);
+              const isFocusDay = focusDay === day.day;
               return (
-                <div key={dayIndex}>
+                <div key={dayIndex} className={`${isFocusDay ? 'ring-2 ring-blue-500 ring-offset-4 rounded-xl p-2 bg-blue-50/30' : ''}`}>
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                      <span className="w-2 h-8 rounded-full bg-blue-500"></span>
+                      <span className={`w-2 h-8 rounded-full ${isFocusDay ? 'bg-blue-600' : 'bg-blue-400'}`}></span>
                       {day.day}
+                      {isFocusDay && <span className="text-xs font-bold text-blue-600 uppercase tracking-wider ml-2 bg-blue-100 px-2 py-0.5 rounded-full">Ders Günü</span>}
                     </h3>
                     <button
                       onClick={() => {
                         setSelectedDayForAdd(dayIndex);
                         setShowAddModal(true);
                       }}
-                      className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
+                      className={`text-sm px-3 py-1 rounded-lg font-bold transition-colors ${isFocusDay ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                     >
                       + Ekle
                     </button>

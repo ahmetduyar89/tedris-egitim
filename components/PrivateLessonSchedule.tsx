@@ -71,6 +71,8 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     const [dropTarget, setDropTarget] = useState<{ day: number; hour: number } | null>(null);
 
     const [currentWeeklyProgram, setCurrentWeeklyProgram] = useState<WeeklyProgram | null>(null);
+    const [pastWeeklyProgram, setPastWeeklyProgram] = useState<WeeklyProgram | null>(null);
+    const [programViewMode, setProgramViewMode] = useState<'current' | 'past'>('current');
 
     useEffect(() => {
         const fetchAllStudents = async () => {
@@ -291,33 +293,54 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
             // Fetch Weekly Program for the specific week of the lesson
             try {
-                const weekId = weekStart.toISOString().split('T')[0];
-                const programSnapshot = await db.collection('weeklyPrograms')
-                    .where('studentId', '==', studentId)
-                    .where('weekId', '==', weekId)
-                    .limit(1)
-                    .get();
+                const lessonDate = new Date(lesson.startTime);
+                // Calculate Monday of that week
+                const day = lessonDate.getDay();
+                const diff = lessonDate.getDate() - day + (day === 0 ? -6 : 1);
+                const weekStartOfLesson = new Date(lessonDate.setDate(diff));
+                weekStartOfLesson.setHours(0, 0, 0, 0);
 
-                if (!programSnapshot.empty) {
-                    const doc = programSnapshot.docs[0];
-                    setCurrentWeeklyProgram({ id: doc.id, ...doc.data() } as WeeklyProgram);
+                const weekId = weekStartOfLesson.toISOString().split('T')[0];
+
+                // Also calculate Past Week Id
+                const pastWeekStart = new Date(weekStartOfLesson);
+                pastWeekStart.setDate(pastWeekStart.getDate() - 7);
+                const pastWeekId = pastWeekStart.toISOString().split('T')[0];
+
+                const [currentSnapshot, pastSnapshot] = await Promise.all([
+                    db.collection('weeklyPrograms')
+                        .where('studentId', '==', studentId)
+                        .where('weekId', '==', weekId)
+                        .limit(1)
+                        .get(),
+                    db.collection('weeklyPrograms')
+                        .where('studentId', '==', studentId)
+                        .where('weekId', '==', pastWeekId)
+                        .limit(1)
+                        .get()
+                ]);
+
+                if (!currentSnapshot.empty) {
+                    setCurrentWeeklyProgram({ id: currentSnapshot.docs[0].id, ...currentSnapshot.docs[0].data() } as WeeklyProgram);
                 } else {
-                    // Create a new weekly program if one doesn't exist for THIS week
                     const newProgram: WeeklyProgram = {
                         id: `prog_${Date.now()}_${studentId}_${weekId}`,
                         studentId: studentId,
                         week: 1,
-                        weekId: weekId, // Store the weekId
-                        days: DAYS_TR.map(day => ({
-                            day,
-                            tasks: [] as Task[]
-                        }))
+                        weekId: weekId,
+                        days: DAYS_TR.map(day => ({ day, tasks: [] }))
                     };
-
-                    // Save to DB immediately so EditableWeeklySchedule can update it
                     await db.collection('weeklyPrograms').doc(newProgram.id).set(newProgram);
                     setCurrentWeeklyProgram(newProgram);
                 }
+
+                if (!pastSnapshot.empty) {
+                    setPastWeeklyProgram({ id: pastSnapshot.docs[0].id, ...pastSnapshot.docs[0].data() } as WeeklyProgram);
+                } else {
+                    setPastWeeklyProgram(null);
+                }
+
+                setProgramViewMode('current');
             } catch (error) {
                 console.error("Error fetching weekly program:", error);
                 // Fallback object to prevent crash
@@ -662,22 +685,61 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
     const handleWhatsAppShare = () => {
         if (!selectedStudent || !selectedLesson) return;
 
-        const homeworkList = Object.entries(weeklyHomework)
-            .filter(([_, hw]) => hw.trim() !== '')
-            .map(([day, hw]) => `*${day}:*\n${hw}`)
-            .join('\n\n');
+        // Current week's homework from program
+        let currentHomeworkText = '';
+        if (currentWeeklyProgram) {
+            currentHomeworkText = currentWeeklyProgram.days
+                .filter(day => day.tasks.length > 0)
+                .map(day => `*${day.day}:*\n${day.tasks.map(t => `- ${t.description}`).join('\n')}`)
+                .join('\n\n');
+        }
+
+        // If program is empty, fallback to legacy homework list
+        if (!currentHomeworkText) {
+            currentHomeworkText = Object.entries(weeklyHomework)
+                .filter(([_, hw]) => hw.trim() !== '')
+                .map(([day, hw]) => `*${day}:*\n${hw}`)
+                .join('\n\n');
+        }
+
+        // Past week's homework summary
+        let pastHomeworkText = '';
+        if (pastWeeklyProgram) {
+            const completed: string[] = [];
+            const pending: string[] = [];
+
+            pastWeeklyProgram.days.forEach(day => {
+                day.tasks.forEach(task => {
+                    const taskStr = `${task.description} (${day.day})`;
+                    if (task.status === TaskStatus.Completed) {
+                        completed.push(taskStr);
+                    } else {
+                        pending.push(taskStr);
+                    }
+                });
+            });
+
+            if (completed.length > 0 || pending.length > 0) {
+                pastHomeworkText = `✅ *Yapılan Ödevler:*\n${completed.length > 0 ? completed.map(t => `- ${t}`).join('\n') : 'Yok'}\n` +
+                    `❌ *Eksik/Yapılanmayanlar:*\n${pending.length > 0 ? pending.map(t => `- ${t}`).join('\n') : 'Yok'}\n`;
+            }
+        }
 
         let message = `Merhaba ${selectedStudent.name},\n\n` +
             `📚 *${new Date(selectedLesson.startTime).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} Tarihli Ders Özeti*\n\n` +
             `📖 *İşlenen Konu:*\n${detailTopic || 'Belirtilmedi'}\n\n`;
 
-        // Add AI summary if available
         if (aiSummary) {
             message += `🤖 *AI Özeti:*\n${aiSummary}\n\n`;
         }
 
-        message += `📝 *Ders Notları:*\n${detailLessonNotes || 'Not eklenmedi'}\n\n` +
-            `✏️ *Haftalık Ödevler:*\n\n${homeworkList || 'Ödev verilmedi'}\n\n` +
+        message += `📝 *Ders Notları:*\n${detailLessonNotes || 'Not eklenmedi'}\n\n`;
+
+        if (pastHomeworkText) {
+            message += `📊 *Ödev Kontrol (Geçen Hafta):*\n${pastHomeworkText}\n`;
+        }
+
+        message += `✏️ *Yeni Haftalık Ödevler:*\n\n${currentHomeworkText || 'Ödev verilmedi'}\n\n` +
             `İyi çalışmalar! 📚✨`;
 
         const encodedMessage = encodeURIComponent(message);
@@ -1376,31 +1438,70 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
 
                         {detailActiveTab === 'homework' && (
                             <div className="space-y-4">
-                                {currentWeeklyProgram ? (
-                                    <>
-                                        <EditableWeeklySchedule
-                                            program={currentWeeklyProgram}
-                                            onProgramUpdate={(updated) => setCurrentWeeklyProgram(updated)}
-                                            focusDay={DAYS_TR[(new Date(selectedLesson.startTime).getDay() + 6) % 7]}
-                                        />
-                                        <div className="flex justify-end pt-4 border-t border-gray-100">
-                                            <button
-                                                onClick={() => setIsStudentDetailModalOpen(false)}
-                                                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
-                                            >
-                                                Kapat
-                                            </button>
+                                <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
+                                    <button
+                                        onClick={() => setProgramViewMode('past')}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${programViewMode === 'past' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        ⏮ Geçen Haftanın Ödev Kontrolü
+                                    </button>
+                                    <button
+                                        onClick={() => setProgramViewMode('current')}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${programViewMode === 'current' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        ⏭ Bu Haftanın Ödev Programı
+                                    </button>
+                                </div>
+
+                                {programViewMode === 'past' ? (
+                                    pastWeeklyProgram ? (
+                                        <div className="space-y-4 animate-fade-in">
+                                            <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg text-sm text-orange-800 flex items-center gap-2">
+                                                <span>ℹ️</span>
+                                                Geçen haftanın ödevlerini buradan kontrol edip durumunu güncelleyebilirsiniz.
+                                            </div>
+                                            <EditableWeeklySchedule
+                                                program={pastWeeklyProgram}
+                                                onProgramUpdate={(updated) => setPastWeeklyProgram(updated)}
+                                            />
                                         </div>
-                                    </>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-12 text-gray-400 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                                            <span className="text-4xl mb-2">📭</span>
+                                            <p>Geçen haftaya ait bir program bulunamadı.</p>
+                                        </div>
+                                    )
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center py-12 text-gray-500 min-h-[300px]">
-                                        <svg className="animate-spin h-8 w-8 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        <p>Haftalık program yükleniyor...</p>
-                                    </div>
+                                    currentWeeklyProgram ? (
+                                        <div className="space-y-4 animate-fade-in">
+                                            <EditableWeeklySchedule
+                                                program={currentWeeklyProgram}
+                                                onProgramUpdate={(updated) => setCurrentWeeklyProgram(updated)}
+                                                focusDay={DAYS_TR[(new Date(selectedLesson.startTime).getDay() + 6) % 7]}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                                            <svg className="animate-spin h-8 w-8 text-primary mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <p>Haftalık program yükleniyor...</p>
+                                        </div>
+                                    )
                                 )}
+
+                                <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                                    <div className="text-xs text-gray-400 italic">
+                                        * Yapılan değişiklikler otomatik olarak kaydedilir.
+                                    </div>
+                                    <button
+                                        onClick={() => setIsStudentDetailModalOpen(false)}
+                                        className="px-6 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                                    >
+                                        Kapat
+                                    </button>
+                                </div>
                             </div>
                         )}
 

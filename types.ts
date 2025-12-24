@@ -301,6 +301,7 @@ export interface WeeklyProgram {
   id: string;
   studentId: string;
   week: number;
+  weekId?: string; // e.g. '2025-12-22'
   days: {
     day: string;
     tasks: Task[];

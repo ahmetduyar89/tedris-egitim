@@ -6,6 +6,7 @@ interface EditableWeeklyScheduleProps {
   program: WeeklyProgram;
   assignments?: Assignment[];
   onProgramUpdate: (program: WeeklyProgram) => void;
+  focusDay?: string; // e.g. 'Pazartesi'
 }
 
 const subjectConfig: { [key in Subject]?: { borderColor: string; textColor: string; bgColor: string; icon: React.ReactNode } } = {
@@ -35,7 +36,7 @@ const defaultConfig = {
   icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg>
 };
 
-const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program, assignments, onProgramUpdate }) => {
+const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program, assignments, onProgramUpdate, focusDay }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDayForAdd, setSelectedDayForAdd] = useState<number>(0);
@@ -412,34 +413,40 @@ const EditableWeeklySchedule: React.FC<EditableWeeklyScheduleProps> = ({ program
 
       {isExpanded && (
         <div className="p-6 space-y-6 bg-card-background animate-fade-in-down">
-          {displayProgram.days.map((day, dayIndex) => (
-            <div key={dayIndex}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <span className="w-2 h-8 rounded-full bg-blue-500"></span>
-                  {dayNames[dayIndex]}
-                </h3>
-                <button
-                  onClick={() => {
-                    setSelectedDayForAdd(dayIndex);
-                    setShowAddModal(true);
-                  }}
-                  className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
-                >
-                  + Ekle
-                </button>
-              </div>
-              <div className="space-y-2">
-                {day.tasks.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">Bu gün için görev yok</p>
-                ) : (
-                  day.tasks.map((task, taskIndex) => (
-                    <TaskCard key={taskIndex} task={task} dayIndex={dayIndex} taskIndex={taskIndex} />
-                  ))
-                )}
-              </div>
-            </div>
-          ))}
+          {displayProgram.days
+            .filter(day => !focusDay || day.day === focusDay)
+            .map((day, filteredIndex) => {
+              // Find the original index for dayNames and updates
+              const dayIndex = dayNames.indexOf(day.day);
+              return (
+                <div key={dayIndex}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <span className="w-2 h-8 rounded-full bg-blue-500"></span>
+                      {day.day}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setSelectedDayForAdd(dayIndex);
+                        setShowAddModal(true);
+                      }}
+                      className="text-sm px-3 py-1 bg-blue-50 text-blue-600 rounded-lg font-bold hover:bg-blue-100 transition-colors"
+                    >
+                      + Ekle
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {day.tasks.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">Bu gün için görev yok</p>
+                    ) : (
+                      day.tasks.map((task, taskIndex) => (
+                        <TaskCard key={taskIndex} task={task} dayIndex={dayIndex} taskIndex={taskIndex} />
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
         </div>
       )}
 

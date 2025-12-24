@@ -289,10 +289,12 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             const studentId = lesson.studentId;
             const tutorId = lesson.tutorId;
 
-            // Fetch Weekly Program
+            // Fetch Weekly Program for the specific week of the lesson
             try {
+                const weekId = weekStart.toISOString().split('T')[0];
                 const programSnapshot = await db.collection('weeklyPrograms')
                     .where('studentId', '==', studentId)
+                    .where('weekId', '==', weekId)
                     .limit(1)
                     .get();
 
@@ -300,11 +302,12 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     const doc = programSnapshot.docs[0];
                     setCurrentWeeklyProgram({ id: doc.id, ...doc.data() } as WeeklyProgram);
                 } else {
-                    // Create a new weekly program if one doesn't exist
+                    // Create a new weekly program if one doesn't exist for THIS week
                     const newProgram: WeeklyProgram = {
-                        id: `prog_${Date.now()}`,
+                        id: `prog_${Date.now()}_${studentId}_${weekId}`,
                         studentId: studentId,
                         week: 1,
+                        weekId: weekId, // Store the weekId
                         days: DAYS_TR.map(day => ({
                             day,
                             tasks: [] as Task[]
@@ -1378,6 +1381,7 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                                         <EditableWeeklySchedule
                                             program={currentWeeklyProgram}
                                             onProgramUpdate={(updated) => setCurrentWeeklyProgram(updated)}
+                                            focusDay={DAYS_TR[(new Date(selectedLesson.startTime).getDay() + 6) % 7]}
                                         />
                                         <div className="flex justify-end pt-4 border-t border-gray-100">
                                             <button

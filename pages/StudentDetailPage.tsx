@@ -306,9 +306,16 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 programToSave = { ...weeklyProgram, ...programData };
                 await db.collection('weeklyPrograms').doc(weeklyProgram.id).set(programToSave);
             } else {
-                const newProgramData = { studentId: student.id, week: 1, ...programData };
+                const now = new Date();
+                const day = now.getDay();
+                const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+                const weekStart = new Date(now.setDate(diff));
+                weekStart.setHours(0, 0, 0, 0);
+                const weekId = weekStart.toISOString().split('T')[0];
+
+                const newProgramData = { studentId: student.id, week: 1, weekId, ...programData };
                 const docRef = await db.collection('weeklyPrograms').add(newProgramData);
-                programToSave = { id: docRef.id, ...newProgramData };
+                programToSave = { id: docRef.id, ...newProgramData } as WeeklyProgram;
             }
             setWeeklyProgram(programToSave);
             setIsEditingProgram(false);

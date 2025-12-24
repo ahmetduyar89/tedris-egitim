@@ -610,8 +610,20 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
       setPendingTests(allPendingTests);
       setCompletedTests(allTests.filter(t => t.completed).sort((a, b) => new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime()));
 
-      // Fetch weekly program
-      const programSnapshot = await db.collection('weeklyPrograms').where('studentId', '==', user.id).limit(1).get();
+      // Fetch weekly program for the current week
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+      const weekStart = new Date(now.setDate(diff));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekId = weekStart.toISOString().split('T')[0];
+
+      const programSnapshot = await db.collection('weeklyPrograms')
+        .where('studentId', '==', user.id)
+        .where('weekId', '==', weekId)
+        .limit(1)
+        .get();
+
       if (!programSnapshot.empty) {
         const doc = programSnapshot.docs[0];
         const program = { id: doc.id, ...doc.data() } as WeeklyProgram;

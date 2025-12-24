@@ -369,9 +369,17 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 setProgramViewMode('current');
             } catch (error) {
                 console.error("Error fetching weekly program:", error);
-                // Fallback object to prevent crash, but try to use a valid-looking ID if possible
-                // or just set to null to avoid broken updates
-                setCurrentWeeklyProgram(null);
+
+                // Fallback: Create a local-only program so the UI doesn't hang
+                const weekId = new Date(lesson.startTime).toISOString().split('T')[0];
+                const fallbackProgram: WeeklyProgram = {
+                    id: `fallback_${Date.now()}`,
+                    studentId: lesson.studentId,
+                    week: 1,
+                    weekId: weekId,
+                    days: DAYS_TR.map(day => ({ day, tasks: [] }))
+                };
+                setCurrentWeeklyProgram(fallbackProgram);
                 setPastWeeklyProgram(null);
             }
 

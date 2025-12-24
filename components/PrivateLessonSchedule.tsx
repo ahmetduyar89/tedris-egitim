@@ -321,21 +321,47 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 ]);
 
                 if (!currentSnapshot.empty) {
-                    setCurrentWeeklyProgram({ id: currentSnapshot.docs[0].id, ...currentSnapshot.docs[0].data() } as WeeklyProgram);
+                    const doc = currentSnapshot.docs[0];
+                    const data = doc.data();
+                    // Self-healing: If the existing ID is invalid (from previous buggy version), 
+                    // delete and recreate it with a proper UUID
+                    if (doc.id.startsWith('prog_') || doc.id.startsWith('temp_')) {
+                        try {
+                            await db.collection('weeklyPrograms').doc(doc.id).delete();
+                            const { id } = await db.collection('weeklyPrograms').add(data);
+                            setCurrentWeeklyProgram({ id, ...data } as WeeklyProgram);
+                        } catch (e) {
+                            console.error("Self-healing failed:", e);
+                            setCurrentWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
+                        }
+                    } else {
+                        setCurrentWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
+                    }
                 } else {
-                    const newProgram: WeeklyProgram = {
-                        id: `prog_${Date.now()}_${studentId}_${weekId}`,
+                    const newProgramData = {
                         studentId: studentId,
                         week: 1,
                         weekId: weekId,
                         days: DAYS_TR.map(day => ({ day, tasks: [] }))
                     };
-                    await db.collection('weeklyPrograms').doc(newProgram.id).set(newProgram);
-                    setCurrentWeeklyProgram(newProgram);
+                    const { id } = await db.collection('weeklyPrograms').add(newProgramData);
+                    setCurrentWeeklyProgram({ id, ...newProgramData } as WeeklyProgram);
                 }
 
                 if (!pastSnapshot.empty) {
-                    setPastWeeklyProgram({ id: pastSnapshot.docs[0].id, ...pastSnapshot.docs[0].data() } as WeeklyProgram);
+                    const doc = pastSnapshot.docs[0];
+                    const data = doc.data();
+                    if (doc.id.startsWith('prog_') || doc.id.startsWith('temp_')) {
+                        try {
+                            await db.collection('weeklyPrograms').doc(doc.id).delete();
+                            const { id } = await db.collection('weeklyPrograms').add(data);
+                            setPastWeeklyProgram({ id, ...data } as WeeklyProgram);
+                        } catch (e) {
+                            setPastWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
+                        }
+                    } else {
+                        setPastWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
+                    }
                 } else {
                     setPastWeeklyProgram(null);
                 }
@@ -343,16 +369,10 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 setProgramViewMode('current');
             } catch (error) {
                 console.error("Error fetching weekly program:", error);
-                // Fallback object to prevent crash
-                setCurrentWeeklyProgram({
-                    id: `temp_${Date.now()}`,
-                    studentId: studentId,
-                    week: 1,
-                    days: DAYS_TR.map(day => ({
-                        day,
-                        tasks: [] as Task[]
-                    }))
-                });
+                // Fallback object to prevent crash, but try to use a valid-looking ID if possible
+                // or just set to null to avoid broken updates
+                setCurrentWeeklyProgram(null);
+                setPastWeeklyProgram(null);
             }
 
             // Reset AI states

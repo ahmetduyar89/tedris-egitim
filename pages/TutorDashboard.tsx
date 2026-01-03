@@ -841,7 +841,7 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
 
         try {
             const { data, error } = await supabase.functions.invoke('delete-student', {
-                body: { studentId: deletingStudent.id }
+                body: { student_id: deletingStudent.id }
             });
 
             if (error) {

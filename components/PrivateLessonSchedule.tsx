@@ -315,37 +315,63 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                 pastWeekStart.setDate(pastWeekStart.getDate() - 7);
                 const pastWeekId = pastWeekStart.toISOString().split('T')[0];
 
-                const [currentSnapshot, pastSnapshot] = await Promise.all([
-                    db.collection('weeklyPrograms')
-                        .where('studentId', '==', studentId)
-                        .where('weekId', '==', weekId)
-                        .limit(1)
-                        .get(),
-                    db.collection('weeklyPrograms')
-                        .where('studentId', '==', studentId)
-                        .where('weekId', '==', pastWeekId)
-                        .limit(1)
-                        .get()
-                ]);
+                // Fetch all programs for this student to handle legacy and specific weeks
+                const programSnapshot = await db.collection('weeklyPrograms')
+                    .where('studentId', '==', studentId)
+                    .orderBy('createdAt', 'desc')
+                    .get();
 
-                if (!currentSnapshot.empty) {
-                    const doc = currentSnapshot.docs[0];
-                    const data = doc.data();
-                    // Self-healing: If the existing ID is invalid (from previous buggy version), 
-                    // delete and recreate it with a proper UUID
-                    if (doc.id.startsWith('prog_') || doc.id.startsWith('temp_')) {
+                const allPrograms = programSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                } as WeeklyProgram));
+
+                // 1. Find Current Week Program
+                let current = allPrograms.find(p => p.weekId === weekId);
+
+                // 2. Find Past Week Program
+                let past = allPrograms.find(p => p.weekId === pastWeekId);
+
+                // Migration/Fallback logic:
+                // If no specific current week program found, take the most recent one as current
+                if (!current && allPrograms.length > 0) {
+                    current = allPrograms[0];
+                }
+
+                // If no specific past week program found, take the second most recent one
+                if (!past && allPrograms.length > 1) {
+                    // Make sure it's not the same as current
+                    past = allPrograms.find(p => p.id !== current?.id);
+                }
+
+                // Self-healing function for local use
+                const healProgram = async (program: WeeklyProgram) => {
+                    if (program.id.startsWith('prog_') || program.id.startsWith('temp_')) {
                         try {
-                            await db.collection('weeklyPrograms').doc(doc.id).delete();
-                            const { id } = await db.collection('weeklyPrograms').add(data);
-                            setCurrentWeeklyProgram({ id, ...data } as WeeklyProgram);
+                            await db.collection('weeklyPrograms').doc(program.id).delete();
+                            const { id } = await db.collection('weeklyPrograms').add(program);
+                            return { ...program, id };
                         } catch (e) {
                             console.error("Self-healing failed:", e);
-                            setCurrentWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
+                            return program;
                         }
-                    } else {
-                        setCurrentWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
                     }
+                    return program;
+                };
+
+                if (current) {
+                    const healedCurrent = await healProgram(current);
+                    // If the found program doesn't have a weekId, assign it this week's ID 
+                    // This migrates legacy data to the first week it's accessed
+                    if (!healedCurrent.weekId) {
+                        try {
+                            await db.collection('weeklyPrograms').doc(healedCurrent.id).update({ week_id: weekId });
+                            healedCurrent.weekId = weekId;
+                        } catch (e) { console.error("Migration failed:", e); }
+                    }
+                    setCurrentWeeklyProgram(healedCurrent);
                 } else {
+                    // Create New Program for current week
                     const newProgramData = {
                         studentId: studentId,
                         week: 1,
@@ -356,20 +382,9 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
                     setCurrentWeeklyProgram({ id, ...newProgramData } as WeeklyProgram);
                 }
 
-                if (!pastSnapshot.empty) {
-                    const doc = pastSnapshot.docs[0];
-                    const data = doc.data();
-                    if (doc.id.startsWith('prog_') || doc.id.startsWith('temp_')) {
-                        try {
-                            await db.collection('weeklyPrograms').doc(doc.id).delete();
-                            const { id } = await db.collection('weeklyPrograms').add(data);
-                            setPastWeeklyProgram({ id, ...data } as WeeklyProgram);
-                        } catch (e) {
-                            setPastWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
-                        }
-                    } else {
-                        setPastWeeklyProgram({ id: doc.id, ...data } as WeeklyProgram);
-                    }
+                if (past) {
+                    const healedPast = await healProgram(past);
+                    setPastWeeklyProgram(healedPast);
                 } else {
                     setPastWeeklyProgram(null);
                 }

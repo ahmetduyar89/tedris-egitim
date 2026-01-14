@@ -1,22 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { User, Student } from '../types';
+import { User, Student, UserRole } from '../types';
 import * as parentService from '../services/parentService';
 import ParentLessonNotesView from '../components/ParentLessonNotesView';
 import ParentPerformanceView from '../components/ParentPerformanceView';
 import ParentAssignmentsView from '../components/ParentAssignmentsView';
 import ParentWeeklyPlanView from '../components/ParentWeeklyPlanView';
+import { assessmentService } from '../services/assessmentService';
 
 interface ParentDashboardProps {
     user: User;
     onLogout: () => void;
 }
 
+const LockedOverlay: React.FC<{ title: string }> = ({ title }) => (
+    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center p-6 text-center rounded-3xl border-2 border-dashed border-indigo-400/30 animate-fade-in">
+        <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center text-2xl shadow-lg mb-4">
+            👑
+        </div>
+        <h4 className="text-lg font-black text-gray-800 mb-1">{title}</h4>
+        <p className="text-gray-600 text-xs max-w-[200px] mb-4 font-medium">Bu analiz sadece Premium öğrenciler içindir.</p>
+        <button className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95">
+            Premium'a Yükselt
+        </button>
+    </div>
+);
+
 const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => {
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments' | 'weekly_plan'>('weekly_plan');
+    const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments' | 'weekly_plan' | 'management' | 'analysis'>('weekly_plan');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isAddingStudent, setIsAddingStudent] = useState(false);
+    const [studentScores, setStudentScores] = useState<any[]>([]);
+    const [studentProgress, setStudentProgress] = useState(0);
 
     useEffect(() => {
         const fetchStudents = async () => {
@@ -36,6 +53,24 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
 
         fetchStudents();
     }, [user.id]);
+
+    useEffect(() => {
+        const fetchStudentMetrics = async () => {
+            if (!selectedStudent) return;
+            try {
+                const [scores, progress] = await Promise.all([
+                    assessmentService.getStudentScores(selectedStudent.id),
+                    assessmentService.getOverallProgress(selectedStudent.id)
+                ]);
+                setStudentScores(scores);
+                setStudentProgress(progress);
+            } catch (error) {
+                console.error('Error fetching student metrics:', error);
+            }
+        };
+
+        fetchStudentMetrics();
+    }, [selectedStudent]);
 
     if (loading) {
         return (
@@ -72,9 +107,11 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
 
     const tabs = [
         { id: 'weekly_plan', label: 'Haftalık Plan', icon: '📅', color: 'from-blue-500 to-cyan-500' },
+        { id: 'analysis', label: 'Gelişim Analizi', icon: '🎯', color: 'from-indigo-600 to-violet-600' },
         { id: 'performance', label: 'Performans', icon: '📊', color: 'from-purple-500 to-pink-500' },
         { id: 'assignments', label: 'Ödevler', icon: '✏️', color: 'from-orange-500 to-red-500' },
         { id: 'lessons', label: 'Ders Notları', icon: '📖', color: 'from-green-500 to-teal-500' },
+        { id: 'management', label: 'Yönetim', icon: '⚙️', color: 'from-gray-500 to-slate-500' },
     ];
 
     return (
@@ -172,22 +209,22 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                         {/* Modern Tab Navigation */}
                         <div className="mb-6">
                             {/* Desktop Tabs */}
-                            <div className="hidden md:grid grid-cols-4 gap-4">
+                            <div className="hidden md:grid grid-cols-4 lg:grid-cols-6 gap-4">
                                 {tabs.map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id as any)}
-                                        className={`group relative overflow-hidden rounded-2xl p-6 transition-all duration-300 ${activeTab === tab.id
-                                                ? 'bg-white shadow-xl scale-105'
-                                                : 'bg-white/60 hover:bg-white hover:shadow-lg'
+                                        className={`group relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${activeTab === tab.id
+                                            ? 'bg-white shadow-xl scale-105'
+                                            : 'bg-white/60 hover:bg-white hover:shadow-lg'
                                             }`}
                                     >
                                         <div className={`absolute inset-0 bg-gradient-to-br ${tab.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
                                         <div className="relative">
-                                            <div className="text-4xl mb-3">{tab.icon}</div>
-                                            <div className={`text-sm font-bold ${activeTab === tab.id
-                                                    ? `bg-gradient-to-r ${tab.color} bg-clip-text text-transparent`
-                                                    : 'text-gray-600'
+                                            <div className="text-3xl mb-2">{tab.icon}</div>
+                                            <div className={`text-xs font-bold ${activeTab === tab.id
+                                                ? `bg-gradient-to-r ${tab.color} bg-clip-text text-transparent`
+                                                : 'text-gray-600'
                                                 }`}>
                                                 {tab.label}
                                             </div>
@@ -202,20 +239,20 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                             {/* Mobile Tabs */}
                             <div className="md:hidden">
                                 <div className="bg-white rounded-2xl p-2 shadow-lg">
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         {tabs.map((tab) => (
                                             <button
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id as any)}
-                                                className={`relative overflow-hidden rounded-xl p-4 transition-all duration-300 ${activeTab === tab.id
-                                                        ? 'bg-gradient-to-br from-primary/10 to-accent/10'
-                                                        : 'bg-gray-50'
+                                                className={`relative overflow-hidden rounded-xl p-3 transition-all duration-300 ${activeTab === tab.id
+                                                    ? 'bg-gradient-to-br from-primary/10 to-accent/10'
+                                                    : 'bg-gray-50'
                                                     }`}
                                             >
-                                                <div className="text-2xl mb-1">{tab.icon}</div>
-                                                <div className={`text-xs font-bold ${activeTab === tab.id
-                                                        ? 'text-primary'
-                                                        : 'text-gray-600'
+                                                <div className="text-xl mb-1">{tab.icon}</div>
+                                                <div className={`text-[10px] font-bold ${activeTab === tab.id
+                                                    ? 'text-primary'
+                                                    : 'text-gray-600'
                                                     }`}>
                                                     {tab.label}
                                                 </div>
@@ -229,6 +266,115 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                         {/* Content Area - Clean & Minimal */}
                         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                             <div className="p-6 md:p-8">
+                                {activeTab === 'analysis' && (
+                                    <div className="space-y-8 animate-fade-in">
+                                        <div className="flex justify-between items-center">
+                                            <h2 className="text-2xl font-bold text-gray-800">Gelişim Analizi</h2>
+                                            <div className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm">
+                                                Tanı Testi Sonuçları
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-8">
+                                            {/* Progress Box */}
+                                            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                                                {!selectedStudent.isPremium && <LockedOverlay title="İlerleme Analizi" />}
+                                                <div className={`transition-all duration-500 flex flex-col items-center ${!selectedStudent.isPremium ? 'blur-md opacity-20 scale-95' : ''}`}>
+                                                    <div className="relative w-40 h-40 flex items-center justify-center mb-6">
+                                                        <svg className="w-full h-full transform -rotate-90">
+                                                            <circle
+                                                                cx="80"
+                                                                cy="80"
+                                                                r="70"
+                                                                stroke="currentColor"
+                                                                strokeWidth="12"
+                                                                fill="transparent"
+                                                                className="text-gray-200"
+                                                            />
+                                                            <circle
+                                                                cx="80"
+                                                                cy="80"
+                                                                r="70"
+                                                                stroke="currentColor"
+                                                                strokeWidth="12"
+                                                                fill="transparent"
+                                                                strokeDasharray={440}
+                                                                strokeDashoffset={440 - (440 * studentProgress) / 100}
+                                                                className="text-indigo-600 transition-all duration-1000 ease-out"
+                                                                strokeLinecap="round"
+                                                            />
+                                                        </svg>
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                                            <span className="text-4xl font-black text-gray-800">%{studentProgress}</span>
+                                                            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Başarı</span>
+                                                        </div>
+                                                    </div>
+                                                    <h3 className="text-lg font-bold text-gray-800 mb-2">Genel Çalışma İlerlemesi</h3>
+                                                    <p className="text-sm text-gray-500">Planlanan tüm görevlerin tamamlanma oranı.</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Weakest Topics List */}
+                                            <div className="space-y-4">
+                                                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                                                    <span className="p-1 px-2 bg-rose-100 text-rose-600 rounded text-xs">!</span>
+                                                    Öncelikli Gelişim Alanları
+                                                </h3>
+                                                <div className="grid gap-3">
+                                                    {studentScores.slice(0, 4).map((score) => (
+                                                        <div key={`${score.subject}-${score.topic}`} className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex justify-between items-center group hover:border-indigo-200 transition-all">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${score.subject === 'math' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}`}>
+                                                                    {score.subject === 'math' ? '🔢' : '🧬'}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-gray-800 text-sm">{score.topic}</p>
+                                                                    <p className="text-xs text-gray-400 capitalize">{score.subject}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-xs text-gray-400 font-bold mb-1">Başarı</div>
+                                                                <div className={`font-black text-sm ${score.accuracy < 50 ? 'text-rose-500' : 'text-orange-500'}`}>
+                                                                    %{score.accuracy}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {studentScores.length === 0 && (
+                                                        <div className="py-12 text-center text-gray-400">
+                                                            <p>Henüz analiz verisi bulunmuyor.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* All Topics Accuracy Chart (Mini) */}
+                                        <div className="mt-8 bg-indigo-900 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden">
+                                            {!selectedStudent.isPremium && <LockedOverlay title="Tam Konu Analizi" />}
+                                            <div className={`transition-all duration-500 ${!selectedStudent.isPremium ? 'blur-lg opacity-10' : ''}`}>
+                                                <h3 className="text-lg font-bold mb-6">Tüm Konular Başarı Analizi</h3>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                                    {studentScores.map((score) => (
+                                                        <div key={score.topic} className="bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/5">
+                                                            <p className="text-[10px] text-indigo-200 uppercase font-black mb-1 truncate">{score.topic}</p>
+                                                            <div className="flex items-end justify-between gap-2">
+                                                                <div className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
+                                                                    <div
+                                                                        className={`h-full rounded-full transition-all duration-1000 ${score.accuracy > 70 ? 'bg-emerald-400' : score.accuracy > 40 ? 'bg-orange-400' : 'bg-rose-400'
+                                                                            }`}
+                                                                        style={{ width: `${score.accuracy}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                                <span className="text-xs font-bold leading-none">%{score.accuracy}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 {activeTab === 'lessons' && (
                                     <ParentLessonNotesView student={selectedStudent} />
                                 )}
@@ -241,10 +387,246 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 {activeTab === 'weekly_plan' && (
                                     <ParentWeeklyPlanView student={selectedStudent} />
                                 )}
+                                {activeTab === 'management' && (
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <h2 className="text-xl font-bold text-gray-800">Öğrenci Yönetimi</h2>
+                                            <button
+                                                onClick={() => setIsAddingStudent(true)}
+                                                className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium flex items-center gap-2 text-sm"
+                                            >
+                                                <span>+</span> Yeni Öğrenci Ekle
+                                            </button>
+                                        </div>
+                                        <div className="grid gap-4">
+                                            {students.map(student => (
+                                                <div key={student.id} className="p-4 border rounded-xl flex justify-between items-center bg-gray-50">
+                                                    <div>
+                                                        <p className="font-bold text-gray-800">{student.name}</p>
+                                                        <p className="text-sm text-gray-600">{student.grade}. Sınıf</p>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setSelectedStudent(student)}
+                                                            className="px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                                        >
+                                                            Görüntüle
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </>
                 )}
+            </div>
+
+            {/* Add Student Modal */}
+            {isAddingStudent && (
+                <AddStudentModal
+                    parent={user}
+                    onClose={() => setIsAddingStudent(false)}
+                    onStudentAdded={(newStudent) => {
+                        setStudents(prev => [...prev, newStudent]);
+                        setSelectedStudent(newStudent);
+                        setIsAddingStudent(false);
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
+// AddStudentModal Component for Parents
+const AddStudentModal: React.FC<{ parent: User; onClose: () => void; onStudentAdded: (newStudent: Student) => void }> = ({ parent, onClose, onStudentAdded }) => {
+    const [name, setName] = useState('');
+    const [grade, setGrade] = useState(5);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsSubmitting(true);
+
+        if (password.length < 6) {
+            setError('Şifre en az 6 karakter olmalıdır.');
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            // Student signup
+            const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
+            const response = await fetch(authUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({
+                    email: email.trim(),
+                    password: password.trim(),
+                })
+            });
+
+            const authData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(authData.msg || authData.error_description || 'Kayıt oluşturulamadı');
+            }
+
+            if (authData.user || authData.id) {
+                const userId = authData.user?.id || authData.id;
+
+                const { createClient } = await import('@supabase/supabase-js');
+                const tempClient = createClient(
+                    import.meta.env.VITE_SUPABASE_URL,
+                    import.meta.env.VITE_SUPABASE_ANON_KEY,
+                    {
+                        global: { headers: { Authorization: `Bearer ${authData.access_token}` } },
+                        auth: {
+                            persistSession: false,
+                            autoRefreshToken: false,
+                            detectSessionInUrl: false,
+                            storage: { getItem: () => null, setItem: () => { }, removeItem: () => { } }
+                        }
+                    }
+                );
+
+                // Insert into users table
+                const { error: userError } = await tempClient
+                    .from('users')
+                    .insert([{
+                        id: userId,
+                        email: email.trim(),
+                        name: name.trim(),
+                        role: UserRole.Student,
+                        status: 'approved'
+                    }]);
+
+                if (userError) throw userError;
+
+                // Insert into students table with parent_id
+                const { error: studentError } = await tempClient
+                    .from('students')
+                    .insert([{
+                        id: userId,
+                        name: name.trim(),
+                        grade: grade,
+                        parent_id: parent.id,
+                        level: 1,
+                        xp: 0,
+                        learning_loop_status: 'Başlangıç',
+                        is_ai_assistant_enabled: true
+                    }]);
+
+                if (studentError) throw studentError;
+
+                const newStudent: Student = {
+                    id: userId,
+                    name: name.trim(),
+                    grade: grade,
+                    tutorId: '',
+                    level: 1,
+                    xp: 0,
+                    badges: [],
+                    learningLoopStatus: 'Başlangıç' as any,
+                    progressReports: [],
+                    isAiAssistantEnabled: true,
+                };
+
+                onStudentAdded(newStudent);
+                alert('Öğrenci hesabı başarıyla oluşturuldu!');
+            }
+        } catch (error: any) {
+            setError(error.message || 'Öğrenci oluşturulurken bir hata oluştu.');
+            console.error("Error creating student:", error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md max-h-[95vh] overflow-y-auto transform transition-all scale-100 font-sans">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800">Yeni Öğrenci Ekle</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Adı Soyadı</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={e => setName(e.target.value)}
+                            required
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="Ad Soyad"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sınıf Seviyesi</label>
+                        <select
+                            value={grade}
+                            onChange={e => setGrade(parseInt(e.target.value, 10))}
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all bg-white"
+                        >
+                            {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci E-posta (Giriş için)</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            required
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="ornek@ogrenci.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Şifresi</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            required
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                            placeholder="En az 6 karakter"
+                        />
+                    </div>
+                    {error && (
+                        <div className="text-red-600 text-sm bg-red-50 p-3 rounded-xl border border-red-100">
+                            {error}
+                        </div>
+                    )}
+                    <div className="pt-2 flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 font-medium transition-colors"
+                        >
+                            İptal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 bg-primary text-white px-4 py-3 rounded-xl hover:bg-primary-dark font-medium transition-colors disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Kaydediliyor...' : 'Öğrenciyi Kaydet'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

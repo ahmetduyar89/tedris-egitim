@@ -6,6 +6,7 @@ interface LoginPageProps {
   onLogin: (user: User) => void;
   onNavigateToWebsite: () => void;
   initialMode?: 'login' | 'register';
+  onParentSignup?: () => void;
 }
 
 
@@ -13,7 +14,7 @@ const TedrisLogo = () => (
   <img src="/logo-full.png" alt="TedrisEDU" className="h-12 w-auto" />
 );
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, initialMode = 'login' }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, initialMode = 'login', onParentSignup }) => {
   const [isRegisterView, setIsRegisterView] = useState(initialMode === 'register');
   const [loginType, setLoginType] = useState<'teacher' | 'parent'>('teacher');
   const [email, setEmail] = useState('');
@@ -417,6 +418,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
             {isRegisterView ? 'Giriş Yapın' : 'Kayıt Olun'}
           </button>
         </p>
+
+        {!isRegisterView && onParentSignup && (
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500 mb-3">Veli misiniz?</p>
+            <button
+              onClick={onParentSignup}
+              className="text-primary font-bold hover:text-accent transition-colors flex items-center justify-center gap-2 mx-auto px-4 py-2 rounded-xl bg-primary/5 hover:bg-primary/10"
+            >
+              <span>👪</span> Yeni Veli Hesabı Oluştur
+            </button>
+          </div>
+        )}
       </div>
 
       {showApprovalModal && (

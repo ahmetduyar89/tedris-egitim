@@ -1,8 +1,0 @@
--- Update private_lessons table schema
-ALTER TABLE public.private_lessons 
-ADD COLUMN IF NOT EXISTS duration INTEGER,
-ADD COLUMN IF NOT EXISTS color TEXT,
-ADD COLUMN IF NOT EXISTS contact TEXT,
-ADD COLUMN IF NOT EXISTS grade INTEGER,
-ADD COLUMN IF NOT EXISTS lesson_notes TEXT,
-ADD COLUMN IF NOT EXISTS homework TEXT;

@@ -35,6 +35,8 @@ import { getPDFTestsForStudent, getSubmissionsForStudent, PDFTest, PDFTestSubmis
 import { diagnosisTestManagementService } from '../services/diagnosisTestManagementService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import StudentDiagnosisTestPage from './StudentDiagnosisTestPage';
+import DiagnosticTestPage from './DiagnosticTestPage';
+import AdaptiveDashboard from './AdaptiveDashboard';
 import * as privateLessonService from '../services/privateLessonService';
 import StudentTurkishLearningPage from './StudentTurkishLearningPage';
 const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
@@ -43,8 +45,8 @@ const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom
 
 
 
-type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest';
-type Tab = 'dashboard' | 'report' | 'homework' | 'library' | 'map' | 'flashcards' | 'turkish';
+type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest' | 'takingAssessment' | 'adaptiveDashboard';
+type Tab = 'dashboard' | 'adaptive' | 'report' | 'homework' | 'library' | 'map' | 'flashcards' | 'turkish';
 
 interface ToastProps {
   message: string;
@@ -345,6 +347,29 @@ const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+const AssessmentWidget: React.FC<{ onStart: () => void }> = ({ onStart }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-4">
+      <div className="p-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center gap-2">
+        <span className="bg-white/20 p-1.5 rounded-lg text-white backdrop-blur-sm">🎯</span>
+        <h2 className="text-lg font-bold">Tanı Testi</h2>
+      </div>
+      <div className="p-4">
+        <p className="text-sm text-gray-600 mb-4">
+          Eksiklerini belirlemek ve sana özel çalışma planı hazırlamak için 20 soruluk tanı testini çöz.
+        </p>
+        <button
+          onClick={onStart}
+          className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+        >
+          <span>Sınavı Başlat</span>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7-7 7" /></svg>
+        </button>
       </div>
     </div>
   );
@@ -1188,6 +1213,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           {/* Compact Sidebar (Right) - Only show if weekly program exists */}
           {hasWeeklyProgram && studentData && (
             <div className="space-y-4">
+              <AssessmentWidget onStart={() => setActiveView('takingAssessment')} />
               <TestArea
                 pendingTests={pendingTests}
                 completedTests={completedTests}
@@ -1531,6 +1557,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
                 Anasayfa
               </button>
               <button
+                onClick={() => setActiveTab('adaptive')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === 'adaptive' ? 'bg-primary text-white shadow-md transform scale-105' : 'text-text-secondary hover:bg-gray-100'}`}
+              >
+                🎯 Çalışma Planım
+              </button>
+              <button
                 onClick={() => setActiveTab('homework')}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap relative ${activeTab === 'homework' ? 'bg-primary text-white shadow-md transform scale-105' : 'text-text-secondary hover:bg-gray-100'}`}
               >
@@ -1585,6 +1617,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         <main className="flex-1 overflow-y-auto bg-gray-50/50">
           <div className="max-w-7xl mx-auto pb-20 md:pb-8">
             {activeTab === 'dashboard' && renderDashboard()}
+            {activeTab === 'adaptive' && <AdaptiveDashboard user={user} student={studentData!} onStartTest={() => setActiveView('takingAssessment')} />}
             {activeTab === 'homework' && renderHomework()}
             {activeTab === 'library' && renderLibrary()}
             {activeTab === 'map' && renderMap()}
@@ -1616,7 +1649,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   };
 
   return (
-    <>
+    <>      {activeView === 'takingAssessment' && (
+      <DiagnosticTestPage
+        user={user}
+        onComplete={() => {
+          setActiveView('dashboard');
+          loadStudentData();
+        }}
+      />
+    )}
       {activeOnlineLesson && (
         <React.Suspense fallback={<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 text-white">Yükleniyor...</div>}>
           <OnlineLessonRoom

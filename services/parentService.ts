@@ -44,7 +44,28 @@ export const getParent = async (parentId: string): Promise<Parent | null> => {
  */
 export const getParentStudents = async (parentId: string): Promise<Student[]> => {
     try {
-        const { data, error } = await supabase
+        // Check both parent_student_relations and the new parent_id column in students
+        const { data: studentsData, error: studentsError } = await supabase
+            .from('students')
+            .select(`
+                id,
+                name,
+                grade,
+                tutor_id,
+                contact,
+                parent_name,
+                parent_phone,
+                level,
+                xp,
+                learning_loop_status,
+                parent_id
+            `)
+            .or(`parent_id.eq.${parentId}`);
+
+        if (studentsError) throw studentsError;
+
+        // Also check relations for backward compatibility
+        const { data: relationsData, error: relationsError } = await supabase
             .from('parent_student_relations')
             .select(`
                 student_id,
@@ -58,27 +79,41 @@ export const getParentStudents = async (parentId: string): Promise<Student[]> =>
                     parent_phone,
                     level,
                     xp,
-                    learning_loop_status
+                    learning_loop_status,
+                    parent_id
                 )
             `)
             .eq('parent_id', parentId);
 
-        if (error) throw error;
+        if (relationsError) throw relationsError;
 
-        if (!data) return [];
+        // Combine results and remove duplicates
+        const combinedStudents = new Map();
 
-        return data.map((row: any) => ({
-            id: row.students.id,
-            name: row.students.name,
-            grade: row.students.grade,
-            tutorId: row.students.tutor_id,
-            contact: row.students.contact,
-            parentName: row.students.parent_name,
-            parentPhone: row.students.parent_phone,
-            level: row.students.level || 1,
-            xp: row.students.xp || 0,
+        if (studentsData) {
+            studentsData.forEach(s => combinedStudents.set(s.id, s));
+        }
+
+        if (relationsData) {
+            relationsData.forEach((row: any) => {
+                if (row.students) {
+                    combinedStudents.set(row.students.id, row.students);
+                }
+            });
+        }
+
+        return Array.from(combinedStudents.values()).map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            grade: s.grade,
+            tutorId: s.tutor_id,
+            contact: s.contact,
+            parentName: s.parent_name,
+            parentPhone: s.parent_phone,
+            level: s.level || 1,
+            xp: s.xp || 0,
             badges: [],
-            learningLoopStatus: row.students.learning_loop_status,
+            learningLoopStatus: s.learning_loop_status,
             progressReports: []
         }));
     } catch (error) {

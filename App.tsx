@@ -8,13 +8,14 @@ const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
+const ParentSignupPage = lazy(() => import('./pages/ParentSignupPage'));
 const PublicSharePage = lazy(() => import('./pages/PublicSharePage'));
 const ContentViewerPage = lazy(() => import('./pages/ContentViewerPage'));
 import { supabase } from './services/dbAdapter';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
 
-type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer' | 'notification-test';
+type View = 'loading' | 'website' | 'auth' | 'dashboard' | 'public-share' | 'content-viewer' | 'notification-test' | 'parent-signup';
 
 
 const App: React.FC = () => {
@@ -102,7 +103,20 @@ const App: React.FC = () => {
 
         if (session?.user) {
           try {
-            // Önce users tablosunda kontrol et (öğretmen/öğrenci)
+            // 1. Önce profiles tablosunda kontrol et (Yeni sistem)
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            if (profileData) {
+              setCurrentUser(profileData as User);
+              setView('dashboard');
+              return;
+            }
+
+            // 2. Eğer yoksa users tablosunda kontrol et (Tutor/Student)
             const { data: userData, error } = await supabase
               .from('users')
               .select('*')
@@ -117,7 +131,6 @@ const App: React.FC = () => {
             }
 
             if (userData) {
-              // Users tablosunda bulundu (öğretmen veya öğrenci)
               if (userData.role === 'tutor' && userData.status !== 'approved') {
                 await supabase.auth.signOut();
                 setView('auth');
@@ -126,24 +139,14 @@ const App: React.FC = () => {
               setCurrentUser(userData as User);
               setView('dashboard');
             } else {
-              // Users tablosunda bulunamadı, parents tablosunda kontrol et
-              console.log('User not found in users table, checking parents table...');
+              // 3. Eğer orada da yoksa parents tablosunda kontrol et (Veli)
               const { data: parentData, error: parentError } = await supabase
                 .from('parents')
                 .select('*')
                 .eq('id', session.user.id)
                 .maybeSingle();
 
-              if (parentError) {
-                console.error('Error fetching parent data:', parentError);
-                await supabase.auth.signOut();
-                setView('auth');
-                return;
-              }
-
               if (parentData) {
-                // Veli bulundu
-                console.log('Parent user found:', parentData.name);
                 setCurrentUser({
                   id: parentData.id,
                   name: parentData.name,
@@ -230,7 +233,20 @@ const App: React.FC = () => {
 
           if (session?.user) {
             try {
-              // Önce users tablosunda kontrol et (öğretmen/öğrenci)
+              // 1. Önce profiles tablosunda kontrol et
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+              if (profileData) {
+                setCurrentUser(profileData as User);
+                setView('dashboard');
+                return;
+              }
+
+              // 2. Eğer yoksa users tablosunda kontrol et (öğretmen/öğrenci)
               const { data: userData, error } = await supabase
                 .from('users')
                 .select('*')
@@ -255,24 +271,15 @@ const App: React.FC = () => {
                 setCurrentUser(userData as User);
                 setView('dashboard');
               } else {
-                // Users tablosunda bulunamadı, parents tablosunda kontrol et
-                console.log('[Auth] User not found in users table, checking parents table...');
+                // 3. Eğer orada da yoksa parents tablosunda kontrol et
                 const { data: parentData, error: parentError } = await supabase
                   .from('parents')
                   .select('*')
                   .eq('id', session.user.id)
                   .maybeSingle();
 
-                if (parentError) {
-                  console.error('[Auth] Error fetching parent data:', parentError);
-                  setCurrentUser(null);
-                  setView('auth');
-                  return;
-                }
-
                 if (parentData) {
                   // Veli bulundu
-                  console.log('[Auth] Parent user found:', parentData.name);
                   setCurrentUser({
                     id: parentData.id,
                     name: parentData.name,
@@ -408,8 +415,15 @@ const App: React.FC = () => {
         return <ContentViewerPage contentId={contentId} user={currentUser} onBack={handleBackFromContent} />;
       case 'website':
         return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
+      case 'parent-signup':
+        return <ParentSignupPage onSuccess={() => setView('auth')} onBack={() => setView('auth')} />;
       case 'auth':
-        return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
+        return <LoginPage
+          onLogin={handleLogin}
+          onNavigateToWebsite={handleNavigateToWebsite}
+          initialMode={authMode}
+          onParentSignup={() => setView('parent-signup')}
+        />;
       case 'dashboard':
         if (!currentUser) {
           setView('auth'); // Should not happen due to auth listener, but as a fallback

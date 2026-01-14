@@ -30,6 +30,7 @@ import * as privateLessonService from '../services/privateLessonService';
 import { notifyAssignmentCreated } from '../services/multiChannelNotificationService';
 import StreakWidget from '../components/StreakWidget';
 import DailyGoalsCard from '../components/DailyGoalsCard';
+import SelectDiagnosisTestModal from '../components/SelectDiagnosisTestModal';
 
 
 import StudentOverviewTab from '../components/student-detail/StudentOverviewTab';
@@ -90,6 +91,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
     const [lessonStats, setLessonStats] = useState<LessonStats | null>(null);
     const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
     const [paymentConfig, setPaymentConfig] = useState<StudentPaymentConfig | null>(null);
+    const [isSelectingDiagnosisTest, setIsSelectingDiagnosisTest] = useState(false);
 
 
 
@@ -1035,6 +1037,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             {editingFlashcard && <EditFlashcardModal flashcard={editingFlashcard} onClose={() => setEditingFlashcard(null)} onUpdate={handleUpdateFlashcard} />}
             {isCreatingPDFTest && <CreatePDFTestModal student={student} teacherId={user.id} onClose={() => setIsCreatingPDFTest(false)} onCreated={loadData} />}
             {viewingPDFTestResult && <PDFTestResultModal test={viewingPDFTestResult.test} submission={viewingPDFTestResult.submission} onClose={() => setViewingPDFTestResult(null)} />}
+            {isSelectingDiagnosisTest && <SelectDiagnosisTestModal studentId={student.id} teacherId={user.id} onClose={() => setIsSelectingDiagnosisTest(false)} onAssigned={loadData} />}
             {viewingLesson && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1286,6 +1289,10 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                     <button onClick={() => setIsCreatingTest(true)} className="flex-1 sm:flex-none bg-white text-blue-600 px-3 md:px-4 py-2 rounded-xl hover:bg-blue-50 flex items-center justify-center space-x-2 text-sm md:text-base font-semibold shadow-sm transition-all">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" /></svg>
                                         <span className="whitespace-nowrap">AI Test</span>
+                                    </button>
+                                    <button onClick={() => setIsSelectingDiagnosisTest(true)} className="flex-1 sm:flex-none bg-orange-500 text-white px-3 md:px-4 py-2 rounded-xl hover:bg-orange-600 flex items-center justify-center space-x-2 text-sm md:text-base font-semibold shadow-sm transition-all">
+                                        <span className="text-lg">🩺</span>
+                                        <span className="whitespace-nowrap">Tanı Testi Ata</span>
                                     </button>
                                 </div>
                             </div>

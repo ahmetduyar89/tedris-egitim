@@ -82,6 +82,7 @@ export interface Student {
   progressReports: ProgressReport[];
   // AI Assistant Control
   isAiAssistantEnabled?: boolean;
+  isPremium?: boolean;
 }
 
 // --- Streak System & Motivation ---

@@ -27,7 +27,18 @@ interface StudentDetailModalProps {
     aiLoading: boolean;
     handleGenerateAISuggestions: () => void;
     handleApplyAISuggestions: () => void;
-    attendanceData: any[]; // Depends on structural needs
+    attendanceStatus: 'completed' | 'missed' | 'cancelled';
+    setAttendanceStatus: (status: 'completed' | 'missed' | 'cancelled') => void;
+    paymentStatus: 'paid' | 'unpaid' | 'partial';
+    setPaymentStatus: (status: 'paid' | 'unpaid' | 'partial') => void;
+    paymentAmount: string;
+    setPaymentAmount: (amount: string) => void;
+    paymentDate: string;
+    setPaymentDate: (date: string) => void;
+    paymentNotes: string;
+    setPaymentNotes: (notes: string) => void;
+    studentPaymentConfig: number;
+    handleSaveAttendance: () => void;
 }
 
 const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
@@ -55,7 +66,18 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     aiLoading,
     handleGenerateAISuggestions,
     handleApplyAISuggestions,
-    attendanceData
+    attendanceStatus,
+    setAttendanceStatus,
+    paymentStatus,
+    setPaymentStatus,
+    paymentAmount,
+    setPaymentAmount,
+    paymentDate,
+    setPaymentDate,
+    paymentNotes,
+    setPaymentNotes,
+    studentPaymentConfig,
+    handleSaveAttendance
 }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
@@ -220,9 +242,106 @@ const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
                 )}
 
                 {detailActiveTab === 'attendance' && (
-                    <div className="space-y-4">
-                        <div className="text-center py-12 text-gray-400">
-                            <p>Katılım verileri yükleniyor veya henüz girilmemiş.</p>
+                    <div className="space-y-6">
+                        <div className="bg-gray-50 p-4 rounded-xl space-y-4">
+                            <label className="block text-sm font-medium text-gray-700">Ders Katılım Durumu</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {(['completed', 'missed', 'cancelled'] as const).map(status => (
+                                    <button
+                                        key={status}
+                                        type="button"
+                                        onClick={() => setAttendanceStatus(status)}
+                                        className={`px-3 py-3 rounded-lg border-2 text-sm transition-all flex flex-col items-center justify-center gap-1 ${attendanceStatus === status
+                                            ? status === 'completed' ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                                : status === 'missed' ? 'border-red-500 bg-red-50 text-red-700 font-semibold'
+                                                    : 'border-orange-500 bg-orange-50 text-orange-700 font-semibold'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                            }`}
+                                    >
+                                        <span className="text-lg">
+                                            {status === 'completed' ? '✅' : status === 'missed' ? '❌' : '🚫'}
+                                        </span>
+                                        <span>
+                                            {status === 'completed' ? 'Geldi' : status === 'missed' ? 'Gelmedi' : 'İptal'}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {attendanceStatus === 'completed' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-medium text-gray-700">Ödeme Durumu</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {(['paid', 'unpaid', 'partial'] as const).map(status => (
+                                            <button
+                                                key={status}
+                                                type="button"
+                                                onClick={() => setPaymentStatus(status)}
+                                                className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === status
+                                                    ? status === 'paid' ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
+                                                        : status === 'unpaid' ? 'border-red-500 bg-red-50 text-red-700 font-semibold'
+                                                            : 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold'
+                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                {status === 'paid' ? '✓ Ödendi' : status === 'unpaid' ? '✗ Ödenmedi' : '◐ Kısmi'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Ücret (TL)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={paymentAmount}
+                                            onChange={e => setPaymentAmount(e.target.value)}
+                                            onFocus={e => e.target.select()}
+                                            placeholder="0.00"
+                                            className="w-full border border-gray-300 rounded-xl py-2 px-4 shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                        />
+                                        {studentPaymentConfig > 0 && (
+                                            <p className="text-xs text-gray-500 mt-1 ml-1">
+                                                Varsayılan: {studentPaymentConfig} TL
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Tarihi</label>
+                                        <input
+                                            type="date"
+                                            value={paymentDate}
+                                            onChange={e => setPaymentDate(e.target.value)}
+                                            className="w-full border border-gray-300 rounded-xl py-2 px-4 shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Notları</label>
+                                    <textarea
+                                        value={paymentNotes}
+                                        onChange={e => setPaymentNotes(e.target.value)}
+                                        placeholder="Ödeme ile ilgili notlar..."
+                                        className="w-full border border-gray-300 rounded-xl py-2 px-4 h-24 shadow-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end pt-4 border-t border-gray-100">
+                            <button
+                                onClick={handleSaveAttendance}
+                                className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                Katılım Bilgisini Kaydet
+                            </button>
                         </div>
                     </div>
                 )}

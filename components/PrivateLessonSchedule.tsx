@@ -526,6 +526,62 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
         }
     };
 
+    const handleSaveAttendance = async () => {
+        if (!selectedLesson || !selectedStudent) return;
+
+        try {
+            let targetLessonId = selectedLesson.id;
+
+            // Check if this is a virtual lesson
+            if (selectedLesson.id.startsWith('virtual-')) {
+                // Create a real lesson record first
+                const { data: newLesson, error: createError } = await supabase
+                    .from('private_lessons')
+                    .insert([{
+                        tutor_id: selectedLesson.tutorId,
+                        student_id: selectedLesson.studentId,
+                        student_name: selectedLesson.studentName,
+                        start_time: selectedLesson.startTime,
+                        end_time: selectedLesson.endTime,
+                        subject: selectedLesson.subject,
+                        duration: selectedLesson.duration,
+                        status: attendanceStatus,
+                        color: selectedLesson.color,
+                        contact: selectedLesson.contact,
+                        grade: selectedLesson.grade,
+                        lesson_notes: detailLessonNotes,
+                        homework: JSON.stringify(weeklyHomework),
+                        topic: detailTopic
+                    }])
+                    .select()
+                    .single();
+
+                if (createError) throw createError;
+                targetLessonId = newLesson.id;
+            }
+
+            await privateLessonService.markLessonAttendance(
+                targetLessonId,
+                selectedStudent.id,
+                user.id,
+                attendanceStatus,
+                attendanceStatus === 'completed' ? {
+                    paymentAmount: parseFloat(paymentAmount) || 0,
+                    paymentStatus,
+                    paymentDate: paymentDate || undefined,
+                    paymentNotes: paymentNotes || undefined
+                } : undefined
+            );
+
+            alert('Katılım bilgisi kaydedildi!');
+            fetchLessons();
+            setIsStudentDetailModalOpen(false);
+        } catch (error) {
+            console.error('Error saving attendance:', error);
+            alert('Katılım bilgisi kaydedilirken bir hata oluştu.');
+        }
+    };
+
     const handleMoveLesson = async (lesson: PrivateLesson, targetDay: number, targetHour: number, targetMinute: number = 0) => {
         try {
             // Calculate new date/time
@@ -1079,242 +1135,92 @@ const PrivateLessonSchedule: React.FC<PrivateLessonScheduleProps> = ({ user, stu
             )}
 
             {isStudentDetailModalOpen && selectedStudent && selectedLesson && (
-                className = {`px-4 py-3 rounded-lg border-2 transition-all ${attendanceStatus === 'cancelled'
-                    ? 'border-orange-500 bg-orange-50 text-orange-700'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                    }`}
-                                        >
-            <div className="flex flex-col items-center space-y-1">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                </svg>
-                <span className="text-xs font-medium">İptal</span>
-            </div>
-        </button>
-                                    </div >
-                                </div >
-
-    {/* Payment Section - Only show if lesson was completed */ }
-{
-    attendanceStatus === 'completed' && (
-        <div className="space-y-4 bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <h4 className="font-semibold text-gray-900 flex items-center space-x-2">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Ödeme Bilgileri</span>
-            </h4>
-
-            {/* Payment Status */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Durumu</label>
-                <div className="grid grid-cols-3 gap-2">
-                    <button
-                        type="button"
-                        onClick={() => setPaymentStatus('paid')}
-                        className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === 'paid'
-                            ? 'border-green-500 bg-green-50 text-green-700 font-semibold'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                            }`}
-                    >
-                        ✓ Ödendi
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setPaymentStatus('unpaid')}
-                        className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === 'unpaid'
-                            ? 'border-red-500 bg-red-50 text-red-700 font-semibold'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                            }`}
-                    >
-                        ✗ Ödenmedi
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setPaymentStatus('partial')}
-                        className={`px-3 py-2 rounded-lg border-2 text-sm transition-all ${paymentStatus === 'partial'
-                            ? 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                            }`}
-                    >
-                        ◐ Kısmi
-                    </button>
-                </div>
-            </div>
-
-            {/* Payment Amount */}
-            <div className="grid grid-cols-2 gap-3">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ücret (TL)</label>
-                    <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={paymentAmount}
-                        onChange={e => setPaymentAmount(e.target.value)}
-                        onFocus={e => e.target.select()}
-                        placeholder="0.00"
-                        className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm"
-                    />
-                    {studentPaymentConfig > 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
-                            Varsayılan: {studentPaymentConfig} TL
-                        </p>
-                    )}
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Tarihi</label>
-                    <input
-                        type="date"
-                        value={paymentDate}
-                        onChange={e => setPaymentDate(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg py-2 px-3 text-sm"
-                    />
-                </div>
-            </div>
-
-            {/* Payment Notes */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Notları</label>
-                <textarea
-                    value={paymentNotes}
-                    onChange={e => setPaymentNotes(e.target.value)}
-                    placeholder="Ödeme ile ilgili notlar..."
-                    className="w-full border border-gray-300 rounded-lg py-2 px-3 h-20 text-sm"
+                <StudentDetailModal
+                    onClose={() => setIsStudentDetailModalOpen(false)}
+                    selectedStudent={selectedStudent}
+                    selectedLesson={selectedLesson}
+                    detailActiveTab={detailActiveTab}
+                    setDetailActiveTab={setDetailActiveTab}
+                    detailTopic={detailTopic}
+                    setDetailTopic={setDetailTopic}
+                    detailLessonNotes={detailLessonNotes}
+                    setDetailLessonNotes={setDetailLessonNotes}
+                    weeklyHomework={weeklyHomework}
+                    setWeeklyHomework={setWeeklyHomework}
+                    handleSaveStudentDetail={handleSaveStudentDetail}
+                    programViewMode={programViewMode}
+                    setProgramViewMode={setProgramViewMode}
+                    pastWeeklyProgram={pastWeeklyProgram}
+                    setPastWeeklyProgram={setPastWeeklyProgram}
+                    currentWeeklyProgram={currentWeeklyProgram}
+                    setCurrentWeeklyProgram={setCurrentWeeklyProgram}
+                    DAYS_TR={DAYS_TR}
+                    aiSummary={aiSummary}
+                    aiHomeworkSuggestions={aiHomeworkSuggestions ? aiHomeworkSuggestions.split('\n') : []}
+                    aiLoading={aiLoading}
+                    handleGenerateAISuggestions={handleGenerateAISuggestions}
+                    handleApplyAISuggestions={handleApplyAISuggestions}
+                    attendanceStatus={attendanceStatus}
+                    setAttendanceStatus={setAttendanceStatus}
+                    paymentStatus={paymentStatus}
+                    setPaymentStatus={setPaymentStatus}
+                    paymentAmount={paymentAmount}
+                    setPaymentAmount={setPaymentAmount}
+                    paymentDate={paymentDate}
+                    setPaymentDate={setPaymentDate}
+                    paymentNotes={paymentNotes}
+                    setPaymentNotes={setPaymentNotes}
+                    studentPaymentConfig={studentPaymentConfig}
+                    handleSaveAttendance={handleSaveAttendance}
                 />
-            </div>
-        </div>
-    )
-}
+            )}
+            {
+                isDeleteModalOpen && lessonToDelete && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
+                            <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4 text-red-600">Dersi Sil</h2>
+                            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
+                                Bu dersi nasıl silmek istersiniz?
+                            </p>
+                            <div className="flex flex-col space-y-3">
+                                <button
+                                    onClick={() => confirmDeleteLesson('single')}
+                                    className="w-full px-3 sm:px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:text-primary transition-colors flex items-center justify-between group"
+                                >
+                                    <div className="text-left flex-1">
+                                        <span className="block font-semibold text-gray-900 group-hover:text-primary text-sm sm:text-base">Sadece Bu Dersi Sil</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">Sadece bu haftaki ders programdan kaldırılır.</span>
+                                    </div>
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
 
-{/* Save Button for Attendance */ }
-<div className="flex justify-end pt-4">
-    <button
-        onClick={async () => {
-            if (!selectedLesson || !selectedStudent) return;
-
-            try {
-                let targetLessonId = selectedLesson.id;
-
-                // Check if this is a virtual lesson
-                if (selectedLesson.id.startsWith('virtual-')) {
-                    // Create a real lesson record first
-                    const { data: newLesson, error: createError } = await supabase
-                        .from('private_lessons')
-                        .insert([{
-                            tutor_id: selectedLesson.tutorId,
-                            student_id: selectedLesson.studentId,
-                            student_name: selectedLesson.studentName,
-                            start_time: selectedLesson.startTime,
-                            end_time: selectedLesson.endTime,
-                            subject: selectedLesson.subject,
-                            duration: selectedLesson.duration,
-                            status: attendanceStatus,
-                            color: selectedLesson.color,
-                            contact: selectedLesson.contact,
-                            grade: selectedLesson.grade,
-                            lesson_notes: detailLessonNotes,
-                            homework: JSON.stringify(weeklyHomework),
-                            topic: detailTopic
-                        }])
-                        .select()
-                        .single();
-
-                    if (createError) throw createError;
-                    targetLessonId = newLesson.id;
-                }
-
-                await privateLessonService.markLessonAttendance(
-                    targetLessonId,
-                    selectedStudent.id,
-                    user.id,
-                    attendanceStatus,
-                    attendanceStatus === 'completed' ? {
-                        paymentAmount: parseFloat(paymentAmount) || 0,
-                        paymentStatus,
-                        paymentDate: paymentDate || undefined,
-                        paymentNotes: paymentNotes || undefined
-                    } : undefined
-                );
-
-                alert('Katılım bilgisi kaydedildi!');
-                fetchLessons();
-                setIsStudentDetailModalOpen(false);
-            } catch (error) {
-                console.error('Error saving attendance:', error);
-                alert('Katılım bilgisi kaydedilirken bir hata oluştu.');
-            }
-        }}
-        className="px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm font-medium"
-    >
-        Katılım Bilgisini Kaydet
-    </button>
-</div>
-
-
-{/* Bottom Actions */ }
-<div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t">
-    <button onClick={() => setIsStudentDetailModalOpen(false)} className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 text-sm sm:text-base">
-        Vazgeç
-    </button>
-    <button onClick={handleSaveStudentDetail} className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark text-sm sm:text-base">
-        Kaydet
-    </button>
-</div>
-                            </div >
-                        )}
-                    </div >
-                </div >
-            )
-            }
-{
-    isDeleteModalOpen && lessonToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full max-w-md">
-                <h2 className="text-xl sm:text-2xl font-bold font-poppins mb-3 sm:mb-4 text-red-600">Dersi Sil</h2>
-                <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
-                    Bu dersi nasıl silmek istersiniz?
-                </p>
-                <div className="flex flex-col space-y-3">
-                    <button
-                        onClick={() => confirmDeleteLesson('single')}
-                        className="w-full px-3 sm:px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-primary hover:text-primary transition-colors flex items-center justify-between group"
-                    >
-                        <div className="text-left flex-1">
-                            <span className="block font-semibold text-gray-900 group-hover:text-primary text-sm sm:text-base">Sadece Bu Dersi Sil</span>
-                            <span className="text-xs sm:text-sm text-gray-500">Sadece bu haftaki ders programdan kaldırılır.</span>
+                                <button
+                                    onClick={() => confirmDeleteLesson('all')}
+                                    className="w-full px-3 sm:px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-red-500 hover:text-red-600 transition-colors flex items-center justify-between group"
+                                >
+                                    <div className="text-left flex-1">
+                                        <span className="block font-semibold text-gray-900 group-hover:text-red-600 text-sm sm:text-base">Tüm Programdan Sil</span>
+                                        <span className="text-xs sm:text-sm text-gray-500">Bu ders ve gelecekteki tüm tekrarları silinir.</span>
+                                    </div>
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-red-600 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className="mt-4 sm:mt-6 flex justify-end">
+                                <button
+                                    onClick={() => setIsDeleteModalOpen(false)}
+                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm sm:text-base"
+                                >
+                                    İptal
+                                </button>
+                            </div>
                         </div>
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-primary flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-
-                    <button
-                        onClick={() => confirmDeleteLesson('all')}
-                        className="w-full px-3 sm:px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-red-500 hover:text-red-600 transition-colors flex items-center justify-between group"
-                    >
-                        <div className="text-left flex-1">
-                            <span className="block font-semibold text-gray-900 group-hover:text-red-600 text-sm sm:text-base">Tüm Programdan Sil</span>
-                            <span className="text-xs sm:text-sm text-gray-500">Bu ders ve gelecekteki tüm tekrarları silinir.</span>
-                        </div>
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-red-600 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </div>
-                <div className="mt-4 sm:mt-6 flex justify-end">
-                    <button
-                        onClick={() => setIsDeleteModalOpen(false)}
-                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm sm:text-base"
-                    >
-                        İptal
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
-}
+                    </div>
+                )
+            }
         </div >
     );
 };

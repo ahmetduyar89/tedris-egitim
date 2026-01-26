@@ -13,6 +13,7 @@ import {
     ContentRecommendation
 } from '../types';
 import { cacheService } from './cacheService';
+import { sanitizePromptInput } from './promptSanitizer';
 
 // Helper to invoke Supabase Edge Function
 async function invokeAIFunction<T>(action: string, payload: any): Promise<T> {
@@ -38,11 +39,12 @@ export const generateTestQuestions = async (
     questionType: QuestionType,
     difficulty: Difficulty,
 ): Promise<Question[]> => {
-    const totalCount = topics.reduce((sum, t) => sum + t.count, 0);
-    // Assuming single subject/unit for simplicity in payload, or we need to adjust the edge function to handle multiple topics better.
-    // The current edge function seems to expect single subject/unit based on `buildTestGenerationPrompt`.
-    // Let's use the first topic's subject/unit as primary context if multiple.
-    const primaryTopic = topics[0];
+    const sanitizedTopics = topics.map(t => ({
+        ...t,
+        unit: sanitizePromptInput(t.unit, 100)
+    }));
+    const totalCount = sanitizedTopics.reduce((sum, t) => sum + t.count, 0);
+    const primaryTopic = sanitizedTopics[0];
 
     const response = await invokeAIFunction<{ questions: any[] }>('generateTest', {
         grade,
@@ -51,7 +53,7 @@ export const generateTestQuestions = async (
         questionCount: totalCount,
         difficulty,
         questionType,
-        topics // Passing full topics list just in case we update edge function later
+        topics: sanitizedTopics
     });
 
     return response.questions.map((q: any, index: number) => ({
@@ -67,7 +69,7 @@ export const generateTestAnalysis = async (
 ): Promise<AIAnalysisReport> => {
     return invokeAIFunction<AIAnalysisReport>('analyzeTest', {
         subject,
-        unit,
+        unit: sanitizePromptInput(unit, 100),
         questions
     });
 };
@@ -104,7 +106,7 @@ export const generateWeeklyProgram = async (
         analysis: {
             weakTopics,
             strongTopics,
-            overallComment,
+            overallComment: sanitizePromptInput(overallComment, 1000),
             // Pass original fields just in case
             ...report
         }
@@ -231,7 +233,7 @@ export const generateWeeklyProgram = async (
                             'Soru Çözümü': ['ile ilgili en az 20 soru çöz', 'konusundaki alıştırmaları tamamla', 'örnek soru çözümleri yap'],
                             'Tekrar': ['konusunu baştan sona tekrar et', 'ile ilgili aldığın notları gözden geçir', 'kavram haritası çıkararak çalış'],
                             'Test': ['konusundan tarama testi çöz', 'seviye tespit testi uygula', 'konu kavrama testi çöz'],
-                            'Ödev': ['verilen ödevleri eksiksiz tamamla', 'çalışma sorularını bitir'],
+                            'Ödev': ['verilen ödevleri eksikosiz tamamla', 'çalışma sorularını bitir'],
                             'Okuma': ['bölümünü oku ve özet çıkar', 'ilgili metinleri incele'],
                             'Alıştırma': ['pratik yap', 'alıştırmaları çöz']
                         };
@@ -272,7 +274,7 @@ export const generateWeeklyProgram = async (
 
 export const generateReviewPackage = async (topic: string, grade: number): Promise<ReviewPackageItem[]> => {
     const response = await invokeAIFunction<{ items: any[] }>('generateReviewPackage', {
-        topic,
+        topic: sanitizePromptInput(topic, 200),
         grade
     });
 
@@ -284,40 +286,48 @@ export const generateReviewPackage = async (topic: string, grade: number): Promi
 };
 
 export const explainTopic = async (topic: string, grade: number): Promise<{ topic: string; explanation: string; example: string; hint: string; }> => {
-    const cacheKey = `explain-topic-${topic}-${grade}`;
+    const sanitizedTopic = sanitizePromptInput(topic, 200);
+    const cacheKey = `explain-topic-${sanitizedTopic}-${grade}`;
     return cacheService.remember(cacheKey, async () => {
-        return invokeAIFunction('explainTopic', { topic, grade });
+        return invokeAIFunction('explainTopic', { topic: sanitizedTopic, grade });
     }, 86400);
 };
 
 export const recommendContentForTopic = async (topic: string, grade: number): Promise<ContentRecommendation[]> => {
-    const cacheKey = `recommend-content-${topic}-${grade}`;
+    const sanitizedTopic = sanitizePromptInput(topic, 200);
+    const cacheKey = `recommend-content-${sanitizedTopic}-${grade}`;
     return cacheService.remember(cacheKey, async () => {
-        const response = await invokeAIFunction<{ recommendations: ContentRecommendation[] }>('recommendContent', { topic, grade });
+        const response = await invokeAIFunction<{ recommendations: ContentRecommendation[] }>('recommendContent', { topic: sanitizedTopic, grade });
         return response.recommendations;
     }, 86400);
 };
 
 export const evaluateHomework = async (assignmentTitle: string, submissionText: string): Promise<{ scorePercent: number, feedback: string, weakTopics: string[] }> => {
     return invokeAIFunction('analyzeHomework', {
-        assignment: { description: assignmentTitle },
-        submission: { submissionText }
+        assignment: { description: sanitizePromptInput(assignmentTitle, 200) },
+        submission: { submissionText: sanitizePromptInput(submissionText, 5000) }
     });
 };
 
 export const generateFlashcards = async (topic: string, grade: number, subject: Subject, count: number = 10): Promise<any> => {
-    return invokeAIFunction('generateFlashcards', { topic, grade, subject, count });
+    return invokeAIFunction('generateFlashcards', {
+        topic: sanitizePromptInput(topic, 200),
+        grade,
+        subject,
+        count
+    });
 };
 
 export const generateCompletionTasks = async (topic: string, subject?: Subject): Promise<Task[]> => {
-    const response = await invokeAIFunction<{ tasks: any[] }>('generateCompletionTasks', { topic, subject });
+    const sanitizedTopic = sanitizePromptInput(topic, 200);
+    const response = await invokeAIFunction<{ tasks: any[] }>('generateCompletionTasks', { topic: sanitizedTopic, subject });
     return response.tasks.map((task: any) => ({
         id: `completion-task-${Date.now()}-${Math.random()}`,
         description: task.description,
         duration: task.duration,
         status: TaskStatus.Assigned,
         isCompletionTask: true,
-        topic: topic,
+        topic: sanitizedTopic,
         subject: subject,
         ai_recommended: true,
     }));
@@ -328,16 +338,27 @@ export const generateProgressReport = async (lastReport: AIAnalysisReport, curre
 };
 
 export const suggestHomework = async (grade: number, subject: Subject, weakTopics: string[]): Promise<{ title: string, description: string, type: AssignmentType }[]> => {
-    const response = await invokeAIFunction<{ suggestions: any[] }>('suggestHomework', { grade, subject, weakTopics });
+    const sanitizedWeakTopics = weakTopics.map(t => sanitizePromptInput(t, 100));
+    const response = await invokeAIFunction<{ suggestions: any[] }>('suggestHomework', {
+        grade,
+        subject,
+        weakTopics: sanitizedWeakTopics
+    });
     return response.suggestions;
 };
 
 export const checkAnswer = async (question: string, studentAnswerText: string, studentImageBase64?: string): Promise<{ isCorrect: boolean; feedback: string; }> => {
-    return invokeAIFunction('checkAnswer', { question, studentAnswerText, studentImageBase64 });
+    return invokeAIFunction('checkAnswer', {
+        question: sanitizePromptInput(question, 1000),
+        studentAnswerText: sanitizePromptInput(studentAnswerText, 2000),
+        studentImageBase64
+    });
 };
 
 export const generateContent = async (prompt: string): Promise<string> => {
-    const response = await invokeAIFunction<any>('generateContent', { prompt });
+    const response = await invokeAIFunction<any>('generateContent', {
+        prompt: sanitizePromptInput(prompt, 5000)
+    });
     return JSON.stringify(response);
 };
 
@@ -354,7 +375,7 @@ export const generateInteractiveComponent = async (
 
         Context Text:
         ---
-        ${contextText}
+        ${sanitizePromptInput(contextText, 5000)}
         ---
     `;
 
@@ -436,7 +457,7 @@ export const generateDiagnosisQuestions = async (
     };
 
     const response = await invokeAIFunction<{ questions: any[] }>('generateDiagnosisQuestions', {
-        subject,
+        subject: sanitizePromptInput(subject, 100),
         grade,
         modules,
         questionsPerModule,
@@ -456,7 +477,7 @@ export const analyzeDiagnosisTest = async (
     moduleResults: { moduleName: string; correct: number; total: number }[]
 ): Promise<any> => {
     const response = await invokeAIFunction<any>('analyzeDiagnosisTest', {
-        subject,
+        subject: sanitizePromptInput(subject, 100),
         grade,
         totalQuestions,
         correctAnswers,
@@ -481,13 +502,16 @@ export const evaluateComposition = async (
     minWords: number,
     maxWords: number
 ): Promise<any> => {
+    const sanitizedTopic = sanitizePromptInput(prompt, 500);
+    const sanitizedText = sanitizePromptInput(studentText, 5000);
+
     const evaluationPrompt = `
 Sen bir Türkçe öğretmenisin. Aşağıdaki öğrenci kompozisyonunu değerlendir.
 
-KONU: ${prompt}
+KONU: ${sanitizedTopic}
 
 ÖĞRENCİ METNİ:
-${studentText}
+${sanitizedText}
 
 DEĞERLENDİRME KRİTERLERİ:
 - Kelime sayısı: ${minWords}-${maxWords} arası olmalı (mevcut: ${studentText.trim().split(/\s+/).length} kelime)
@@ -558,4 +582,3 @@ SADECE JSON döndür, başka açıklama ekleme!
         };
     }
 };
-

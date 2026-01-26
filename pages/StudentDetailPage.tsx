@@ -32,10 +32,11 @@ import StreakWidget from '../components/StreakWidget';
 import DailyGoalsCard from '../components/DailyGoalsCard';
 import SelectDiagnosisTestModal from '../components/SelectDiagnosisTestModal';
 
-
 import StudentOverviewTab from '../components/student-detail/StudentOverviewTab';
 import StudentHomeworkTab from '../components/student-detail/StudentHomeworkTab';
 import StudentAnalyticsTab from '../components/student-detail/StudentAnalyticsTab';
+import { pdfExportService } from '../services/pdfExportService';
+import { studentActivityService } from '../services/studentActivityService';
 interface StudentDetailPageProps {
     user: User;
     student: Student;
@@ -180,16 +181,13 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                 const { generateTestAnalysis } = await import('../services/optimizedAIService');
                 const analysisReport = await generateTestAnalysis(test.subject, test.unit, test.questions);
 
+                await studentActivityService.updateTestAnalysis(test.id, analysisReport);
+
                 const updatedTest = {
                     ...test,
                     analysis: analysisReport,
                     questions: analysisReport.questionEvaluations
                 };
-
-                await db.collection('tests').doc(test.id).update({
-                    analysis: analysisReport,
-                    questions: analysisReport.questionEvaluations
-                });
 
                 setAssignedTests(prev => prev.map(t => t.id === test.id ? updatedTest : t));
                 setViewingReport(updatedTest);
@@ -204,8 +202,8 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         }
 
         if (student.learningLoopStatus === LearningLoopStatus.TestAssigned) {
-            const updatedStudent = { ...student, learningLoopStatus: LearningLoopStatus.AnalysisReady };
-            await updateStudentInFirestore(updatedStudent);
+            await studentActivityService.updateLearningLoopStatus(student, LearningLoopStatus.AnalysisReady);
+            onStudentUpdate({ ...student, learningLoopStatus: LearningLoopStatus.AnalysisReady });
         }
     };
 
@@ -226,34 +224,11 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
     const handleAssignReviewPackage = async (pkg: ReviewPackage) => {
         try {
-            const { id, ...pkgData } = pkg;
-            const pkgRef = await db.collection('reviewPackages').add(pkgData);
-            const newTask: Task = {
-                id: `task-${Date.now()}`,
-                description: `'${pkg.topic}' Konu Tekrarını Tamamla`,
-                status: TaskStatus.Assigned,
-                reviewPackageId: pkgRef.id,
-                duration: 20,
-            };
-
-            let programToUpdate = weeklyProgram ? JSON.parse(JSON.stringify(weeklyProgram)) : {
-                studentId: student.id, week: 1,
-                days: Array.from({ length: 7 }, (_, i) => ({ day: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'][i], tasks: [] }))
-            };
-
-            programToUpdate.days[0].tasks.push(newTask);
-
-            if (weeklyProgram?.id) {
-                await db.collection('weeklyPrograms').doc(weeklyProgram.id).update({ days: programToUpdate.days });
-            } else {
-                const docRef = await db.collection('weeklyPrograms').add(programToUpdate);
-                programToUpdate.id = docRef.id;
-            }
-
-            setWeeklyProgram(programToUpdate);
+            const updatedProgram = await studentActivityService.assignReviewPackage(student, pkg, weeklyProgram);
+            setWeeklyProgram(updatedProgram);
             setIsCreatingReviewPackage(false);
             setGeneratedPackageItems(null);
-            alert("Konu tekrar paketi öğrencinin haftalık programına eklendi.");
+            setToastMessage("✅ Konu tekrar paketi öğrencinin haftalık programına eklendi.");
         } catch (error) {
             console.error("Error assigning review package:", error);
             alert("Paket atanırken bir hata oluştu.");
@@ -303,29 +278,14 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
 
     const handleSaveProgram = async (programData: Omit<WeeklyProgram, 'id' | 'studentId' | 'week'>) => {
         try {
-            let programToSave: WeeklyProgram;
-            if (weeklyProgram?.id) {
-                programToSave = { ...weeklyProgram, ...programData };
-                await db.collection('weeklyPrograms').doc(weeklyProgram.id).set(programToSave);
-            } else {
-                const now = new Date();
-                const day = now.getDay();
-                const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-                const weekStart = new Date(now.setDate(diff));
-                weekStart.setHours(0, 0, 0, 0);
-                const weekId = weekStart.toISOString().split('T')[0];
-
-                const newProgramData = { studentId: student.id, week: 1, weekId, ...programData };
-                const docRef = await db.collection('weeklyPrograms').add(newProgramData);
-                programToSave = { id: docRef.id, ...newProgramData } as WeeklyProgram;
-            }
-            setWeeklyProgram(programToSave);
+            const savedProgram = await studentActivityService.saveWeeklyProgram(student.id, programData, weeklyProgram?.id);
+            setWeeklyProgram(savedProgram);
             setIsEditingProgram(false);
             setProgramToEdit(null);
             setToastMessage('✅ Haftalık plan başarıyla kaydedildi ve öğrenciye atandı.');
 
-            const updatedStudent = { ...student, learningLoopStatus: LearningLoopStatus.InProgress };
-            await updateStudentInFirestore(updatedStudent);
+            await studentActivityService.updateLearningLoopStatus(student, LearningLoopStatus.InProgress);
+            onStudentUpdate({ ...student, learningLoopStatus: LearningLoopStatus.InProgress });
         } catch (e) {
             console.error("Error saving program", e);
             alert("Program kaydedilirken hata oluştu.");
@@ -397,411 +357,8 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
         }
     };
 
-    const handleExportToPDF = () => {
-        if (!weeklyProgram) return;
-        const { days } = weeklyProgram;
-        let htmlContent = `
-            <!DOCTYPE html>
-            <html><head>
-                <title>${student.name} - Haftalık Plan</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <style>
-                    @media print {
-                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        .no-print { display: none; }
-                    }
-                    body { font-family: 'Inter', sans-serif; }
-                </style>
-            </head>
-            <body class="p-8 font-sans">
-                <h1 class="text-3xl font-bold mb-2">${student.name} - Haftalık Plan</h1>
-                <p class="text-lg text-gray-600 mb-8">${student.grade}. Sınıf</p>
-                <div class="space-y-6">`;
-
-        days.forEach(day => {
-            const dayTasks = day.tasks || [];
-            let dayTotalDuration = dayTasks.reduce((sum, task) => sum + (task.duration || 0), 0);
-            htmlContent += `
-                <div class="p-4 border rounded-lg break-inside-avoid">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xl font-bold text-indigo-600">${day.day}</h2>
-                        <span class="font-semibold text-gray-700">Toplam: ${dayTotalDuration} dk</span>
-                    </div>
-                    <ul class="list-disc pl-5 space-y-2">`;
-            if (dayTasks.length > 0) {
-                dayTasks.forEach(task => {
-                    const isCompleted = task.status === TaskStatus.Completed;
-                    htmlContent += `<li class="${isCompleted ? 'text-gray-500 line-through' : 'text-gray-800'}">${isCompleted ? '✅' : '⬜️'} ${task.description} (${task.duration || 0} dk)</li>`;
-                });
-            } else {
-                htmlContent += `<li class="text-gray-400 list-none">Dinlenme günü.</li>`;
-            }
-            htmlContent += `</ul></div>`;
-        });
-
-        htmlContent += `
-                </div>
-                <div class="no-print mt-8 text-center">
-                    <button onclick="window.print()" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-indigo-700">
-                        Yazdır veya PDF Olarak Kaydet
-                    </button>
-                </div>
-            </body>
-            </html>`;
-
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-
-        iframe.onload = () => {
-            setTimeout(() => {
-                iframe.contentWindow?.print();
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                    URL.revokeObjectURL(url);
-                }, 100);
-            }, 500);
-        };
-    };
-
-    const handleExportAnalysisToPDF = () => {
-        const completedTests = assignedTests.filter(t => t.completed && t.analysis);
-        const completedAssignments = assignments.filter(a => a.submission?.status === 'Değerlendirildi');
-        const completedQBTests = questionBankAssignments.filter(qb => qb.status === 'Tamamlandı');
-
-        const totalTests = completedTests.length;
-        const totalAssignments = completedAssignments.length;
-        const totalQBTests = completedQBTests.length;
-
-        const avgTestScore = totalTests > 0
-            ? Math.round(completedTests.reduce((sum, t) => sum + (t.score || 0), 0) / totalTests)
-            : 0;
-
-        const avgAssignmentScore = completedAssignments.length > 0
-            ? Math.round(completedAssignments.reduce((sum, a) => {
-                const score = a.submission?.teacherScore ?? a.submission?.aiScore ?? 0;
-                return sum + score;
-            }, 0) / completedAssignments.length)
-            : 0;
-
-        const avgQBTestScore = totalQBTests > 0
-            ? Math.round(completedQBTests.reduce((sum, qb) => sum + (qb.score || 0), 0) / totalQBTests)
-            : 0;
-
-        const invalidTopicPatterns = [
-            /tespit edilememiştir/i,
-            /bulunamadı/i,
-            /yok/i,
-            /bu sınavda/i,
-            /henüz/i
-        ];
-
-        const isValidTopic = (topic: string) => {
-            if (!topic || topic.trim().length < 3) return false;
-            return !invalidTopicPatterns.some(pattern => pattern.test(topic));
-        };
-
-        const weakTopicsMap = new Map<string, number>();
-        completedTests.forEach(test => {
-            test.analysis?.analysis?.weakTopics?.forEach(topic => {
-                if (isValidTopic(topic)) {
-                    weakTopicsMap.set(topic, (weakTopicsMap.get(topic) || 0) + 1);
-                }
-            });
-        });
-        completedAssignments.forEach(assignment => {
-            assignment.submission?.aiAnalysis?.weakTopics?.forEach(topic => {
-                if (isValidTopic(topic)) {
-                    weakTopicsMap.set(topic, (weakTopicsMap.get(topic) || 0) + 1);
-                }
-            });
-        });
-        completedQBTests.forEach(qbTest => {
-            if (qbTest.aiFeedback?.weaknesses) {
-                qbTest.aiFeedback.weaknesses.forEach(topic => {
-                    if (isValidTopic(topic)) {
-                        weakTopicsMap.set(topic, (weakTopicsMap.get(topic) || 0) + 1);
-                    }
-                });
-            }
-        });
-
-        const strongTopicsMap = new Map<string, number>();
-        completedTests.forEach(test => {
-            test.analysis?.analysis?.strongTopics?.forEach(topic => {
-                if (isValidTopic(topic)) {
-                    strongTopicsMap.set(topic, (strongTopicsMap.get(topic) || 0) + 1);
-                }
-            });
-        });
-        completedAssignments.forEach(assignment => {
-            assignment.submission?.aiAnalysis?.strongTopics?.forEach(topic => {
-                if (isValidTopic(topic)) {
-                    strongTopicsMap.set(topic, (strongTopicsMap.get(topic) || 0) + 1);
-                }
-            });
-        });
-        completedQBTests.forEach(qbTest => {
-            if (qbTest.aiFeedback?.strengths) {
-                qbTest.aiFeedback.strengths.forEach(topic => {
-                    if (isValidTopic(topic)) {
-                        strongTopicsMap.set(topic, (strongTopicsMap.get(topic) || 0) + 1);
-                    }
-                });
-            }
-        });
-
-        const weakTopics = Array.from(weakTopicsMap.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
-
-        const strongTopics = Array.from(strongTopicsMap.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
-
-        const htmlContent = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>${student.name} - Genel Performans Analizi</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <style>
-                    @media print {
-                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                        .no-print { display: none; }
-                        .page-break { page-break-before: always; }
-                    }
-                    body { font-family: 'Inter', sans-serif; }
-                    .gradient-header {
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    }
-                    .stat-card {
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    }
-                </style>
-            </head>
-            <body class="bg-gray-50 p-8">
-                <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-                    <div class="gradient-header text-white p-8">
-                        <h1 class="text-4xl font-bold mb-2">${student.name}</h1>
-                        <p class="text-xl opacity-90">${student.grade}. Sınıf - Genel Performans Analizi</p>
-                        <p class="text-sm opacity-75 mt-2">Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        })}</p>
-                    </div>
-
-                    <div class="p-8 space-y-8">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                                <span class="text-3xl mr-2">📊</span>
-                                Genel Özet
-                            </h2>
-                            <div class="grid grid-cols-4 gap-4">
-                                <div class="stat-card bg-blue-50 p-4 rounded-xl border-l-4 border-blue-500">
-                                    <div class="text-sm text-gray-600 mb-1">Testler</div>
-                                    <div class="text-3xl font-bold text-blue-600">${totalTests}</div>
-                                    <div class="text-sm text-gray-500 mt-1">Ort: ${avgTestScore}%</div>
-                                </div>
-                                <div class="stat-card bg-cyan-50 p-4 rounded-xl border-l-4 border-cyan-500">
-                                    <div class="text-sm text-gray-600 mb-1">Ödevler</div>
-                                    <div class="text-3xl font-bold text-cyan-600">${totalAssignments}</div>
-                                    <div class="text-sm text-gray-500 mt-1">Ort: ${avgAssignmentScore}%</div>
-                                </div>
-                                <div class="stat-card bg-purple-50 p-4 rounded-xl border-l-4 border-purple-500">
-                                    <div class="text-sm text-gray-600 mb-1">Soru Bankası</div>
-                                    <div class="text-3xl font-bold text-purple-600">${totalQBTests}</div>
-                                    <div class="text-sm text-gray-500 mt-1">Ort: ${avgQBTestScore}/100</div>
-                                </div>
-                                <div class="stat-card bg-green-50 p-4 rounded-xl border-l-4 border-green-500">
-                                    <div class="text-sm text-gray-600 mb-1">Genel Ortalama</div>
-                                    <div class="text-3xl font-bold text-green-600">
-                                        ${Math.round((avgTestScore + avgAssignmentScore + avgQBTestScore) / 3)}%
-                                    </div>
-                                    <div class="text-sm text-gray-500 mt-1">Tüm Aktiviteler</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        ${weakTopics.length > 0 ? `
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                                <span class="text-3xl mr-2">⚠️</span>
-                                En Çok Zorlanan Konular
-                            </h2>
-                            <p class="text-sm text-gray-500 mb-3">Testler, soru bankası ve ödevlerden toplanan veriler</p>
-                            <div class="space-y-3">
-                                ${weakTopics.map(([topic, count], idx) => `
-                                    <div class="flex items-center justify-between bg-red-50 p-4 rounded-lg border border-red-200">
-                                        <div class="flex items-center space-x-3">
-                                            <span class="text-2xl font-bold text-red-600">${idx + 1}</span>
-                                            <span class="text-gray-800 font-medium">${topic}</span>
-                                        </div>
-                                        <span class="px-3 py-1 bg-red-200 text-red-800 rounded-full text-sm font-semibold">
-                                            ${count} aktivitede
-                                        </span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                                <span class="text-3xl mr-2">💪</span>
-                                En Güçlü Konular
-                            </h2>
-                            <p class="text-sm text-gray-500 mb-3">Testler, soru bankası ve ödevlerden toplanan veriler</p>
-                            ${strongTopics.length > 0 ? `
-                                <div class="grid grid-cols-2 gap-3">
-                                    ${strongTopics.map(([topic, count]) => `
-                                        <div class="flex items-center justify-between bg-green-50 p-3 rounded-lg border border-green-200">
-                                            <div class="flex items-center space-x-2">
-                                                <span class="text-xl">✓</span>
-                                                <span class="text-gray-800 font-medium">${topic}</span>
-                                            </div>
-                                            <span class="px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-semibold">
-                                                ${count} aktivite
-                                            </span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : `
-                                <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 text-center">
-                                    <p class="text-gray-600 font-medium">
-                                        Henüz güçlü olunan bir konu tespit edilememiştir.
-                                    </p>
-                                </div>
-                            `}
-                        </div>
-
-                        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                                <span class="text-3xl mr-2">💡</span>
-                                Genel Öneriler
-                            </h2>
-                            <ul class="space-y-3">
-                                ${avgTestScore < 70 && totalTests > 0 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-orange-600 mr-2 mt-1">→</span>
-                                        <span class="text-gray-700">
-                                            Test ortalaması ${avgTestScore}% seviyesinde. Konu anlatımı tekrarı ve düzenli örnek soru çalışması yapılması önerilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${avgAssignmentScore < 70 && totalAssignments > 0 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-orange-600 mr-2 mt-1">→</span>
-                                        <span class="text-gray-700">
-                                            Ödev performansı ${avgAssignmentScore}% seviyesinde. Ödev yapım sürecinde daha dikkatli çalışma ve zaman yönetimi önerilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${avgQBTestScore < 70 && totalQBTests > 0 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-orange-600 mr-2 mt-1">→</span>
-                                        <span class="text-gray-700">
-                                            Soru bankası testlerinde ${avgQBTestScore} puan ortalaması var. Soru çözüm tekniklerinin geliştirilmesi ve zaman yönetimi üzerine çalışılmalı.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${weakTopics.length > 0 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-orange-600 mr-2 mt-1">→</span>
-                                        <span class="text-gray-700">
-                                            <strong>${weakTopics[0][0]}</strong> konusunda ${weakTopics[0][1]} farklı aktivitede zorluk yaşanmış. Bu konuda ek kaynak çalışması ve örnek soru çözümü yapılması önerilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${weakTopics.length >= 2 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-orange-600 mr-2 mt-1">→</span>
-                                        <span class="text-gray-700">
-                                            <strong>${weakTopics[1][0]}</strong> konusunda da gelişim gerekiyor. Konu anlatımı tekrarı ve alıştırma soruları faydalı olacaktır.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${weakTopics.length >= 3 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-orange-600 mr-2 mt-1">→</span>
-                                        <span class="text-gray-700">
-                                            <strong>${weakTopics[2][0]}</strong> konusuna da dikkat edilmeli. Temel kavramların pekiştirilmesi önerilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${strongTopics.length > 0 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-green-600 mr-2 mt-1">✓</span>
-                                        <span class="text-gray-700">
-                                            <strong>${strongTopics[0][0]}</strong> konusunda başarılı performans gösterilmiş. Bu konudaki çalışma yöntemi diğer konulara da uygulanabilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${strongTopics.length >= 2 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-green-600 mr-2 mt-1">✓</span>
-                                        <span class="text-gray-700">
-                                            <strong>${strongTopics[1][0]}</strong> konusundaki hakimiyet devam ettirilerek benzer konulara geçiş yapılabilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${avgTestScore >= 85 && avgAssignmentScore >= 85 && avgQBTestScore >= 85 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-green-600 mr-2 mt-1">✓</span>
-                                        <span class="text-gray-700">
-                                            Tüm alanlarda yüksek başarı gösterilmektedir (%85+). Mevcut çalışma disiplini sürdürülmeli ve zorluk seviyesi artırılabilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                                ${totalTests + totalAssignments + totalQBTests < 5 ? `
-                                    <li class="flex items-start bg-white p-3 rounded-lg">
-                                        <span class="text-blue-600 mr-2 mt-1">ℹ</span>
-                                        <span class="text-gray-700">
-                                            Daha detaylı analiz için daha fazla aktivite verisi gereklidir. Düzenli test ve ödev çalışması yapılması önerilir.
-                                        </span>
-                                    </li>
-                                ` : ''}
-                            </ul>
-                        </div>
-
-                        <div class="text-center text-gray-500 text-sm mt-8 pt-6 border-t">
-                            <p>Bu rapor sistem tarafından otomatik olarak oluşturulmuştur.</p>
-                            <p class="mt-1">© ${new Date().getFullYear()} Özel Ders Takip Sistemi</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="no-print mt-8 text-center">
-                    <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg">
-                        📄 Yazdır veya PDF Olarak Kaydet
-                    </button>
-                </div>
-            </body>
-            </html>
-        `;
-
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = url;
-        document.body.appendChild(iframe);
-
-        iframe.onload = () => {
-            setTimeout(() => {
-                iframe.contentWindow?.print();
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                    URL.revokeObjectURL(url);
-                }, 100);
-            }, 500);
-        };
-    };
+    const onExportToPDF = () => pdfExportService.exportWeeklyPlan(student, weeklyProgram);
+    const onExportAnalysisToPDF = () => pdfExportService.exportAcademicAnalysis(student, assignedTests, assignments, questionBankAssignments);
 
     const handleGenerateQBAnalysis = async (assignmentId: string) => {
         try {
@@ -1197,7 +754,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
             lessonStats={lessonStats}
             paymentSummary={paymentSummary}
             paymentConfig={paymentConfig}
-            onExportAnalysisToPDF={handleExportAnalysisToPDF}
+            onExportAnalysisToPDF={onExportAnalysisToPDF}
             onShowAnalysis={handleShowAnalysis}
             onViewQBAssignment={setViewingQBAssignment}
             onViewPDFTestResult={(test, submission) => setViewingPDFTestResult({ test, submission })}
@@ -1272,7 +829,7 @@ const StudentDetailPage: React.FC<StudentDetailPageProps> = ({ user, student, on
                                     <p className="text-blue-100">{student.grade === 4 ? 'İlkokul' : `${student.grade}. Sınıf`}</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                    <button onClick={handleExportToPDF} disabled={!weeklyProgram} className="flex-1 sm:flex-none bg-white/10 text-white px-3 md:px-4 py-2 rounded-xl hover:bg-white/20 flex items-center justify-center space-x-2 disabled:bg-white/5 disabled:text-white/40 disabled:cursor-not-allowed text-sm md:text-base border border-white/10 backdrop-blur-sm transition-all">
+                                    <button onClick={onExportToPDF} disabled={!weeklyProgram} className="flex-1 sm:flex-none bg-white/10 text-white px-3 md:px-4 py-2 rounded-xl hover:bg-white/20 flex items-center justify-center space-x-2 disabled:bg-white/5 disabled:text-white/40 disabled:cursor-not-allowed text-sm md:text-base border border-white/10 backdrop-blur-sm transition-all">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                                         <span className="whitespace-nowrap">PDF</span>
                                     </button>

@@ -1,0 +1,135 @@
+import React, { useState } from 'react';
+import { Student } from '../../types';
+import { supabase } from '../../services/dbAdapter';
+
+interface EditStudentModalProps {
+    student: Student;
+    onClose: () => void;
+    onStudentUpdated: (updatedStudent: Student) => void;
+}
+
+const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, onStudentUpdated }) => {
+    const [name, setName] = useState(student.name);
+    const [grade, setGrade] = useState(student.grade);
+    const [phone, setPhone] = useState(student.contact || '');
+    const [parentName, setParentName] = useState(student.parentName || '');
+    const [parentPhone, setParentPhone] = useState(student.parentPhone || '');
+    const [parentPassword, setParentPassword] = useState('');
+    const [isAiAssistantEnabled, setIsAiAssistantEnabled] = useState(student.isAiAssistantEnabled ?? true);
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsSubmitting(true);
+
+        try {
+            const { error: updateError } = await supabase
+                .from('students')
+                .update({
+                    name,
+                    grade,
+                    is_ai_assistant_enabled: isAiAssistantEnabled,
+                    contact: phone,
+                    parent_name: parentName,
+                    parent_phone: parentPhone
+                })
+                .eq('id', student.id);
+
+            if (updateError) throw updateError;
+
+            if (parentName.trim() && parentPassword.trim()) {
+                try {
+                    const { data: existingParent } = await supabase
+                        .from('parents')
+                        .select('id, email')
+                        .eq('name', parentName.trim())
+                        .maybeSingle();
+
+                    if (existingParent) {
+                        const { error: passwordError } = await supabase.auth.admin.updateUserById(
+                            existingParent.id,
+                            { password: parentPassword.trim() }
+                        );
+                        if (passwordError) console.error('Password update error:', passwordError);
+                    }
+                } catch (parentError) {
+                    console.error('Parent update error:', parentError);
+                }
+            }
+
+            const updatedStudent = {
+                ...student,
+                name,
+                grade,
+                isAiAssistantEnabled,
+                contact: phone,
+                parentName,
+                parentPhone
+            };
+            onStudentUpdated(updatedStudent);
+            onClose();
+        } catch (error: any) {
+            setError('Öğrenci güncellenirken bir hata oluştu.');
+            console.error('Error updating student:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold font-poppins text-gray-800">Öğrenci Düzenle</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Adı Soyadı</label>
+                        <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sınıf Seviyesi</label>
+                        <select value={grade} onChange={e => setGrade(parseInt(e.target.value, 10))} className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all bg-white">
+                            <option value={4}>İlkokul</option>
+                            {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Telefon</label>
+                        <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Veli Adı Soyadı</label>
+                            <input type="text" value={parentName} onChange={e => setParentName(e.target.value)} className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Veli Telefon</label>
+                            <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all" />
+                        </div>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <label className="flex items-center space-x-3 cursor-pointer">
+                            <input type="checkbox" checked={isAiAssistantEnabled} onChange={(e) => setIsAiAssistantEnabled(e.target.checked)} className="w-5 h-5 text-primary rounded border-gray-300" />
+                            <div>
+                                <span className="text-sm font-semibold text-gray-800">AI Asistan Aktif</span>
+                            </div>
+                        </label>
+                    </div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    <div className="pt-2 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 font-medium transition-colors">İptal</button>
+                        <button type="submit" disabled={isSubmitting} className="flex-1 bg-primary text-white px-4 py-3 rounded-xl hover:bg-primary-dark font-medium transition-colors">Güncelle</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default EditStudentModal;

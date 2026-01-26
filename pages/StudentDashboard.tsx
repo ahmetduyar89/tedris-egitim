@@ -39,341 +39,23 @@ import DiagnosticTestPage from './DiagnosticTestPage';
 import AdaptiveDashboard from './AdaptiveDashboard';
 import * as privateLessonService from '../services/privateLessonService';
 import StudentTurkishLearningPage from './StudentTurkishLearningPage';
-const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
-
-// ... (inside StudentDashboard component)
-
+import Toast from '../components/student-dashboard/Toast';
+import TestArea from '../components/student-dashboard/TestArea';
+import HomeworkWidget from '../components/student-dashboard/HomeworkWidget';
+import UpcomingLessonsWidget from '../components/student-dashboard/UpcomingLessonsWidget';
+import AssessmentWidget from '../components/student-dashboard/AssessmentWidget';
+import DashboardTab from '../components/student-dashboard/DashboardTab';
+import HomeworkTab from '../components/student-dashboard/HomeworkTab';
+import LibraryTab from '../components/student-dashboard/LibraryTab';
+import MapTab from '../components/student-dashboard/MapTab';
+import { studentDashboardDataService } from '../services/studentDashboardDataService';
+import { pdfExportService } from '../services/pdfExportService';
 
 
 type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest' | 'takingAssessment' | 'adaptiveDashboard';
 type Tab = 'dashboard' | 'adaptive' | 'report' | 'homework' | 'library' | 'map' | 'flashcards' | 'turkish';
 
-interface ToastProps {
-  message: string;
-  type: 'success' | 'info';
-  onClose: () => void;
-}
-
-const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  const baseClasses = "fixed top-20 right-8 p-4 rounded-xl shadow-lg text-white font-semibold animate-fade-in-down z-50 flex items-center space-x-3";
-  const typeClasses = {
-    success: 'bg-success',
-    info: 'bg-primary/80'
-  };
-
-  const icon = {
-    success: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    info: <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-  };
-
-  return (
-    <div className={`${baseClasses} ${typeClasses[type]}`}>
-      {icon[type]}
-      <span>{message}</span>
-    </div>
-  );
-};
-
-interface TestAreaProps {
-  pendingTests: Test[];
-  completedTests: Test[];
-  onStartTest: (test: Test) => void;
-  onViewReport: (test: Test) => void;
-  pendingPDFTests: PDFTest[];
-  completedPDFTests: PDFTestSubmission[];
-  onStartPDFTest: (test: PDFTest) => void;
-}
-
-const TestArea: React.FC<TestAreaProps> = ({ pendingTests, completedTests, onStartTest, onViewReport, pendingPDFTests, completedPDFTests, onStartPDFTest }) => {
-  const hasPendingTests = pendingTests.length > 0 || pendingPDFTests.length > 0;
-  const hasCompletedTests = completedTests.length > 0 || completedPDFTests.length > 0;
-
-  if (!hasPendingTests && !hasCompletedTests) {
-    return null;
-  }
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gradient-to-r from-teal-600 to-emerald-600 text-white flex items-center gap-2">
-        <span className="bg-white/20 p-1.5 rounded-lg text-white backdrop-blur-sm">📝</span>
-        <h2 className="text-lg font-bold">Testler</h2>
-      </div>
-
-      <div className="p-4 space-y-4">
-        {hasPendingTests && (
-          <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-              Atanan
-            </h3>
-            <ul className="space-y-2">
-              {pendingTests.map(test => (
-                <li key={test.id} className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate pr-2">{test.title}</h4>
-                    <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-medium flex-shrink-0">Test</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">{test.questions.length} soru · {test.duration} dk</p>
-                  <button
-                    onClick={() => onStartTest(test)}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm hover:shadow active:scale-95"
-                  >
-                    Başla
-                  </button>
-                </li>
-              ))}
-              {pendingPDFTests.map(test => (
-                <li key={test.id} className="p-3 rounded-xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-                  <div className="flex items-center gap-1.5 mb-2 max-w-full">
-                    <span className="bg-red-50 text-red-600 p-1 rounded-md text-xs flex-shrink-0">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                    </span>
-                    <h4 className="text-sm font-bold text-gray-800 group-hover:text-blue-600 transition-colors truncate flex-1 min-w-0">{test.title}</h4>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3 ml-1">{test.totalQuestions} soru · {test.durationMinutes} dk</p>
-                  <button
-                    onClick={() => onStartPDFTest(test)}
-                    className="w-full bg-blue-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-sm hover:shadow active:scale-95"
-                  >
-                    Başla
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {hasCompletedTests && (
-          <div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-              Tamamlanan
-            </h3>
-            <ul className="space-y-2">
-              {completedTests.map(test => (
-                <li key={test.id} className="p-2.5 rounded-xl bg-gray-50 hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer group" onClick={() => test.analysis && onViewReport(test)}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 truncate">{test.title}</h4>
-                      <p className="text-[10px] text-gray-500 mt-0.5">Puan: <span className={test.score && test.score >= 70 ? 'text-green-600 font-bold' : 'text-orange-600 font-bold'}>{test.score ?? 0}%</span></p>
-                    </div>
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${test.analysis ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {test.analysis ? 'Rapor' : 'Bekliyor'}
-                    </span>
-                  </div>
-                </li>
-              ))}
-              {completedPDFTests.map(submission => (
-                <li key={submission.id} className="p-2.5 rounded-xl bg-gray-50 hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-sm transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <h4 className="text-sm font-semibold text-gray-700 truncate">{submission.pdfTest?.title || 'PDF Testi'}</h4>
-                      </div>
-                      <p className="text-[10px] text-gray-500 ml-5">Puan: <span className={submission.scorePercentage && submission.scorePercentage >= 70 ? 'text-green-600 font-bold' : 'text-orange-600 font-bold'}>{submission.scorePercentage?.toFixed(1)}%</span></p>
-                    </div>
-                    <span className="text-[10px] px-2 py-1 rounded-full bg-green-100 text-green-700 font-bold">✓</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-interface HomeworkWidgetProps {
-  assignments: Assignment[];
-  onOpenAssignment: (assignment: Assignment) => void;
-}
-
-const HomeworkWidget: React.FC<HomeworkWidgetProps> = ({ assignments, onOpenAssignment }) => {
-  const unviewedOrIncomplete = assignments.filter(a => !a.viewedByStudent || !a.submission);
-  const displayAssignments = unviewedOrIncomplete.slice(0, 3);
-
-  if (displayAssignments.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white flex items-center gap-2">
-        <span className="bg-white/20 p-1.5 rounded-lg text-white backdrop-blur-sm">📚</span>
-        <h2 className="text-lg font-bold">Ödevler</h2>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {displayAssignments.map(assignment => {
-          const isNew = !assignment.viewedByStudent;
-
-          return (
-            <div
-              key={assignment.id}
-              onClick={() => onOpenAssignment(assignment)}
-              className="p-3 rounded-xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all cursor-pointer group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0 pr-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-sm font-bold text-gray-800 truncate group-hover:text-violet-600 transition-colors">
-                      {assignment.title}
-                    </h4>
-                    {isNew && (
-                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold shadow-sm animate-pulse flex-shrink-0">
-                        YENİ
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 font-medium truncate">
-                    {assignment.subject} · {new Date(assignment.dueDate).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                  </p>
-                </div>
-                <div className="bg-gray-50 p-1.5 rounded-full group-hover:bg-violet-50 transition-colors flex-shrink-0">
-                  <svg className="w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      {unviewedOrIncomplete.length > 3 && (
-        <div className="pb-3 text-center">
-          <button className="text-xs font-semibold text-violet-600 hover:text-violet-800 transition-colors">
-            +{unviewedOrIncomplete.length - 3} ödev daha
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface UpcomingLessonsWidgetProps {
-  studentId: string;
-  onJoinLesson: (lesson: any) => void;
-}
-
-const UpcomingLessonsWidget: React.FC<UpcomingLessonsWidgetProps> = ({ studentId, onJoinLesson }) => {
-  const [lessons, setLessons] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchLessons = async () => {
-      try {
-        const data = await privateLessonService.getStudentLessons(studentId);
-        setLessons(data);
-      } catch (error) {
-        console.error('Error fetching lessons:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLessons();
-
-    // Refresh every minute to update "Join" button status
-    const interval = setInterval(fetchLessons, 60000);
-    return () => clearInterval(interval);
-  }, [studentId]);
-
-  if (loading || lessons.length === 0) return null;
-
-  const isLessonJoinable = (lesson: any) => {
-    return lesson.status === 'started' && lesson.type === 'online';
-  };
-
-  const handleJoinClick = (lesson: any) => {
-    onJoinLesson(lesson);
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gradient-to-r from-red-500 to-rose-600 text-white flex items-center gap-2">
-        <span className="bg-white/20 p-1.5 rounded-lg text-white backdrop-blur-sm">📅</span>
-        <h3 className="text-lg font-bold">Yaklaşan Dersler</h3>
-      </div>
-
-      <div className="p-4 space-y-3">
-        {lessons.map((lesson) => {
-          const startTime = new Date(lesson.start_time);
-          const joinable = isLessonJoinable(lesson);
-
-          return (
-            <div key={lesson.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-red-200 hover:shadow-md transition-all group">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="flex flex-col items-center justify-center bg-gray-50 w-12 h-12 rounded-xl border border-gray-200 shadow-sm group-hover:scale-105 transition-transform flex-shrink-0">
-                  <span className="text-[10px] font-bold text-red-500 uppercase">{startTime.toLocaleDateString('tr-TR', { month: 'short' })}</span>
-                  <span className="text-lg font-bold text-gray-800">{startTime.getDate()}</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors text-sm truncate">{lesson.subject}</h4>
-                  <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                    {startTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-              </div>
-
-              {joinable ? (
-                <button
-                  onClick={() => handleJoinClick(lesson)}
-                  className="ml-2 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md animate-pulse hover:scale-105 active:scale-95 flex items-center gap-1 flex-shrink-0"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                  </svg>
-                  Katıl
-                </button>
-              ) : (
-                <span className={`ml-2 text-[10px] font-bold px-2 py-1 rounded-full border flex-shrink-0 whitespace-nowrap ${lesson.status === 'completed' ? 'bg-gray-100 text-gray-400 border-gray-200' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
-                  {lesson.status === 'completed' ? 'Tamamlandı' : 'Bekleniyor'}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const AssessmentWidget: React.FC<{ onStart: () => void }> = ({ onStart }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-4">
-      <div className="p-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white flex items-center gap-2">
-        <span className="bg-white/20 p-1.5 rounded-lg text-white backdrop-blur-sm">🎯</span>
-        <h2 className="text-lg font-bold">Tanı Testi</h2>
-      </div>
-      <div className="p-4">
-        <p className="text-sm text-gray-600 mb-4">
-          Eksiklerini belirlemek ve sana özel çalışma planı hazırlamak için 20 soruluk tanı testini çöz.
-        </p>
-        <button
-          onClick={onStart}
-          className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
-        >
-          <span>Sınavı Başlat</span>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7-7 7" /></svg>
-        </button>
-      </div>
-    </div>
-  );
-};
+const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
 
 interface StudentDashboardProps {
   user: User;
@@ -442,6 +124,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   const [pdfTests, setPdfTests] = useState<PDFTest[]>([]);
   const [pdfTestSubmissions, setPdfTestSubmissions] = useState<PDFTestSubmission[]>([]);
   const [activePDFTestId, setActivePDFTestId] = useState<string | null>(null);
+  const [activeOnlineLesson, setActiveOnlineLesson] = useState<any>(null);
 
   const newHomeworkCount = useMemo(() => assignments.filter(a => !a.viewedByStudent).length, [assignments]);
   const newContentCount = useMemo(() => contentAssignments.filter(c => !c.viewed).length, [contentAssignments]);
@@ -505,250 +188,20 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     if (!user) return;
 
     try {
-      // Fetch student data
-      const studentDoc = await db.collection('students').doc(user.id).get();
-      if (studentDoc.exists) {
-        const data = studentDoc.data() as any;
-        setStudentData({
-          ...data,
-          badges: data.badges || [],
-          isAiAssistantEnabled: data.is_ai_assistant_enabled ?? data.isAiAssistantEnabled ?? true
-        });
-      }
+      const data = await studentDashboardDataService.loadAllData(user.id);
 
-      // Fetch tests
-      const testsSnapshot = await db.collection('tests').where('studentId', '==', user.id).get();
-      const studentTests = testsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) as Test[];
-
-      // Fetch question bank assignments and convert to Test format
-      const qbAssignmentsSnapshot = await db.collection('question_bank_assignments').where('student_id', '==', user.id).get();
-
-      const qbTests: Test[] = await Promise.all(qbAssignmentsSnapshot.docs.map(async (doc: any) => {
-        const data = doc.data();
-
-        try {
-          // Get question bank details
-          const qbDoc = await db.collection('question_banks').doc(data.question_bank_id || data.questionBankId).get();
-
-          if (!qbDoc.exists) {
-            console.warn('⚠️ Soru bankası bulunamadı (assignment ID:', doc.id, ', qb ID:', data.question_bank_id || data.questionBankId, ')');
-            return {
-              id: doc.id,
-              title: 'Soru Bankası Testi (Yüklenemedi)',
-              subject: Subject.Mathematics,
-              unit: '',
-              questions: [],
-              studentId: user.id,
-              tutorId: data.teacher_id || data.teacherId,
-              completed: data.status === 'Tamamlandı',
-              score: data.score || 0,
-              duration: data.time_limit_minutes || data.timeLimitMinutes || 60,
-              dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
-              submissionDate: data.completed_at || data.completedAt,
-              isQuestionBankTest: true,
-              questionBankAssignmentId: doc.id
-            } as Test;
-          }
-
-          const qbData = qbDoc.data();
-
-          if (!qbData.questions || !Array.isArray(qbData.questions) || qbData.questions.length === 0) {
-            console.warn('⚠️ Soru bankasında soru bulunamadı:', {
-              assignmentId: doc.id,
-              qbId: qbDoc.id,
-              title: qbData.title,
-              hasQuestions: !!qbData.questions,
-              isArray: Array.isArray(qbData.questions),
-              length: qbData.questions?.length
-            });
-          }
-
-          // Map AI feedback to Test analysis format if it exists
-          let analysis;
-          const feedback = data.ai_feedback || data.aiFeedback;
-
-          if (feedback) {
-            analysis = {
-              summary: {
-                correct: data.total_correct || data.totalCorrect || 0,
-                wrong: (data.total_questions || data.totalQuestions || 0) - (data.total_correct || data.totalCorrect || 0),
-                scorePercent: data.score || 0
-              },
-              analysis: {
-                weakTopics: feedback.weaknesses || [],
-                strongTopics: feedback.strengths || [],
-                recommendations: feedback.recommendations || [],
-                overallComment: feedback.overall || ''
-              },
-              // Create synthetic question evaluations so report charts show correct counts
-              questionEvaluations: Array.from({ length: (data.total_questions || data.totalQuestions || 0) }).map((_, i) => ({
-                id: `synthetic_${i}`,
-                text: `Soru ${i + 1}`,
-                type: 'Çoktan Seçmeli', // Default type
-                correctAnswer: '',
-                studentAnswer: '',
-                isCorrect: i < (data.total_correct || data.totalCorrect || 0)
-              })) as any[]
-            };
-          }
-
-          return {
-            id: doc.id,
-            title: qbData?.title || 'Soru Bankası Testi',
-            subject: qbData?.subject || '',
-            unit: qbData?.unit || '',
-            questions: qbData?.questions || [],
-            studentId: user.id,
-            tutorId: data.teacher_id || data.teacherId,
-            completed: data.status === 'Tamamlandı',
-            score: data.score || 0,
-            duration: data.time_limit_minutes || data.timeLimitMinutes || 60,
-            dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
-            submissionDate: data.completed_at || data.completedAt,
-            isQuestionBankTest: true,
-            questionBankAssignmentId: doc.id,
-            analysis: analysis
-          } as Test;
-        } catch (error) {
-          console.error('❌ Soru bankası yüklenirken hata (assignment:', doc.id, '):', error);
-          return {
-            id: doc.id,
-            title: 'Soru Bankası Testi (Hata)',
-            subject: Subject.Mathematics,
-            unit: '',
-            questions: [],
-            studentId: user.id,
-            tutorId: data.teacher_id || data.teacherId,
-            completed: data.status === 'Tamamlandı',
-            score: data.score || 0,
-            duration: data.time_limit_minutes || data.timeLimitMinutes || 60,
-            dueDate: data.application_date || data.applicationDate || new Date().toISOString(),
-            submissionDate: data.completed_at || data.completedAt,
-            isQuestionBankTest: true,
-            questionBankAssignmentId: doc.id
-          } as Test;
-        }
-      }));
-
-      const allTests = [...studentTests, ...qbTests];
-      const allPendingTests = allTests.filter(t => !t.completed);
-      setPendingTests(allPendingTests);
-      setCompletedTests(allTests.filter(t => t.completed).sort((a, b) => new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime()));
-
-      // Fetch weekly program for the current week
-      const now = new Date();
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-      const weekStart = new Date(now.setDate(diff));
-      weekStart.setHours(0, 0, 0, 0);
-      const weekId = weekStart.toISOString().split('T')[0];
-
-      const programSnapshot = await db.collection('weeklyPrograms')
-        .where('studentId', '==', user.id)
-        .where('weekId', '==', weekId)
-        .limit(1)
-        .get();
-
-      if (!programSnapshot.empty) {
-        const doc = programSnapshot.docs[0];
-        const program = { id: doc.id, ...doc.data() } as WeeklyProgram;
-        setWeeklyProgram(program);
-        setProgramId(doc.id);
-      } else {
-        setWeeklyProgram(null);
-        setProgramId(null);
-      }
-
-      // Fetch assignments and submissions using direct Supabase queries (avoid dbAdapter conversion issues)
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('student_id', user.id);
-
-      if (assignmentsError) {
-        console.error('Error fetching assignments:', assignmentsError);
-        throw assignmentsError;
-      }
-
-      const { data: submissionsData, error: submissionsError } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('student_id', user.id);
-
-      if (submissionsError) {
-        console.error('Error fetching submissions:', submissionsError);
-        throw submissionsError;
-      }
-
-      const submissionsMap = new Map();
-      (submissionsData || []).forEach((data: any) => {
-        submissionsMap.set(data.assignment_id, {
-          id: data.id,
-          assignmentId: data.assignment_id,
-          studentId: data.student_id,
-          submissionText: data.submission_text,
-          fileUrl: data.file_url,
-          submittedAt: data.submitted_at,
-          status: data.status,
-          aiScore: data.ai_score ? Number(data.ai_score) : undefined,
-          aiAnalysis: data.ai_analysis,
-          teacherScore: data.teacher_score ? Number(data.teacher_score) : undefined,
-          teacherFeedback: data.teacher_feedback
-        });
-      });
-
-      const assignmentsList = (assignmentsData || []).map((data: any) => {
-        const assignment: Assignment = {
-          id: data.id,
-          teacherId: data.teacher_id,
-          studentId: data.student_id,
-          subject: data.subject,
-          title: data.title,
-          description: data.description,
-          dueDate: data.due_date,
-          aiSuggested: data.ai_suggested || false,
-          createdAt: data.created_at,
-          viewedByStudent: data.viewed_by_student || false,
-          contentType: data.content_type,
-          fileUrl: data.file_url,
-          htmlContent: data.html_content
-        };
-        const submission = submissionsMap.get(data.id);
-        if (submission) {
-          assignment.submission = submission;
-        }
-        return assignment;
-      });
-      setAssignments(assignmentsList);
-
-      // Fetch content assignments and then content items (optimized to fetch only needed content)
-      const contentAssignmentsSnapshot = await db.collection('contentAssignments').where('studentId', '==', user.id).get();
-      const studentContentAssignments = contentAssignmentsSnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }) as ContentAssignment);
-      setContentAssignments(studentContentAssignments);
-
-      if (studentContentAssignments.length > 0) {
-        const contentIds = studentContentAssignments.map(ca => ca.contentId);
-        if (contentIds.length > 0) {
-          const contentPromises = contentIds.map(id => db.collection('contentLibrary').doc(id).get());
-          const contentDocs = await Promise.all(contentPromises);
-          const studentContentItems = contentDocs
-            .filter((doc: any) => doc.exists)
-            .map((doc: any) => ({ id: doc.id, ...doc.data() }) as ContentLibraryItem);
-          setAssignedContent(studentContentItems);
-        }
-      } else {
-        setAssignedContent([]);
-      }
-
-      // Fetch PDF tests and submissions
-      const studentPDFTests = await getPDFTestsForStudent(user.id);
-      setPdfTests(studentPDFTests);
-
-      const studentPDFSubmissions = await getSubmissionsForStudent(user.id);
-      setPdfTestSubmissions(studentPDFSubmissions);
-
+      setStudentData(data.studentData);
+      setPendingTests(data.pendingTests);
+      setCompletedTests(data.completedTests);
+      setWeeklyProgram(data.weeklyProgram);
+      setProgramId(data.programId);
+      setAssignments(data.assignments);
+      setContentAssignments(data.contentAssignments);
+      setAssignedContent(data.assignedContent);
+      setPdfTests(data.pdfTests);
+      setPdfTestSubmissions(data.pdfTestSubmissions);
     } catch (error) {
-      console.error("Error loading student data:", error);
+      console.error("Error loading student data from service:", error);
     }
   }, [user]);
 
@@ -919,6 +372,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     setActiveView('submitHomework');
   };
 
+  const handleJoinOnlineLesson = (lesson: any) => {
+    setActiveOnlineLesson(lesson);
+  };
+
   const handleTaskToggle = async (task: Task) => {
     if (task.metadata?.assignmentId) {
       setToast({ message: "Ödevi tamamlamak için lütfen teslim ediniz.", type: "info" });
@@ -1057,13 +514,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
   };
 
   const handleExportReport = () => {
-    const content = document.getElementById('weekly-report-content');
-    if (content) {
-      const printWindow = window.open('', '_blank');
-      printWindow?.document.write(`<html><head><title>Haftalık Rapor</title><script src="https://cdn.tailwindcss.com"></script></head><body>${content.innerHTML}</body></html>`);
-      printWindow?.document.close();
-      printWindow?.print();
-    }
+    pdfExportService.exportElementToPDF('weekly-report-content', 'Haftalık Rapor');
   };
 
   const handleContentViewed = async (item: ContentLibraryItem) => {
@@ -1134,340 +585,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
     }, 1500);
   };
 
-  const renderDashboard = () => {
-    const hasWeeklyProgram = mergedWeeklyProgram !== null;
-    const isLoading = !studentData;
-
-    // Skeleton Loader
-    if (isLoading) {
-      return (
-        <div className="p-4 md:p-8 space-y-8">
-          {/* Motivation Card Skeleton */}
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-6 animate-pulse">
-            <div className="h-6 bg-white/20 rounded w-48 mb-2"></div>
-            <div className="h-4 bg-white/20 rounded w-full max-w-md"></div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main Content Skeleton */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 animate-pulse">
-                <div className="h-8 bg-gray-200 rounded w-64 mb-6"></div>
-                <div className="space-y-4">
-                  {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-24 bg-gray-100 rounded-lg"></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar Skeleton */}
-            <div className="space-y-4">
-              {/* Achievement Card Skeleton */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 animate-pulse">
-                <div className="h-6 bg-gray-200 rounded w-32 mb-3"></div>
-                <div className="h-20 bg-gray-100 rounded"></div>
-              </div>
-
-              {/* Daily Goals Skeleton */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 animate-pulse">
-                <div className="h-6 bg-gray-200 rounded w-32 mb-3"></div>
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-12 bg-gray-100 rounded"></div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Streak Widget Skeleton */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 animate-pulse">
-                <div className="h-6 bg-gray-200 rounded w-24 mb-3"></div>
-                <div className="h-16 bg-gray-100 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-4 md:p-8 space-y-8 animate-fade-in">
-        {/* Achievement Notifications */}
-        <AchievementNotification studentId={user.id} />
-
-        {studentData && <MotivationCard message={dailyMessage} isLoading={isMessageLoading} student={studentData} />}
-
-        <div className={`grid grid-cols-1 ${hasWeeklyProgram ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
-          {/* Main Content - Weekly Program (Focus Area) */}
-          {hasWeeklyProgram && (
-            <div className="lg:col-span-2 space-y-6">
-              <WeeklySchedule
-                program={mergedWeeklyProgram}
-                onTaskClick={handleTaskClick}
-                onTaskToggle={handleTaskToggle}
-                isInteractive={true}
-              />
-            </div>
-          )}
-
-          {/* Compact Sidebar (Right) - Only show if weekly program exists */}
-          {hasWeeklyProgram && studentData && (
-            <div className="space-y-4">
-              <AssessmentWidget onStart={() => setActiveView('takingAssessment')} />
-              <TestArea
-                pendingTests={pendingTests}
-                completedTests={completedTests}
-                onStartTest={handleStartTest}
-                onViewReport={handleViewReport}
-                pendingPDFTests={pendingPDFTests}
-                completedPDFTests={completedPDFTests}
-                onStartPDFTest={handleStartPDFTest}
-              />
-
-              {/* Compact Daily Goals */}
-              <CompactDailyGoalsCard studentId={user.id} />
-
-              {/* Streak Widget */}
-              <StreakWidget studentId={user.id} />
-
-              {/* Other widgets */}
-              <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
-              <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
-              <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
-            </div>
-          )}
-
-          {/* If no weekly program, show full-width widgets */}
-          {!hasWeeklyProgram && (
-            <div className="max-w-4xl mx-auto space-y-6">
-              <div className="bg-card-background p-8 rounded-2xl shadow-lg text-center">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-gray-400">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-2">Haftalık Programın Hazırlanıyor</h3>
-                <p className="text-gray-600">Öğretmenin yakında senin için bir haftalık program oluşturacak.</p>
-              </div>
-
-              {/* Show widgets in grid when no program */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {studentData && (
-                  <>
-                    <CompactDailyGoalsCard studentId={user.id} />
-                  </>
-                )}
-                <StreakWidget studentId={user.id} />
-                <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
-                <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
-                <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />
-              </div>
-
-              <TestArea
-                pendingTests={pendingTests}
-                completedTests={completedTests}
-                onStartTest={handleStartTest}
-                onViewReport={handleViewReport}
-                pendingPDFTests={pendingPDFTests}
-                completedPDFTests={completedPDFTests}
-                onStartPDFTest={handleStartPDFTest}
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const renderHomework = () => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-
-    const groups = {
-      overdue: [] as Assignment[],
-      today: [] as Assignment[],
-      thisWeek: [] as Assignment[],
-      upcoming: [] as Assignment[],
-      completed: [] as Assignment[]
-    };
-
-    assignments.forEach(assignment => {
-      // Check if completed (submitted or graded)
-      if (assignment.submission && (assignment.submission.status === AssignmentStatus.Submitted || assignment.submission.status === AssignmentStatus.Graded)) {
-        groups.completed.push(assignment);
-        return;
-      }
-
-      const dueDate = new Date(assignment.dueDate);
-      const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-
-      if (dueDate < now) {
-        groups.overdue.push(assignment);
-      } else if (dueDateOnly.getTime() === today.getTime()) {
-        groups.today.push(assignment);
-      } else if (dueDateOnly > today && dueDateOnly <= nextWeek) {
-        groups.thisWeek.push(assignment);
-      } else {
-        groups.upcoming.push(assignment);
-      }
-    });
-
-    // Sort groups
-    groups.overdue.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    groups.today.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    groups.thisWeek.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    groups.upcoming.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-    groups.completed.sort((a, b) => new Date(b.submission!.submittedAt).getTime() - new Date(a.submission!.submittedAt).getTime());
-
-    const hasAnyHomework = Object.values(groups).some(g => g.length > 0);
-
-    if (!hasAnyHomework) {
-      return (
-        <div className="p-8 flex flex-col items-center justify-center text-center animate-fade-in">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-gray-400">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold text-gray-800">Harika!</h3>
-          <p className="text-gray-500 mt-2">Şu an için yapman gereken bir ödev bulunmuyor.</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-4 md:p-8 animate-fade-in space-y-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold text-gray-800">Ödevlerim</h2>
-          <div className="text-sm text-gray-500">
-            Toplam: <span className="font-bold text-primary">{assignments.length}</span>
-          </div>
-        </div>
-
-        {groups.overdue.length > 0 && (
-          <section>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-8 bg-red-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-red-600">Gecikmiş Ödevler</h3>
-              <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-bold">{groups.overdue.length}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {groups.overdue.map(assignment => (
-                <AssignmentCard key={assignment.id} assignment={assignment} onOpen={handleOpenAssignment} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {groups.today.length > 0 && (
-          <section>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-8 bg-amber-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-amber-600">Bugün Son Gün</h3>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full text-xs font-bold">{groups.today.length}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {groups.today.map(assignment => (
-                <AssignmentCard key={assignment.id} assignment={assignment} onOpen={handleOpenAssignment} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {groups.thisWeek.length > 0 && (
-          <section>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-blue-600">Bu Hafta</h3>
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs font-bold">{groups.thisWeek.length}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {groups.thisWeek.map(assignment => (
-                <AssignmentCard key={assignment.id} assignment={assignment} onOpen={handleOpenAssignment} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {groups.upcoming.length > 0 && (
-          <section>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-8 bg-indigo-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-indigo-600">Gelecek Ödevler</h3>
-              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-xs font-bold">{groups.upcoming.length}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {groups.upcoming.map(assignment => (
-                <AssignmentCard key={assignment.id} assignment={assignment} onOpen={handleOpenAssignment} />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {groups.completed.length > 0 && (
-          <section>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-2 h-8 bg-green-500 rounded-full"></div>
-              <h3 className="text-xl font-bold text-green-600">Tamamlananlar</h3>
-              <span className="px-2 py-0.5 bg-green-100 text-green-600 rounded-full text-xs font-bold">{groups.completed.length}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 opacity-75 hover:opacity-100 transition-opacity">
-              {groups.completed.map(assignment => (
-                <AssignmentCard key={assignment.id} assignment={assignment} onOpen={handleOpenAssignment} />
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-    );
-  };
-
-  const [activeOnlineLesson, setActiveOnlineLesson] = useState<{
-    roomName: string;
-    studentName: string;
-  } | null>(null);
-
-  const handleJoinOnlineLesson = (lesson: any) => {
-    // Create a unique room name: Tedris-Lesson-[LessonID]
-    // Sanitize ID to ensure it's URL safe
-    const safeId = lesson.id.replace(/[^a-zA-Z0-9]/g, '');
-    const roomName = `Tedris-Ders-${safeId}`;
-
-    setActiveOnlineLesson({
-      roomName,
-      studentName: user.name || 'Öğrenci'
-    });
-  };
-
-  const renderLibrary = () => (
-    <div className="p-4 md:p-8 animate-fade-in">
-      <h2 className="text-3xl font-bold mb-6">Kütüphanem</h2>
-      {assignedContent.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {assignedContent.map(item => <ContentCard key={item.id} item={item} onView={handleContentViewed} />)}
-        </div>
-      ) : <p className="text-text-secondary">Henüz sana atanmış bir materyal yok.</p>}
-    </div>
-  );
-
-  const renderMap = () => (
-    <div className="p-4 md:p-8 animate-fade-in space-y-8">
-      <MasteryMapVisualization studentId={user.id} />
-      <AdaptivePlanDashboard studentId={user.id} />
-      {studentData && <LearningMap student={studentData} />}
-      {showDiagnosisModal && studentData && (
-        <DiagnosisTestModal
-          isOpen={showDiagnosisModal}
-          onClose={() => setShowDiagnosisModal(false)}
-          studentId={user.id}
-          subject="Matematik"
-          grade={studentData.grade}
-        />
-      )}
-    </div>
-  );
 
   const tabClass = (tabName: Tab) => `px-4 py-2 font-semibold rounded-t-lg border-b-2 transition-colors relative ${activeTab === tabName ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-secondary/80 hover:border-gray-300'}`;
 
@@ -1614,26 +731,104 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
           </div>
         </div>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50/50">
-          <div className="max-w-7xl mx-auto pb-20 md:pb-8">
-            {activeTab === 'dashboard' && renderDashboard()}
-            {activeTab === 'adaptive' && <AdaptiveDashboard user={user} student={studentData!} onStartTest={() => setActiveView('takingAssessment')} />}
-            {activeTab === 'homework' && renderHomework()}
-            {activeTab === 'library' && renderLibrary()}
-            {activeTab === 'map' && renderMap()}
-            {activeTab === 'flashcards' && <div className="p-4 md:p-8"><SpacedRepetitionDashboard studentId={user.id} /></div>}
-            {activeTab === 'turkish' && <div className="p-4 md:p-8"><StudentTurkishLearningPage user={user} /></div>}
-            {activeTab === 'report' && weeklyProgram && <div className="p-4 md:p-8"><WeeklyReport student={studentData!} weeklyProgram={weeklyProgram} completedTests={completedTests} onExport={handleExportReport} /></div>}
-          </div>
-        </main>
+        <div className="flex-1 overflow-y-auto bg-background">
+          <div className="max-w-7xl mx-auto pb-20">
+            {activeTab === 'dashboard' && (
+              <DashboardTab
+                user={user}
+                studentData={studentData}
+                dailyMessage={dailyMessage}
+                isMessageLoading={isMessageLoading}
+                mergedWeeklyProgram={mergedWeeklyProgram}
+                pendingTests={pendingTests}
+                completedTests={completedTests}
+                handleStartTest={handleStartTest}
+                handleViewReport={handleViewReport}
+                pendingPDFTests={pendingPDFTests}
+                completedPDFTests={completedPDFTests}
+                handleStartPDFTest={handleStartPDFTest}
+                handleTaskClick={handleTaskClick}
+                handleTaskToggle={handleTaskToggle}
+                handleJoinOnlineLesson={handleJoinOnlineLesson}
+                setActiveTab={setActiveTab}
+                assignments={assignments}
+                handleOpenAssignment={handleOpenAssignment}
+                setActiveView={setActiveView}
+              />
+            )}
 
-        {studentData?.isAiAssistantEnabled && (
-          <button onClick={() => setActiveView('aiAssistant')} className="fixed bottom-6 right-6 md:bottom-8 md:right-8 bg-accent p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform z-20" title="AI Asistan">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 md:w-8 md:h-8 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+            {activeTab === 'adaptive' && studentData && (
+              <div className="p-4 md:p-8 animate-fade-in">
+                <AdaptiveDashboard student={studentData} user={user} onStartTest={() => setActiveTab('map')} />
+              </div>
+            )}
+
+            {activeTab === 'report' && weeklyProgram && (
+              <div className="p-4 md:p-8 animate-fade-in">
+                <WeeklyReport student={studentData!} weeklyProgram={weeklyProgram} completedTests={completedTests} onExport={handleExportReport} />
+              </div>
+            )}
+
+            {activeTab === 'homework' && (
+              <HomeworkTab
+                assignments={assignments}
+                onOpenAssignment={handleOpenAssignment}
+              />
+            )}
+
+            {activeTab === 'library' && (
+              <LibraryTab
+                assignedContent={assignedContent}
+                onContentViewed={handleContentViewed}
+              />
+            )}
+
+            {activeTab === 'map' && (
+              <MapTab
+                studentId={user.id}
+                studentData={studentData}
+                showDiagnosisModal={showDiagnosisModal}
+                setShowDiagnosisModal={setShowDiagnosisModal}
+              />
+            )}
+
+            {activeTab === 'flashcards' && (
+              <div className="p-4 md:p-8 animate-fade-in">
+                <SpacedRepetitionDashboard studentId={user.id} />
+              </div>
+            )}
+
+            {activeTab === 'turkish' && (
+              <div className="h-full">
+                <StudentTurkishLearningPage user={user} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Floating Action Button for AI Assistant */}
+        {studentData?.isAiAssistantEnabled && activeView === 'dashboard' && (
+          <button
+            onClick={() => setActiveView('aiAssistant')}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 active:scale-95 flex items-center justify-center group z-40"
+            title="Yapay Zeka Asistanı"
+          >
+            <div className="absolute -top-12 right-0 bg-white text-gray-800 text-xs px-3 py-1.5 rounded-lg shadow-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap border border-gray-100">
+              Yardıma mı ihtiyacın var?
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
           </button>
         )}
 
-        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
 
         <button
           onClick={() => setShowDiagnosisModal(true)}

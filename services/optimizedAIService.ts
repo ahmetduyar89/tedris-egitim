@@ -5,6 +5,7 @@ import * as geminiService from './secureAIService';
 import { cacheService } from './cacheService';
 import { aiRateLimiter } from './rateLimiter';
 import { handleError, AppError, ErrorType, logError } from './errorHandler';
+import { sanitizePromptInput } from './promptSanitizer';
 
 /**
  * Wrapper function that adds rate limiting, caching, and error handling
@@ -284,7 +285,8 @@ export async function generateTestAnalysis(
 export async function generateContent(
     prompt: string
 ): Promise<any> {
-    const cacheKey = `gen-content-${prompt.substring(0, 50)}`;
+    const sanitizedPrompt = sanitizePromptInput(prompt, 500);
+    const cacheKey = `gen-content-${sanitizedPrompt.substring(0, 50)}`;
 
     return withOptimizations(
         cacheKey,

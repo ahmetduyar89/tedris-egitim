@@ -25,6 +25,10 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [timeLeft, setTimeLeft] = useState<number | null>(null);
+    const [showAiFeedback, setShowAiFeedback] = useState(false);
+    const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+    const [isAiExplaining, setIsAiExplaining] = useState(false);
+    const [lastCheckedQuestionId, setLastCheckedQuestionId] = useState<string | null>(null);
 
     useEffect(() => {
         loadTest();
@@ -106,12 +110,62 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
             [currentQuestion.id]: option
         }));
 
+        // Reset feedback when answer changes
+        setShowAiFeedback(false);
+        setAiExplanation(null);
+
         // Veritabanına kaydet (arkaplanda)
         try {
             await diagnosisTestManagementService.saveAnswer(assignmentId, currentQuestion.id, option);
         } catch (error) {
             console.error('Error saving answer:', error);
         }
+    };
+
+    const handleCheckAnswer = async () => {
+        const currentQuestion = questions[currentQuestionIndex];
+        const studentAnswer = answers[currentQuestion.id];
+
+        if (!studentAnswer) {
+            alert('Lütfen bir seçenek belirleyin!');
+            return;
+        }
+
+        const isCorrect = studentAnswer.trim() === currentQuestion.correctAnswer.trim();
+
+        if (!isCorrect) {
+            setIsAiExplaining(true);
+            try {
+                const { explainWrongAnswer } = await import('../services/optimizedAIService');
+                const explanation = await explainWrongAnswer(
+                    currentQuestion.questionText,
+                    currentQuestion.options,
+                    currentQuestion.correctAnswer,
+                    studentAnswer,
+                    assignment?.test?.subject,
+                    assignment?.test?.grade
+                );
+                setAiExplanation(explanation);
+                setShowAiFeedback(true);
+                setLastCheckedQuestionId(currentQuestion.id);
+            } catch (error) {
+                console.error('Error getting AI explanation:', error);
+            } finally {
+                setIsAiExplaining(false);
+            }
+        } else {
+            // Correct answer - move to next or show success?
+            // User requested explanations for WRONG answers.
+            setAiExplanation('Harika! Doğru cevap.');
+            setShowAiFeedback(true);
+            setLastCheckedQuestionId(currentQuestion.id);
+        }
+    };
+
+    const handleNextQuestion = () => {
+        setShowAiFeedback(false);
+        setAiExplanation(null);
+        setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1));
     };
 
     const handleSubmit = async () => {
@@ -295,32 +349,76 @@ const StudentDiagnosisTestPage: React.FC<StudentDiagnosisTestPageProps> = ({
                         </div>
                     </div>
 
+                    {/* AI Feedback Section */}
+                    {showAiFeedback && aiExplanation && (
+                        <div className={`mt-6 p-6 rounded-2xl animate-fade-in ${aiExplanation.includes('Harika') ? 'bg-green-50 border border-green-100' : 'bg-amber-50 border border-amber-100'}`}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="text-2xl">{aiExplanation.includes('Harika') ? '🌟' : '💡'}</div>
+                                <h3 className={`font-bold ${aiExplanation.includes('Harika') ? 'text-green-800' : 'text-amber-800'}`}>
+                                    {aiExplanation.includes('Harika') ? 'Tebrikler!' : 'Öğretmen Notu'}
+                                </h3>
+                            </div>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                {aiExplanation}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Navigation */}
                     <div className="flex justify-between items-center mt-8 pt-8 border-t border-gray-100">
                         <button
-                            onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                            disabled={currentQuestionIndex === 0}
+                            onClick={() => {
+                                setCurrentQuestionIndex(prev => Math.max(0, prev - 1));
+                                setShowAiFeedback(false);
+                                setAiExplanation(null);
+                            }}
+                            disabled={currentQuestionIndex === 0 || isAiExplaining}
                             className="px-6 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:hover:bg-transparent"
                         >
                             ← Önceki
                         </button>
 
-                        {currentQuestionIndex === questions.length - 1 ? (
-                            <button
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                                className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50"
-                            >
-                                {isSubmitting ? 'Gönderiliyor...' : 'Testi Bitir'}
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                                className="px-8 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
-                            >
-                                Sonraki →
-                            </button>
-                        )}
+                        <div className="flex gap-3">
+                            {!showAiFeedback && (
+                                <button
+                                    onClick={handleCheckAnswer}
+                                    disabled={!answers[currentQuestion.id] || isAiExplaining}
+                                    className="px-8 py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isAiExplaining ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-b-transparent"></div>
+                                            Düşünülüyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 19.75l-4.313-1.312 3.823-7.555-5.328 1.144L5.688 8l3.411 1.764 1.132-5.362L13.125 5l-1.096 5.625 5.253.953-3.266 5.922 4.103 1.25-3.303 1.156z" />
+                                            </svg>
+                                            Kontrol Et
+                                        </>
+                                    )}
+                                </button>
+                            )}
+
+                            {currentQuestionIndex === questions.length - 1 ? (
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitting || isAiExplaining}
+                                    className="px-8 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Gönderiliyor...' : 'Testi Bitir'}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleNextQuestion}
+                                    disabled={isAiExplaining}
+                                    className="px-8 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                                >
+                                    Sonraki →
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>

@@ -246,6 +246,26 @@ export async function checkAnswer(
 }
 
 /**
+ * Explain wrong answer (optimized)
+ */
+export async function explainWrongAnswer(
+    question: string,
+    options: string[],
+    correctAnswer: string,
+    studentAnswer: string,
+    subject?: string,
+    grade?: number
+): Promise<string> {
+    const cacheKey = `explain-wrong-${question.substring(0, 30)}-${studentAnswer}-${correctAnswer}`;
+
+    return withOptimizations(
+        cacheKey,
+        () => geminiService.explainWrongAnswer(question, options, correctAnswer, studentAnswer, subject, grade),
+        3600000 // 1 hour cache
+    );
+}
+
+/**
  * Suggest homework (optimized)
  */
 export async function suggestHomework(

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Student, Subject, Assignment, AssignmentType, Test } from '../types';
+import { User, Student, Subject, Assignment, AssignmentType, Test, QuestionType, Difficulty } from '../types';
 import { suggestHomework } from '../services/optimizedAIService';
 import { db } from '../services/dbAdapter';
 
@@ -19,6 +19,7 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
     const [contentType, setContentType] = useState<'pdf' | 'video' | 'image' | 'html' | ''>('');
     const [fileUrl, setFileUrl] = useState('');
     const [htmlContent, setHtmlContent] = useState('');
+    const [aiSuggestions, setAiSuggestions] = useState<{ title: string, questions: any[] } | null>(null);
 
 
     useEffect(() => {
@@ -30,35 +31,65 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
     const handleAiSuggest = async () => {
         setIsAiLoading(true);
         try {
+            // 1. Load last 3 tests
             const testsSnapshot = await db.collection('tests')
                 .where('studentId', '==', student.id)
                 .where('completed', '==', true)
+                .orderBy('submissionDate', 'desc')
+                .limit(3)
                 .get();
 
-            let weakTopics = ['Genel Tekrar'];
+            let weakTopicsCount: { [key: string]: number } = {};
+
             if (!testsSnapshot.empty) {
-                const completedTests = testsSnapshot.docs.map((doc: any) => doc.data() as Test);
-                completedTests.sort((a, b) => new Date(b.submissionDate!).getTime() - new Date(a.submissionDate!).getTime());
-
-                const lastTest = completedTests[0];
-                if (lastTest && lastTest.analysis?.analysis?.weakTopics && lastTest.analysis.analysis.weakTopics.length > 0) {
-                    weakTopics = lastTest.analysis.analysis.weakTopics;
-                }
+                testsSnapshot.docs.forEach((doc: any) => {
+                    const test = doc.data() as Test;
+                    const topics = test.analysis?.analysis?.weakTopics || [];
+                    topics.forEach((t: string) => {
+                        weakTopicsCount[t] = (weakTopicsCount[t] || 0) + 1;
+                    });
+                });
             }
 
-            const suggestions = await suggestHomework(student.grade, subject, weakTopics);
-            if (suggestions.length > 0) {
-                setTitle(suggestions[0].title);
-                setDescription(suggestions[0].description);
-            } else {
-                alert("AI, bu öğrenci için şu anda bir ödev önerisi bulamadı.");
-            }
+            // Get top weak topic
+            const sortedWeakTopics = Object.entries(weakTopicsCount).sort((a, b) => b[1] - a[1]);
+            const topWeakTopic = sortedWeakTopics.length > 0 ? sortedWeakTopics[0][0] : 'Genel Tekrar';
+
+            // 2. Generate 5 targeted questions
+            const { generateTestQuestions } = await import('../services/optimizedAIService');
+            const questions = await generateTestQuestions(
+                student.grade,
+                [{ subject, unit: topWeakTopic, count: 5 }],
+                QuestionType.MultipleChoice,
+                Difficulty.Medium
+            );
+
+            setAiSuggestions({
+                title: `${topWeakTopic} Odaklı Gelişim Çalışması`,
+                questions: questions
+            });
+
         } catch (error) {
-            console.error("Error getting AI homework suggestion:", error);
-            alert("AI ödev önerisi oluşturulurken bir hata oluştu.");
+            console.error("Error in Hybrid Homework Suggestion:", error);
+            alert("AI önerisi hazırlanırken bir hata oluştu.");
         } finally {
             setIsAiLoading(false);
         }
+    };
+
+    const addSuggestedQuestions = () => {
+        if (!aiSuggestions) return;
+
+        const questionsText = aiSuggestions.questions.map((q: any, i: number) => (
+            `${i + 1}. SORU: ${q.questionText}\n   Seçenekler: ${q.options.join(', ')}\n`
+        )).join('\n');
+
+        setDescription(prev => prev + (prev ? '\n\n' : '') +
+            `🤖 AI ÖNERİSİ: Bu öğrencinin son testlerindeki '${aiSuggestions.title.split(' ')[0]}' eksiği için özel sorular:\n\n` +
+            questionsText);
+
+        if (!title) setTitle(aiSuggestions.title);
+        setAiSuggestions(null);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -148,6 +179,48 @@ const CreateAssignmentModal: React.FC<CreateAssignmentModalProps> = ({ user, stu
                         <button type="submit" className="bg-primary text-white px-4 py-2 rounded-xl">Ödevi Ata</button>
                     </div>
                 </form>
+
+                {/* Hybrid Homework AI Suggestion Overlay/Section */}
+                {aiSuggestions && (
+                    <div className="mt-6 pt-6 border-t border-blue-100 animate-fade-in">
+                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xl">🤖</span>
+                                <h3 className="font-bold text-blue-900">AI Hibrit Ödev Önerisi</h3>
+                            </div>
+                            <p className="text-sm text-blue-800 mb-4">
+                                Öğrencinin son 3 testini analiz ettim. <b>{aiSuggestions.title.split(' ')[0]}</b> konusunda eksikleri var.
+                                Senin için bu eksiklere nokta atışı 5 pratik sorusu hazırladım.
+                            </p>
+
+                            <div className="space-y-3 mb-4">
+                                {aiSuggestions.questions.slice(0, 2).map((q, i) => (
+                                    <div key={i} className="text-xs bg-white/50 p-2 rounded border border-blue-50 text-gray-600 line-clamp-2 italic">
+                                        Q{i + 1}: {q.questionText}
+                                    </div>
+                                ))}
+                                {aiSuggestions.questions.length > 2 && (
+                                    <div className="text-[10px] text-blue-400 text-center">+ {aiSuggestions.questions.length - 2} soru daha...</div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={addSuggestedQuestions}
+                                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors"
+                                >
+                                    Ekle ve Devam Et
+                                </button>
+                                <button
+                                    onClick={() => setAiSuggestions(null)}
+                                    className="px-4 py-2 text-blue-600 text-sm font-medium hover:bg-blue-100 rounded-lg transition-colors"
+                                >
+                                    Yoksay
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

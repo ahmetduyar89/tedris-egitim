@@ -355,6 +355,44 @@ export const checkAnswer = async (question: string, studentAnswerText: string, s
     });
 };
 
+export const explainWrongAnswer = async (
+    question: string,
+    options: string[],
+    correctAnswer: string,
+    studentAnswer: string,
+    subject?: string,
+    grade?: number
+): Promise<string> => {
+    const prompt = `
+    Sen uzman bir öğretmensin. Bir öğrenci aşağıdaki soruyu yanlış cevapladı. 
+    Lütfen öğrenciye neden yanlış yaptığını ve doğru mantığın ne olduğunu nazikçe açıkla.
+    
+    SORU: ${sanitizePromptInput(question, 1000)}
+    SEÇENEKLER: ${options.join(', ')}
+    DOĞRU CEVAP: ${correctAnswer}
+    ÖĞRENCİNİN CEVABI: ${studentAnswer}
+    ${subject ? `DERS: ${subject}` : ''}
+    ${grade ? `SINIF: ${grade}` : ''}
+
+    Açıklaman şunları içermeli:
+    1. Öğrencinin muhtemel düşünme hatası.
+    2. Doğru cevaba giden adım adım mantık.
+    3. Konuyla ilgili kısa bir ipucu.
+    
+    Dil: Türkçe. Yanıtın kısa, öz ve öğrenciyi motive edici olsun. SADECE açıklamayı döndür.
+    `;
+
+    const response = await invokeAIFunction<any>('generateContent', {
+        prompt: sanitizePromptInput(prompt, 5000)
+    });
+
+    // Handle different response formats from generateContent
+    if (typeof response === 'string') return response;
+    if (response.content) return response.content;
+    if (response.text) return response.text;
+    return JSON.stringify(response);
+};
+
 export const generateContent = async (prompt: string): Promise<string> => {
     const response = await invokeAIFunction<any>('generateContent', {
         prompt: sanitizePromptInput(prompt, 5000)

@@ -16,6 +16,7 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
     const [result, setResult] = useState<DiagnosisDetailedResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'analysis' | 'questions'>('analysis');
+    const [recommendedContent, setRecommendedContent] = useState<any[]>([]);
 
     // Weekly Program State
     const [generatedProgram, setGeneratedProgram] = useState<WeeklyProgram | null>(null);
@@ -35,15 +36,36 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
             const data = await diagnosisTestManagementService.getDetailedResults(assignmentId);
             setResult(data);
 
-            // Try to check if a program was already generated for this test? 
-            // For now, we don't link them explicitly in DB schema shown, so we start fresh or user generates new.
-            // If we wanted to persist "linked" program, we'd need to store programId in assignment or vice versa.
-            // Given the prompt "Öğretmen yapay zekanın hazırladığı haftalık planı düzenleyebilmeli, silebilmeli", 
-            // we will generate and save. If existing check is needed, we'd query weeklyPrograms.
+            if (data && data.aiAnalysis) {
+                matchRecommendedContent(data.aiAnalysis);
+            }
         } catch (error) {
             console.error('Error loading detailed result:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const matchRecommendedContent = async (aiAnalysis: any) => {
+        try {
+            // Get all content from library (simpler for now than complex search)
+            const snapshot = await db.collection('contentLibrary').get();
+            const allContent = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+
+            const weakTopics = (aiAnalysis.weakAreas || aiAnalysis.weaknesses || aiAnalysis.weak_areas || [])
+                .map((w: any) => typeof w === 'string' ? w : w.moduleName || w.module_name);
+
+            if (weakTopics.length === 0) return;
+
+            // Match content by title or topic
+            const matches = allContent.filter(content => {
+                const searchStr = `${content.title} ${content.topic} ${content.tags?.join(' ')}`.toLowerCase();
+                return weakTopics.some((topic: string) => searchStr.includes(topic.toLowerCase()));
+            });
+
+            setRecommendedContent(matches.slice(0, 3)); // Show top 3 matches
+        } catch (error) {
+            console.error('Error matching recommended content:', error);
         }
     };
 
@@ -280,6 +302,36 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                         </div>
                                     )}
 
+                                    {/* Recommended Content Links */}
+                                    {recommendedContent.length > 0 && (
+                                        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                                                <span className="mr-2">📚</span> Senin İçin Hazırlanmış İçerikler
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {recommendedContent.map((content) => (
+                                                    <div key={content.id} className="group border border-gray-100 rounded-xl p-4 hover:border-primary/30 hover:shadow-md transition-all bg-gray-50/50">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <h4 className="font-bold text-gray-900 group-hover:text-primary transition-colors">{content.title}</h4>
+                                                            <span className="text-[10px] bg-white px-2 py-0.5 rounded-full border border-gray-100 text-gray-500 uppercase tracking-tighter">
+                                                                {content.type}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 line-clamp-2 mb-4">{content.description}</p>
+                                                        <button
+                                                            onClick={() => {
+                                                                window.location.href = `/content/${content.id}`;
+                                                            }}
+                                                            className="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+                                                        >
+                                                            Hemen Çalış →
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* AI Plan Generation Section */}
                                     <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
                                         <div className="flex justify-between items-center mb-4">
@@ -370,8 +422,6 @@ const DiagnosisTestDetailModal: React.FC<DiagnosisTestDetailModalProps> = ({ isO
                                             ))}
                                         </div>
                                     </div>
-                                    {/* Raw Data Debug */}
-
                                 </div>
                             ) : (
                                 <div className="space-y-4">

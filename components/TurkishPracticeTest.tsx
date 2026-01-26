@@ -26,6 +26,8 @@ const TurkishPracticeTest: React.FC<TurkishPracticeTestProps> = ({
     const [results, setResults] = useState<QuestionResult[]>([]);
     const [shuffledContents, setShuffledContents] = useState<TurkishContentLibraryItem[]>([]);
     const [isComplete, setIsComplete] = useState(false);
+    const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Shuffle contents on mount
     useEffect(() => {
@@ -61,11 +63,35 @@ const TurkishPracticeTest: React.FC<TurkishPracticeTestProps> = ({
 
         setResults([...results, result]);
         setShowFeedback(true);
+
+        if (!isCorrect) {
+            handleGetAiExplanation(currentContent, userAnswer.trim());
+        }
+    };
+
+    const handleGetAiExplanation = async (content: TurkishContentLibraryItem, studentAnswer: string) => {
+        setIsAiLoading(true);
+        try {
+            const { explainWrongAnswer } = await import('../services/optimizedAIService');
+            const explanation = await explainWrongAnswer(
+                `${content.frontContent} ne anlama gelir?`,
+                [], // This is a text input, no options
+                content.backContent,
+                studentAnswer,
+                'Türkçe'
+            );
+            setAiExplanation(explanation);
+        } catch (error) {
+            console.error('Error getting AI explanation:', error);
+        } finally {
+            setIsAiLoading(false);
+        }
     };
 
     const handleNext = () => {
         setShowFeedback(false);
         setUserAnswer('');
+        setAiExplanation(null);
 
         if (currentQuestionIndex < shuffledContents.length - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -271,6 +297,26 @@ const TurkishPracticeTest: React.FC<TurkishPracticeTestProps> = ({
                                     <div className="mt-4 pt-4 border-t border-gray-200">
                                         <span className="font-semibold text-gray-700">Örnek Kullanım:</span>
                                         <p className="text-gray-900 italic">{currentContent.exampleSentence}</p>
+                                    </div>
+                                )}
+
+                                {/* AI Explanation for Turkish Practice */}
+                                {(isAiLoading || aiExplanation) && (
+                                    <div className="mt-4 pt-4 border-t border-gray-200">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-lg">🤖</span>
+                                            <span className="font-bold text-blue-800 text-sm italic">AI Eğitmen Notu:</span>
+                                        </div>
+                                        {isAiLoading ? (
+                                            <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                                <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-600 border-b-transparent"></div>
+                                                Analiz ediliyor...
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-700 leading-relaxed bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                                {aiExplanation}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>

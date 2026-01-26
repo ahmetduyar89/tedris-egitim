@@ -38,7 +38,7 @@ export const getStudentSuffix = (name: string) => {
 export const TEMPLATES: Record<MessageTemplateType, {
     label: string;
     subject: string;
-    body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string, latestTestInfo?: string, missingTasksInfo?: string) => string
+    body: (s: Student, target: 'parent' | 'student', honorific: Honorific, homeworkInfo?: string, testResultInfo?: string, latestTestInfo?: string, missingTasksInfo?: string, lessonSubject?: string) => string
 }> = {
     general: {
         label: 'Genel Bilgilendirme',
@@ -72,7 +72,7 @@ export const TEMPLATES: Record<MessageTemplateType, {
     homework: {
         label: 'Ödev Hatırlatma',
         subject: 'Ödev Takibi',
-        body: (s, target, honorific, homeworkInfo) => {
+        body: (s, target, honorific, homeworkInfo, _1, _2, _3, lessonSubject) => {
             let prefix = '';
             if (target === 'parent') {
                 const pName = s.parentName ? toTitleCase(s.parentName) : '';
@@ -84,6 +84,7 @@ export const TEMPLATES: Record<MessageTemplateType, {
             }
 
             const studentRef = `${getFirstName(s.name)}${getStudentSuffix(s.name)}`;
+            const subjectPrefix = lessonSubject ? `*${lessonSubject}* dersi ` : '';
 
             let homeworkText = '';
             if (homeworkInfo) {
@@ -92,7 +93,7 @@ export const TEMPLATES: Record<MessageTemplateType, {
                 homeworkText = `\n\n📚 Verilen ödevlerin düzenli olarak tamamlanması önemlidir.`;
             }
 
-            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : ''} Verilen ödevlerin tamamlanması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
+            return `${prefix},\n\n${target === 'parent' ? `${studentRef}` : ''} ${subjectPrefix}verilen ödevlerin tamamlanması konusunda hatırlatma yapmak istedim.${homeworkText}\n\nDüzenli tekrar ve ödev takibi başarımız için çok önemli.\n\nİyi günler dilerim.`;
         }
     },
     payment: {
@@ -115,7 +116,7 @@ export const TEMPLATES: Record<MessageTemplateType, {
     exam_info: {
         label: 'Sınav Bilgilendirme',
         subject: 'Sınav Hazırlığı',
-        body: (s, target, honorific, homeworkInfo, testResultInfo) => {
+        body: (s, target, honorific, homeworkInfo, testResultInfo, _1, _2, lessonSubject) => {
             let prefix = '';
             if (target === 'parent') {
                 const pName = s.parentName ? toTitleCase(s.parentName) : '';
@@ -127,14 +128,15 @@ export const TEMPLATES: Record<MessageTemplateType, {
             }
 
             const studentName = target === 'parent' ? getFirstName(s.name) : '';
+            const subjectPrefix = lessonSubject ? `*${lessonSubject}* ` : '';
 
             let message = `${prefix},\n\n`;
 
             if (testResultInfo) {
                 if (target === 'parent') {
-                    message += `${studentName}'nin en son yaptığı sınav sonucu aşağıdadır:`;
+                    message += `${studentName}'nin en son yaptığı ${subjectPrefix}sınav sonucu aşağıdadır:`;
                 } else {
-                    message += `En son yaptığın sınav sonucu:`;
+                    message += `En son yaptığın ${subjectPrefix}sınav sonucu:`;
                 }
                 message += testResultInfo;
                 message += `\n\n${target === 'parent' ? `${studentName}'nin` : 'Senin'} evde yapacağı tekrarlar ve soru çözümleri başarı için çok önemli.`;

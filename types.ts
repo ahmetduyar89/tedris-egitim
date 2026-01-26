@@ -83,6 +83,8 @@ export interface Student {
   // AI Assistant Control
   isAiAssistantEnabled?: boolean;
   isPremium?: boolean;
+  // Multi-Subject support
+  subjects?: Subject[];
 }
 
 // --- Streak System & Motivation ---
@@ -243,6 +245,7 @@ export interface Test {
   teacherId?: string;
   subject: Subject;
   unit: string;
+  grade: number;
   questions: Question[];
   duration: number; // in minutes
   dueDate: string;

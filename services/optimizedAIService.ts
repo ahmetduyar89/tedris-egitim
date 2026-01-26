@@ -266,6 +266,24 @@ export async function explainWrongAnswer(
 }
 
 /**
+ * Generate remedial question (optimized)
+ */
+export async function generateRemedialQuestion(
+    failedQuestion: string,
+    topic: string,
+    subject: any, // Subject enum
+    grade: number
+): Promise<any> {
+    const cacheKey = `remedial-gen-${failedQuestion.substring(0, 30)}-${topic}-${grade}`;
+
+    return withOptimizations(
+        cacheKey,
+        () => geminiService.generateRemedialQuestion(failedQuestion, topic, subject, grade),
+        0 // No cache (remedial questions are unique)
+    );
+}
+
+/**
  * Suggest homework (optimized)
  */
 export async function suggestHomework(

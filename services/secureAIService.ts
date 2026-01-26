@@ -375,11 +375,11 @@ export const explainWrongAnswer = async (
     ${grade ? `SINIF: ${grade}` : ''}
 
     Açıklaman şunları içermeli:
-    1. Öğrencinin muhtemel düşünme hatası.
-    2. Doğru cevaba giden adım adım mantık.
-    3. Konuyla ilgili kısa bir ipucu.
+    - **Düşünce Analizi:** Öğrencinin bu cevabı verirken düşmüş olabileceği muhtemel kavram yanılgısını tespit et ve açıkla.
+    - **Adım Adım Çözüm:** Karmaşık formüller yerine mantıksal akış ve günlük hayat analojileri kullanarak doğruya ulaştır.
+    - **Sınav Stratejisi:** Bu tarz bir soruda MEB/LGS/YKS mantığına göre nasıl düşünülmesi gerektiğine dair bir "Tutor İpucu" ver.
     
-    Dil: Türkçe. Yanıtın kısa, öz ve öğrenciyi motive edici olsun. SADECE açıklamayı döndür.
+    Dil: Profesyonel, destekleyici ve ilham verici bir öğretmen tonu (Türkçe). Yanıtın kısa, öz ve pedagojik olsun. SADECE açıklamayı döndür.
     `;
 
     const response = await invokeAIFunction<any>('generateContent', {
@@ -398,6 +398,55 @@ export const generateContent = async (prompt: string): Promise<string> => {
         prompt: sanitizePromptInput(prompt, 5000)
     });
     return JSON.stringify(response);
+};
+
+export const generateRemedialQuestion = async (
+    failedQuestion: string,
+    topic: string,
+    subject: Subject,
+    grade: number
+): Promise<Question> => {
+    const prompt = `
+    Sen kıdemli bir soru yazarısın. Öğrenci şu soruyu yanlış cevapladı: "${failedQuestion}"
+    
+    Lütfen bu sorunun kapsadığı "${topic}" konusuyla ilgili, aynı zorluk seviyesinde ama farklı bir bağlamda YENİ NESİL (beceri temelli) bir telafi sorusu hazırla.
+    
+    Kriterler:
+    - MEB müfredatı ve LGS/YKS soru formatına tam uyumlu olmalı.
+    - Seçenekler öğrencinin kavram yanılgılarını hedefleyen akıllı çeldiriciler içermeli.
+    - Mantık yürütme ve analiz gerektirmeli, saf ezber olmamalı.
+    
+    Ders: ${subject}
+    Sınıf: ${grade}
+    
+    Yanıtını şu JSON formatında ver:
+    {
+        "text": "Soru metni",
+        "options": ["A", "B", "C", "D"],
+        "correctAnswer": "Doğru şıkkın metni",
+        "type": "Çoktan Seçmeli"
+    }
+    `;
+
+    const response = await invokeAIFunction<any>('generateContent', {
+        prompt: sanitizePromptInput(prompt, 5000),
+        responseSchema: {
+            type: "OBJECT",
+            properties: {
+                text: { type: "STRING" },
+                options: { type: "ARRAY", items: { type: "STRING" } },
+                correctAnswer: { type: "STRING" },
+                type: { type: "STRING" }
+            },
+            required: ["text", "options", "correctAnswer", "type"]
+        }
+    });
+
+    return {
+        id: `remedial-${Date.now()}`,
+        ...response,
+        topic
+    } as Question;
 };
 
 export const generateInteractiveComponent = async (

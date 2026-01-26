@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Student, UserRole, LearningLoopStatus } from '../../types';
+import { User, Student, UserRole, LearningLoopStatus, Subject } from '../../types';
 import { createClient } from '@supabase/supabase-js';
 
 interface AddStudentModalProps {
@@ -19,11 +19,18 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([Subject.Science]); // Default to Science
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsSubmitting(true);
+
+        if (selectedSubjects.length === 0) {
+            setError('Lütfen en az bir ders seçiniz.');
+            setIsSubmitting(false);
+            return;
+        }
 
         if (password.length < 6) {
             setError('Şifre en az 6 karakter olmalıdır.');
@@ -93,7 +100,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                         level: 1,
                         xp: 0,
                         learning_loop_status: LearningLoopStatus.Initial,
-                        is_ai_assistant_enabled: true
+                        is_ai_assistant_enabled: true,
+                        subjects: selectedSubjects
                     }]);
 
                 if (studentError) throw studentError;
@@ -159,6 +167,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                     learningLoopStatus: LearningLoopStatus.Initial,
                     progressReports: [],
                     isAiAssistantEnabled: true,
+                    subjects: selectedSubjects,
                 };
 
                 onStudentAdded(newStudent);
@@ -213,6 +222,30 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                             {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
                         </select>
                     </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Verilecek Dersler</label>
+                        <div className="grid grid-cols-2 gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                            {Object.values(Subject).map((subj) => (
+                                <label key={subj} className="flex items-center space-x-2 cursor-pointer p-1">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedSubjects.includes(subj)}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedSubjects([...selectedSubjects, subj]);
+                                            } else {
+                                                setSelectedSubjects(selectedSubjects.filter(s => s !== subj));
+                                            }
+                                        }}
+                                        className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4"
+                                    />
+                                    <span className="text-sm text-gray-700">{subj}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Telefon</label>
                         <input

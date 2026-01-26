@@ -14,6 +14,7 @@ export interface NotificationPayload {
     actionUrl?: string;
     channels?: NotificationChannel[]; // If not specified, uses student preferences
     whatsappWindow?: any; // Reference to window opened synchronously
+    lessonSubject?: string; // Optional subject name for context
 }
 
 /**
@@ -330,8 +331,9 @@ const getEnabledChannels = (preferences: any): NotificationChannel[] => {
  */
 const formatWhatsAppMessage = (payload: NotificationPayload): string => {
     const emoji = getNotificationEmoji(payload.type);
+    const subjectPrefix = payload.lessonSubject ? `[${payload.lessonSubject}] ` : '';
     // Removed "_TedrisEDU Platform_" footer as requested
-    return `${emoji} *${payload.title}*\n\n${payload.message}`;
+    return `${emoji} *${subjectPrefix}${payload.title}*\n\n${payload.message}`;
 };
 
 /**

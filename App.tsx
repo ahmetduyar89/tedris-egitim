@@ -6,7 +6,7 @@ import NotificationTestPage from './pages/NotificationTestPage';
 // Lazy load heavy dashboard components
 const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+// const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const ParentSignupPage = lazy(() => import('./pages/ParentSignupPage'));
 const PublicSharePage = lazy(() => import('./pages/PublicSharePage'));
@@ -82,11 +82,6 @@ const App: React.FC = () => {
               }
 
               if (userData && (userData.role === 'student' || userData.role === 'tutor')) {
-                if (userData.role === 'tutor' && userData.status !== 'approved') {
-                  await supabase.auth.signOut();
-                  setView('auth');
-                  return;
-                }
                 setCurrentUser(userData as User);
                 setView('content-viewer');
                 return;
@@ -131,11 +126,6 @@ const App: React.FC = () => {
             }
 
             if (userData) {
-              if (userData.role === 'tutor' && userData.status !== 'approved') {
-                await supabase.auth.signOut();
-                setView('auth');
-                return;
-              }
               setCurrentUser(userData as User);
               setView('dashboard');
             } else {
@@ -262,12 +252,6 @@ const App: React.FC = () => {
 
               if (userData) {
                 // Users tablosunda bulundu (öğretmen veya öğrenci)
-                if (userData.role === 'tutor' && userData.status !== 'approved') {
-                  console.log('[Auth] Tutor not approved');
-                  setCurrentUser(null);
-                  setView('auth');
-                  return;
-                }
                 setCurrentUser(userData as User);
                 setView('dashboard');
               } else {
@@ -429,8 +413,9 @@ const App: React.FC = () => {
           setView('auth'); // Should not happen due to auth listener, but as a fallback
           return null;
         }
+        /* Admin dashboard removed for simplification */
         if (currentUser.is_admin) {
-          return <AdminDashboard onLogout={handleLogout} adminName={currentUser.name} />;
+          return <TutorDashboard user={currentUser} onLogout={handleLogout} onNavigateToContent={handleNavigateToContent} />;
         }
         switch (currentUser.role) {
           case UserRole.Tutor:

@@ -41,6 +41,7 @@ import * as privateLessonService from '../services/privateLessonService';
 import StudentTurkishLearningPage from './StudentTurkishLearningPage';
 import Toast from '../components/student-dashboard/Toast';
 import TestArea from '../components/student-dashboard/TestArea';
+import AdaptivePracticeSolver from '../components/AdaptivePracticeSolver';
 import HomeworkWidget from '../components/student-dashboard/HomeworkWidget';
 import UpcomingLessonsWidget from '../components/student-dashboard/UpcomingLessonsWidget';
 import AssessmentWidget from '../components/student-dashboard/AssessmentWidget';
@@ -53,7 +54,7 @@ import { pdfExportService } from '../services/pdfExportService';
 
 
 type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest' | 'takingAssessment' | 'adaptiveDashboard';
-type Tab = 'dashboard' | 'adaptive' | 'report' | 'homework' | 'library' | 'map' | 'flashcards' | 'turkish';
+type Tab = 'dashboard' | 'adaptive' | 'report' | 'homework' | 'library' | 'map' | 'flashcards';
 
 const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
 
@@ -624,7 +625,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
         console.log('🎯 QB Assignment ID:', qbAssignmentId);
         return <QuestionBankTestPage user={user} assignmentId={qbAssignmentId} onBack={() => setActiveView('dashboard')} onComplete={handleTestComplete} />;
       } else if (activeTest) {
-        return <TestTakingPage test={activeTest} onComplete={handleTestComplete} />;
+        return <AdaptivePracticeSolver test={activeTest} onCancel={() => setActiveView('dashboard')} onComplete={handleTestComplete} />;
       }
     }
 
@@ -713,12 +714,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
               >
                 Aralıklı Tekrar
               </button>
-              <button
-                onClick={() => setActiveTab('turkish')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === 'turkish' ? 'bg-primary text-white shadow-md transform scale-105' : 'text-text-secondary hover:bg-gray-100'}`}
-              >
-                📚 Branş Çalışmaları
-              </button>
               {weeklyProgram && (
                 <button
                   onClick={() => setActiveTab('report')}
@@ -797,12 +792,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             {activeTab === 'flashcards' && (
               <div className="p-4 md:p-8 animate-fade-in">
                 <SpacedRepetitionDashboard studentId={user.id} />
-              </div>
-            )}
-
-            {activeTab === 'turkish' && (
-              <div className="h-full">
-                <StudentTurkishLearningPage user={user} />
               </div>
             )}
           </div>

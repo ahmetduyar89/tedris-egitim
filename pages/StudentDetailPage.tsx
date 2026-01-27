@@ -29,7 +29,7 @@ import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import * as privateLessonService from '../services/privateLessonService';
 import { notifyAssignmentCreated } from '../services/multiChannelNotificationService';
 import StreakWidget from '../components/StreakWidget';
-import DailyGoalsCard from '../components/DailyGoalsCard';
+
 import SelectDiagnosisTestModal from '../components/SelectDiagnosisTestModal';
 
 import StudentOverviewTab from '../components/student-detail/StudentOverviewTab';

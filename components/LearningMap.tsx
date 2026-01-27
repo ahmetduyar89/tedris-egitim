@@ -136,6 +136,7 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             studentId: student.id,
                             subject: qb.subject,
                             unit: qb.unit || 'Genel',
+                            grade: student.grade,
                             duration: 0,
                             dueDate: '',
                             completed: true,
@@ -211,7 +212,8 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             title: pdfTest.title || 'PDF Testi',
                             studentId: student.id,
                             subject: pdfTest.subject,
-                            unit: pdfTest.unit || 'Genel',
+                            unit: pdfTest.unit || pdfTest.subject || 'Genel',
+                            grade: student.grade,
                             duration: pdfTest.durationMinutes || pdfTest.duration_minutes || 0,
                             dueDate: pdfTest.dueDate || pdfTest.due_date || '',
                             completed: true,
@@ -377,20 +379,6 @@ const LearningMap: React.FC<LearningMapProps> = ({ student, onGenerateReviewPack
                             </button>
                         )}
 
-                        <h4 className="font-bold font-poppins text-gray-700 mb-2 mt-4 text-sm md:text-base">Gelişim Grafiği</h4>
-                        {selectedNode.history.length > 1 ? (
-                            <ResponsiveContainer width="100%" height={120}>
-                                <LineChart data={selectedNode.history} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                                    <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} />
-                                    <Tooltip />
-                                    <Line type="monotone" dataKey="score" stroke="#4F46E5" strokeWidth={2} name="Puan" />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <p className="text-xs md:text-sm text-gray-500">Gelişim grafiği için yeterli test verisi yok.</p>
-                        )}
 
                         <h4 className="font-bold font-poppins text-gray-700 mb-2 md:mb-3 mt-4 md:mt-6 text-sm md:text-base">İlgili Sorular ({selectedNode.questions.length})</h4>
                         <div className="space-y-2 md:space-y-3 max-h-48 md:max-h-60 overflow-y-auto pr-2">

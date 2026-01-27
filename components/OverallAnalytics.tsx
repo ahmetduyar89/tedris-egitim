@@ -384,42 +384,6 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Progress Chart - Enhanced */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-          <h3 className="text-base font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-indigo-100 text-indigo-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            İlerleme Grafiği
-          </h3>
-          {progressOverTime.length > 0 ? (
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={progressOverTime} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorPuan" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={COLORS.primary} stopOpacity={0.2} />
-                      <stop offset="95%" stopColor={COLORS.primary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} dy={10} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} dx={-10} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                    itemStyle={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}
-                    cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  />
-                  <Area type="monotone" dataKey="puan" stroke={COLORS.primary} strokeWidth={3} fillOpacity={1} fill="url(#colorPuan)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm bg-gray-50/50 rounded-xl">Yeterli veri yok</div>
-          )}
-        </div>
 
         {/* Subject Performance - Enhanced */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -527,14 +491,14 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
         <ul className="space-y-3">
           {aiRecommendations.map((rec, idx) => (
             <li key={idx} className={`flex items-start gap-3 text-sm p-3 rounded-xl border ${rec.type === 'critical' ? 'bg-red-50 border-red-100 text-red-900' :
-                rec.type === 'warning' ? 'bg-orange-50 border-orange-100 text-orange-900' :
-                  rec.type === 'success' ? 'bg-green-50 border-green-100 text-green-900' :
-                    'bg-white/60 border-indigo-50 text-indigo-900/80'
+              rec.type === 'warning' ? 'bg-orange-50 border-orange-100 text-orange-900' :
+                rec.type === 'success' ? 'bg-green-50 border-green-100 text-green-900' :
+                  'bg-white/60 border-indigo-50 text-indigo-900/80'
               }`}>
               <span className={`mt-1 text-[10px] ${rec.type === 'critical' ? 'text-red-600' :
-                  rec.type === 'warning' ? 'text-orange-500' :
-                    rec.type === 'success' ? 'text-green-500' :
-                      'text-indigo-400'
+                rec.type === 'warning' ? 'text-orange-500' :
+                  rec.type === 'success' ? 'text-green-500' :
+                    'text-indigo-400'
                 }`}>●</span>
               <span>{rec.text}</span>
             </li>

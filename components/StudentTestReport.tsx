@@ -52,14 +52,6 @@ const StudentTestReport: React.FC<StudentTestReportProps> = ({ test, allComplete
     };
   }) || [];
 
-  const progressData = allCompletedTests
-    .filter(t => t.subject === test.subject)
-    .sort((a, b) => new Date(a.completedAt || '').getTime() - new Date(b.completedAt || '').getTime())
-    .slice(-5)
-    .map(t => ({
-      name: new Date(t.completedAt || '').toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
-      puan: t.score
-    }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
@@ -137,21 +129,6 @@ const StudentTestReport: React.FC<StudentTestReportProps> = ({ test, allComplete
           )}
         </div>
 
-        {progressData.length > 1 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">İlerleme Grafiği</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <Recharts.LineChart data={progressData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Legend />
-                <Recharts.Line type="monotone" dataKey="puan" stroke={COLORS.primary} strokeWidth={2} name="Test Puanı" />
-              </Recharts.LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
 
         {analysis.analysis?.strongTopics && analysis.analysis.strongTopics.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">

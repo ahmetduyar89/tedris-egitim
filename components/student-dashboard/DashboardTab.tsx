@@ -7,7 +7,7 @@ import MotivationCard from '../MotivationCard';
 import WeeklySchedule from '../WeeklySchedule';
 import AssessmentWidget from './AssessmentWidget';
 import TestArea from './TestArea';
-import CompactDailyGoalsCard from '../CompactDailyGoalsCard';
+
 import StreakWidget from '../StreakWidget';
 import UpcomingLessonsWidget from './UpcomingLessonsWidget';
 import FlashcardWidget from '../FlashcardWidget';
@@ -143,7 +143,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
                         <AssessmentWidget onStart={() => handleStartDiagnosisTest(pendingDiagnosisTests[0].id)} />
                     )}
 
-                    <CompactDailyGoalsCard studentId={user.id} />
+
                     <StreakWidget studentId={user.id} />
                     <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
                     <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />

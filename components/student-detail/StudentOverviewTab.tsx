@@ -7,7 +7,7 @@ import OverallAnalytics from '../OverallAnalytics';
 import EditableWeeklySchedule from '../EditableWeeklySchedule';
 
 import StreakWidget from '../StreakWidget';
-import DailyGoalsCard from '../DailyGoalsCard';
+
 import CompactLessonTracking from './CompactLessonTracking';
 
 interface StudentOverviewTabProps {
@@ -504,7 +504,6 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
 
                     {/* Motivasyon Bilgileri */}
                     <StreakWidget studentId={studentId} />
-                    <DailyGoalsCard studentId={studentId} />
                 </div >
             </div >
 

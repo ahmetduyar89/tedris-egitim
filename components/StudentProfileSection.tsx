@@ -2,7 +2,7 @@ import React from 'react';
 import { Student } from '../types';
 import { calculateLevel } from '../services/motivationService';
 import { EnhancedPomodoroTimer } from './EnhancedPomodoroTimer';
-import DailyGoalsCard from './DailyGoalsCard';
+
 
 interface StudentProfileSectionProps {
     student: Student;
@@ -82,9 +82,6 @@ const StudentProfileSection: React.FC<StudentProfileSectionProps> = ({ student, 
                     </div>
                 )}
             </div>
-
-            {/* Daily Goals Card */}
-            <DailyGoalsCard studentId={studentId} />
         </div>
     );
 };

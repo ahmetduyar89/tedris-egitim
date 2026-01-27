@@ -29,12 +29,12 @@ const WeeklyReport: React.FC<WeeklyReportProps> = ({ student, weeklyProgram, com
     const historicalProgressData = useMemo(() => {
         const reports = student.progressReports || [];
         const completed = completedTests || [];
-        
+
         const progress = reports.map(r => ({
             name: new Date(r.weekStartDate).toLocaleDateString('tr-TR'),
             Puan: r.currentScore,
         }));
-        
+
         if (completed.length > 0 && completed[0].submissionDate && completed[0].score) {
             const mostRecentTestDate = new Date(completed[0].submissionDate).toLocaleDateString('tr-TR');
             if (!progress.some(p => p.name === mostRecentTestDate)) {
@@ -53,34 +53,19 @@ const WeeklyReport: React.FC<WeeklyReportProps> = ({ student, weeklyProgram, com
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                     <h3 className="font-semibold text-lg mb-4">Günlük Görev Tamamlama</h3>
-                     <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={taskCompletionData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
-                            <YAxis allowDecimals={false}/>
+                            <YAxis allowDecimals={false} />
                             <Tooltip />
                             <Legend />
                             <Bar dataKey="tamamlanan" fill="#10B981" name="Tamamlanan Görev" />
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
-                 <div>
-                    <h3 className="font-semibold text-lg mb-4">Test Performans Gelişimi</h3>
-                    {historicalProgressData.length > 1 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                           <LineChart data={historicalProgressData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis domain={[0, 100]}/>
-                                <Tooltip />
-                                <Legend />
-                                <Line type="monotone" dataKey="Puan" stroke="#3B82F6" strokeWidth={2} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    ) : <p className="text-gray-500 text-center flex items-center justify-center h-[300px]">Gelişim grafiği için yeterli veri yok.</p>}
-                 </div>
             </div>
-             <div className="text-center mt-4">
+            <div className="text-center mt-4">
                 <button onClick={onExport} className="bg-primary text-white font-bold py-3 px-6 rounded-xl hover:bg-primary-dark transition-colors">Raporu PDF Olarak İndir</button>
             </div>
         </div>

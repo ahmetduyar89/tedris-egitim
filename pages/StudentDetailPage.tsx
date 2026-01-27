@@ -28,7 +28,7 @@ import { diagnosisTestManagementService } from '../services/diagnosisTestManagem
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 import * as privateLessonService from '../services/privateLessonService';
 import { notifyAssignmentCreated } from '../services/multiChannelNotificationService';
-import StreakWidget from '../components/StreakWidget';
+
 
 import SelectDiagnosisTestModal from '../components/SelectDiagnosisTestModal';
 

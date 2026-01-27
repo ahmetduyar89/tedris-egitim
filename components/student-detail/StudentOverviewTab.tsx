@@ -6,7 +6,7 @@ import { sendWhatsAppToRecipient } from '../../services/multiChannelNotification
 import OverallAnalytics from '../OverallAnalytics';
 import EditableWeeklySchedule from '../EditableWeeklySchedule';
 
-import StreakWidget from '../StreakWidget';
+
 
 import CompactLessonTracking from './CompactLessonTracking';
 
@@ -502,8 +502,7 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                             </div >
                         )}
 
-                    {/* Motivasyon Bilgileri */}
-                    <StreakWidget studentId={studentId} />
+
                 </div >
             </div >
 

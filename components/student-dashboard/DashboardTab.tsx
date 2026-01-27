@@ -8,7 +8,7 @@ import WeeklySchedule from '../WeeklySchedule';
 import AssessmentWidget from './AssessmentWidget';
 import TestArea from './TestArea';
 
-import StreakWidget from '../StreakWidget';
+
 import UpcomingLessonsWidget from './UpcomingLessonsWidget';
 import FlashcardWidget from '../FlashcardWidget';
 import HomeworkWidget from './HomeworkWidget';
@@ -144,7 +144,7 @@ const DashboardTab: React.FC<DashboardTabProps> = ({
                     )}
 
 
-                    <StreakWidget studentId={user.id} />
+
                     <UpcomingLessonsWidget studentId={user.id} onJoinLesson={handleJoinOnlineLesson} />
                     <FlashcardWidget studentId={user.id} onOpenFlashcards={() => setActiveTab('flashcards')} />
                     <HomeworkWidget assignments={assignments} onOpenAssignment={handleOpenAssignment} />

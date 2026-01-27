@@ -19,7 +19,7 @@ import ContentCard from '../components/ContentCard';
 import NewItemPopup from '../components/NewItemPopup';
 import SpacedRepetitionDashboard from '../components/SpacedRepetitionDashboard';
 import FlashcardWidget from '../components/FlashcardWidget';
-import StreakWidget from '../components/StreakWidget';
+
 import AchievementNotification from '../components/AchievementNotification';
 import { logActivity } from '../services/streakService';
 import { getNotificationsForUser, markNotificationsAsRead } from '../services/notificationService';

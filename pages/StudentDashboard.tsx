@@ -20,8 +20,6 @@ import NewItemPopup from '../components/NewItemPopup';
 import SpacedRepetitionDashboard from '../components/SpacedRepetitionDashboard';
 import FlashcardWidget from '../components/FlashcardWidget';
 import StreakWidget from '../components/StreakWidget';
-import DailyGoalsCard from '../components/DailyGoalsCard';
-import CompactDailyGoalsCard from '../components/CompactDailyGoalsCard';
 import AchievementNotification from '../components/AchievementNotification';
 import { logActivity } from '../services/streakService';
 import { getNotificationsForUser, markNotificationsAsRead } from '../services/notificationService';

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Student, WeeklyProgram, Test } from '../types';
 import * as Recharts from 'recharts';
 
-const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } = Recharts;
+const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
 
 interface WeeklyReportProps {
     student: Student;

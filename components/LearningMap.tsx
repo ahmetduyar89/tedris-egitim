@@ -4,7 +4,7 @@ import { Student, Test, MapNode, MapNodeStatus, ContentRecommendation, Question,
 import { recommendContentForTopic } from '../services/optimizedAIService';
 import { db } from '../services/dbAdapter';
 
-const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } = Recharts;
+const { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } = Recharts;
 
 interface LearningMapProps {
     student: Student;

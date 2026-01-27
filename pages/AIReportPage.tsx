@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import * as Recharts from 'recharts';
 import { User, Student, Test, Question, QuestionType, TestResultSummary } from '../types';
 
-const { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } = Recharts;
+const { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } = Recharts;
 
 const COLORS = { correct: '#10B981', wrong: '#EF4444', primary: '#4F46E5', secondary: '#06B6D4' };
 const evaluationTagColors: { [key: string]: string } = {
@@ -12,22 +12,22 @@ const evaluationTagColors: { [key: string]: string } = {
 };
 
 interface AIReportPageProps {
-  user: User;
-  student: Student;
-  test: Test;
-  allCompletedTests: Test[];
-  onBack: () => void;
-  onLogout: () => void;
-  isGeneratingPlan: boolean;
-  onGenerateReviewPackage: (topic: string) => void;
-  onGenerateWeeklyPlan: (test: Test) => void;
-  onReportUpdate: (test: Test) => void;
-  onRecommendContent: () => void;
+    user: User;
+    student: Student;
+    test: Test;
+    allCompletedTests: Test[];
+    onBack: () => void;
+    onLogout: () => void;
+    isGeneratingPlan: boolean;
+    onGenerateReviewPackage: (topic: string) => void;
+    onGenerateWeeklyPlan: (test: Test) => void;
+    onReportUpdate: (test: Test) => void;
+    onRecommendContent: () => void;
 }
 
 const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCompletedTests, onBack, onLogout, isGeneratingPlan, onGenerateReviewPackage, onGenerateWeeklyPlan, onReportUpdate, onRecommendContent }) => {
     const [editedScores, setEditedScores] = useState<Record<string, number | ''>>({});
-    
+
     useEffect(() => {
         // Reset edited scores when the test prop changes
         setEditedScores({});
@@ -54,7 +54,7 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
             }
             return q;
         }) || [];
-    
+
         // Recalculate correctness for each question based on the final score (manual override > AI)
         const finalQuestionsWithRecalculation = updatedQuestionsWithEdits.map(q => {
             let isCorrect: boolean;
@@ -66,13 +66,13 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
             }
             return { ...q, isCorrect };
         });
-    
+
         // Recalculate the overall test summary based on the new correctness states
         const correctCount = finalQuestionsWithRecalculation.filter(q => q.isCorrect).length;
         const totalQuestions = finalQuestionsWithRecalculation.length;
         const wrongCount = totalQuestions - correctCount;
         const newOverallScore = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
-    
+
         // Construct the fully updated test object
         const updatedTest: Test = {
             ...test,
@@ -88,7 +88,7 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                 }
             } : undefined
         };
-    
+
         onReportUpdate(updatedTest);
         setEditedScores({}); // Clear pending edits after saving
         alert("Puanlar güncellendi!");
@@ -126,18 +126,6 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
 
         return { correct, wrong, scorePercent };
     }, [analysis, editedScores]);
-    
-    const historicalTests = useMemo(() => {
-        return allCompletedTests
-            .filter(t => t.studentId === student.id && t.submissionDate && typeof t.score === 'number')
-            .sort((a, b) => new Date(a.submissionDate!).getTime() - new Date(b.submissionDate!).getTime())
-            .slice(-5) // Get the last 5 tests
-            .map(t => ({
-                name: new Date(t.submissionDate!).toLocaleDateString('tr-TR'),
-                Puan: t.score
-            }));
-    }, [student.id, allCompletedTests]);
-
 
     if (!analysis || !analysis.questionEvaluations) {
         return (
@@ -196,42 +184,26 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-1 space-y-8">
                     <div className="bg-card-background p-6 rounded-xl shadow-md">
-                       <h3 className="text-xl font-bold font-poppins text-text-primary mb-4 text-center">Genel Başarı</h3>
+                        <h3 className="text-xl font-bold font-poppins text-text-primary mb-4 text-center">Genel Başarı</h3>
                         <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
                                 <Pie data={overallData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5}>
                                     <Cell key="cell-0" fill={COLORS.correct} /><Cell key="cell-1" fill={COLORS.wrong} />
                                 </Pie>
-                                <Tooltip formatter={(value, name) => [`${value} Soru`, name]}/>
+                                <Tooltip formatter={(value, name) => [`${value} Soru`, name]} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="text-center mt-4 text-5xl font-bold text-primary">{recalculatedSummary.scorePercent}%</div>
                         <div className="text-center text-text-secondary mt-1">Başarı Oranı</div>
                     </div>
-                     <div className="bg-card-background p-6 rounded-xl shadow-md">
-                        <h3 className="text-xl font-bold font-poppins text-text-primary mb-4">Performans Gelişimi</h3>
-                        {historicalTests.length > 1 ? (
-                        <ResponsiveContainer width="100%" height={200}>
-                            <LineChart data={historicalTests} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                <YAxis domain={[0, 100]}/>
-                                <Tooltip />
-                                <Line type="monotone" dataKey="Puan" stroke={COLORS.primary} strokeWidth={2} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                        ) : (
-                            <p className="text-center text-gray-500 h-[200px] flex items-center justify-center">Geçmiş performans verisi yetersiz.</p>
-                        )}
-                    </div>
                 </div>
 
                 <div className="lg:col-span-2 space-y-8">
-                     <div className="bg-card-background p-6 rounded-xl shadow-md">
+                    <div className="bg-card-background p-6 rounded-xl shadow-md">
                         <h3 className="text-xl font-bold font-poppins text-text-primary mb-4">Gelişim Alanları ve Öneriler</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <div>
+                            <div>
                                 <h4 className="font-semibold font-poppins text-lg mb-3 text-error">Geliştirilmesi Gereken Konular</h4>
                                 <ul className="space-y-2">
                                     {analysis.analysis.weakTopics.map((topic, i) => (
@@ -243,8 +215,8 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                                 </ul>
                             </div>
                             <div>
-                                 <h4 className="font-semibold font-poppins text-lg mb-3 text-success">Güçlü Olduğu Konular</h4>
-                                  <ul className="space-y-2">
+                                <h4 className="font-semibold font-poppins text-lg mb-3 text-success">Güçlü Olduğu Konular</h4>
+                                <ul className="space-y-2">
                                     {analysis.analysis.strongTopics.map((topic, i) =>
                                         <li key={i} className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 font-medium">{topic}</li>
                                     )}
@@ -253,7 +225,7 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                         </div>
                     </div>
 
-                     <div className="bg-card-background p-6 rounded-xl shadow-md">
+                    <div className="bg-card-background p-6 rounded-xl shadow-md">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold font-poppins text-text-primary">Soru Bazlı Detaylı Değerlendirme</h3>
                             {hasEditedScores && (
@@ -276,16 +248,14 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                                                     <span className="bg-primary/10 text-primary px-2.5 py-0.5 rounded-full text-xs font-bold">
                                                         Soru {index + 1}
                                                     </span>
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                                        q.type === QuestionType.MultipleChoice
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : 'bg-purple-100 text-purple-700'
-                                                    }`}>
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${q.type === QuestionType.MultipleChoice
+                                                        ? 'bg-blue-100 text-blue-700'
+                                                        : 'bg-purple-100 text-purple-700'
+                                                        }`}>
                                                         {q.type === QuestionType.MultipleChoice ? 'Çoktan Seçmeli' : 'Açık Uçlu'}
                                                     </span>
-                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                                        q.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                    }`}>
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${q.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                        }`}>
                                                         {q.isCorrect ? '✓ Doğru' : '✗ Yanlış'}
                                                     </span>
                                                 </div>
@@ -293,11 +263,10 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                                             </div>
                                             {/* Score Badge */}
                                             <div className="ml-4 flex flex-col items-center">
-                                                <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl ${
-                                                    displayScore >= 70 ? 'bg-green-100 text-green-700' :
+                                                <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl ${displayScore >= 70 ? 'bg-green-100 text-green-700' :
                                                     displayScore >= 40 ? 'bg-yellow-100 text-yellow-700' :
-                                                    'bg-red-100 text-red-700'
-                                                }`}>
+                                                        'bg-red-100 text-red-700'
+                                                    }`}>
                                                     {displayScore}
                                                 </div>
                                                 <span className="text-xs text-gray-500 mt-1">Puan</span>
@@ -306,9 +275,8 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
 
                                         {/* Answer Section */}
                                         <div className="grid md:grid-cols-2 gap-4 mt-4">
-                                            <div className={`p-3 rounded-lg border-l-4 ${
-                                                q.isCorrect ? 'bg-red-50/50 border-red-400' : 'bg-red-50 border-red-500'
-                                            }`}>
+                                            <div className={`p-3 rounded-lg border-l-4 ${q.isCorrect ? 'bg-red-50/50 border-red-400' : 'bg-red-50 border-red-500'
+                                                }`}>
                                                 <p className="text-xs font-semibold text-gray-600 mb-1">Öğrenci Cevabı</p>
                                                 <p className="text-sm text-gray-900 font-medium">{q.studentAnswer}</p>
                                             </div>
@@ -355,9 +323,9 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                                 );
                             })}
                         </div>
-                     </div>
-                     
-                      <div className="bg-card-background p-6 rounded-xl shadow-md flex justify-between items-center gap-4 flex-wrap">
+                    </div>
+
+                    <div className="bg-card-background p-6 rounded-xl shadow-md flex justify-between items-center gap-4 flex-wrap">
                         <div>
                             <h3 className="text-xl font-bold font-poppins text-text-primary">Sonraki Adım</h3>
                             <p className="text-text-secondary">Bu analize göre öğrenci için sonraki adımı belirleyin.</p>
@@ -372,9 +340,9 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
                                 <span>AI Haftalık Plan Oluştur</span>
                             </button>
                         </div>
-                     </div>
+                    </div>
                 </div>
-            </div>
+            </div >
         </>
     );
 };

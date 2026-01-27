@@ -4,7 +4,7 @@ import { Test, Assignment, Flashcard, SpacedRepetitionSchedule, QuestionBankAssi
 import { PDFTestSubmission } from '../services/pdfTestService';
 import { DiagnosisTestAssignment } from '../types/diagnosisTestTypes';
 
-const { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LabelList } = Recharts;
+const { ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar, Cell, LabelList } = Recharts;
 
 const COLORS = {
   primary: '#4F46E5',

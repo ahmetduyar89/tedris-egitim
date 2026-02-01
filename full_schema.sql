@@ -165,6 +165,9 @@ CREATE TABLE IF NOT EXISTS students (
   level integer DEFAULT 1,
   xp integer DEFAULT 0,
   learning_loop_status text DEFAULT 'Başlangıç',
+  parent_name text,
+  parent_phone text,
+  subjects text[] DEFAULT '{}'::text[],
   created_at timestamptz DEFAULT now()
 );
 

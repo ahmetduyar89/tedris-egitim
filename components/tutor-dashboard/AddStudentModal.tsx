@@ -61,21 +61,11 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
             if (authData.user || authData.id) {
                 const userId = authData.user?.id || authData.id;
 
-                const tempClient = createClient(
-                    import.meta.env.VITE_SUPABASE_URL,
-                    import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    {
-                        global: { headers: { Authorization: `Bearer ${authData.access_token}` } },
-                        auth: {
-                            persistSession: false,
-                            autoRefreshToken: false,
-                            detectSessionInUrl: false,
-                            storage: { getItem: () => null, setItem: () => { }, removeItem: () => { } }
-                        }
-                    }
-                );
 
-                const { error: userError } = await tempClient
+                // The tutor (authenticated user) can insert into 'users' table if policies allow, 
+                // but usually 'users' table handles its own inserts via trigger or the user themselves.
+                // In this app, it seems the tutor inserts the user record.
+                const { error: userError } = await supabase
                     .from('users')
                     .insert([{
                         id: userId,
@@ -85,9 +75,14 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                         status: 'approved'
                     }]);
 
-                if (userError) throw userError;
+                if (userError) {
+                    console.error("User insert error:", userError);
+                    throw userError;
+                }
 
-                const { error: studentError } = await tempClient
+                // Create student record using the main client
+                // Note: The tutor should have permission to insert into 'students' for their assigned students
+                const { error: studentError } = await supabase
                     .from('students')
                     .insert([{
                         id: userId,
@@ -104,7 +99,13 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                         subjects: selectedSubjects
                     }]);
 
-                if (studentError) throw studentError;
+                if (studentError) {
+                    console.error("Student insert error:", studentError);
+                    if (studentError.message?.includes("column \"subjects\" of relation \"students\" does not exist")) {
+                        throw new Error("Veritabanında dersler (subjects) kolonu eksik. Lütfen veritabanı şemasını güncelleyin.");
+                    }
+                    throw studentError;
+                }
 
                 if (parentName.trim() && parentPassword.trim()) {
                     try {
@@ -128,7 +129,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                         if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
                             const parentId = parentAuthData.user?.id || parentAuthData.id;
 
-                            await tempClient
+                            await supabase
                                 .from('parents')
                                 .insert([{
                                     id: parentId,
@@ -138,7 +139,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                                     password_hash: 'managed_by_auth'
                                 }]);
 
-                            await tempClient
+                            await supabase
                                 .from('parent_student_relations')
                                 .insert([{
                                     parent_id: parentId,

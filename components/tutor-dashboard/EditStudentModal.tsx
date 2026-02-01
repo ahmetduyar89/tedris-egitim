@@ -39,7 +39,13 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                 })
                 .eq('id', student.id);
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                console.error('Error updating student:', updateError);
+                if (updateError.message?.includes("column \"subjects\" of relation \"students\" does not exist")) {
+                    throw new Error("Veritabanında dersler (subjects) kolonu eksik. Lütfen veritabanı şemasını güncelleyin.");
+                }
+                throw updateError;
+            }
 
             if (parentName.trim() && parentPassword.trim()) {
                 try {

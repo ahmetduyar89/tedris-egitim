@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Student, UserRole, LearningLoopStatus, Subject } from '../../types';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../../services/dbAdapter';
 
 interface AddStudentModalProps {
     tutor: User;

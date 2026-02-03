@@ -1,665 +1,751 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import {
+  Zap,
+  Shield,
+  Target,
+  Users,
+  Cpu,
+  MessageSquare,
+  Layout,
+  ArrowRight,
+  CheckCircle2,
+  Star,
+  Rocket,
+  BrainCircuit,
+  Clock,
+  Smile,
+  BarChart3,
+  Bot,
+  Menu,
+  X,
+  Play
+} from 'lucide-react';
 
 interface LandingPageProps {
   onNavigateToAuth: (mode?: 'login' | 'register') => void;
 }
 
-// --- Components ---
+// --- Animation Variants ---
+const fadeInUp = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, ease: "easeOut" }
+};
 
-const TedrisLogo = ({ light = false }) => (
-  <div className="flex items-center gap-2">
-    <img src="/logo-full.png" alt="TedrisEDU" className="h-8 md:h-10 w-auto" style={{ filter: light ? 'brightness(0) invert(1)' : 'none' }} />
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+// --- Custom Components ---
+
+const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  <motion.div
+    whileHover={{ y: -5 }}
+    className={`bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl ${className}`}
+  >
+    {children}
+  </motion.div>
+);
+
+const SectionHeading = ({ badge, title, subtitle, light = false }: { badge?: string, title: string, subtitle?: string, light?: boolean }) => (
+  <div className="text-center mb-16 px-4">
+    {badge && (
+      <motion.span
+        initial={{ opacity: 0, scale: 0.9 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full"
+      >
+        {badge}
+      </motion.span>
+    )}
+    <motion.h2
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className={`text-3xl md:text-5xl font-extrabold mb-6 font-montserrat tracking-tight ${light ? 'text-white' : 'text-slate-900'}`}
+    >
+      {title}
+    </motion.h2>
+    {subtitle && (
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: 0.1 }}
+        className={`max-w-2xl mx-auto text-lg leading-relaxed ${light ? 'text-slate-400' : 'text-slate-600'}`}
+      >
+        {subtitle}
+      </motion.p>
+    )}
   </div>
 );
 
-const BentoCard = ({
-  title,
-  description,
-  icon,
-  className = "",
-  visual
-}: {
-  title: string,
-  description: string,
-  icon?: string,
-  className?: string,
-  visual?: React.ReactNode
-}) => (
-  <div className={`group relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 ${className}`}>
-    <div className="relative z-10 p-6 md:p-8 flex flex-col h-full">
-      {icon && (
-        <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
-          {icon}
+// --- Sub-sections ---
+
+const HeroSection = ({ onStart }: { onStart: () => void }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 500], [0, 200]);
+  const y2 = useTransform(scrollY, [0, 500], [0, -150]);
+  const rotateX = useTransform(scrollY, [0, 500], [0, 15]);
+
+  return (
+    <section ref={containerRef} className="relative min-h-screen flex items-center justify-center pt-24 pb-32 overflow-hidden bg-[#0A0F1D]">
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/20 blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[100px]" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03]"></div>
+      </div>
+
+      <div className="container mx-auto px-4 z-10">
+        <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-4 py-2 mb-8 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-sm font-semibold"
+          >
+            <Zap size={16} className="fill-current" />
+            <span>Eğitimin Yeni İşletim Sistemi</span>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-8 font-montserrat tracking-tighter leading-[1.05]"
+          >
+            Eğitimin Yeni <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-blue-500 to-indigo-400 animate-gradient-x">İşletim Sistemi</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-xl md:text-2xl text-slate-400 mb-12 max-w-3xl leading-relaxed"
+          >
+            Veri ve Yapay Zeka ile başarıyı tasarlayın. Öğrenme haritaları ve akıllı algoritmalarla eğitimi yeniden tanımlıyoruz.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto"
+          >
+            <button
+              onClick={onStart}
+              className="group relative px-10 py-5 bg-indigo-600 text-white rounded-2xl font-bold text-xl overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(79,70,229,0.3)]"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                Hemen Başlayın <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+            <button className="px-10 py-5 bg-white/5 backdrop-blur-md text-white border border-white/10 rounded-2xl font-bold text-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+              <Play size={22} className="fill-current" /> Canlı İzleyin
+            </button>
+          </motion.div>
         </div>
-      )}
-      <h3 className="text-xl font-bold text-slate-900 mb-2 font-poppins">{title}</h3>
-      <p className="text-slate-500 text-sm leading-relaxed mb-6">
-        {description}
-      </p>
-      {visual && (
-        <div className="mt-auto pt-4 flex justify-center items-center">
-          {visual}
-        </div>
-      )}
-    </div>
-    {/* Hover Gradient */}
-    <div className="absolute inset-0 bg-gradient-to-tr from-indigo-50/0 via-indigo-50/0 to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-  </div>
-);
 
-const PersonaCard = ({ icon, title, features, color }: { icon: string, title: string, features: string[], color: string }) => (
-  <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-    <div className={`w-14 h-14 rounded-2xl bg-${color}-50 flex items-center justify-center text-3xl mb-4`}>
-      {icon}
-    </div>
-    <h3 className="text-lg font-bold text-slate-900 mb-4">{title}</h3>
-    <ul className="space-y-3">
-      {features.map((feature, idx) => (
-        <li key={idx} className="flex items-start gap-3 text-sm text-slate-600">
-          <svg className={`w-5 h-5 text-${color}-500 shrink-0`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          {feature}
-        </li>
-      ))}
-    </ul>
-  </div>
-);
+        {/* 3D Dashboard Mockup */}
+        <motion.div
+          style={{ y: y1, rotateX }}
+          className="relative mt-24 max-w-6xl mx-auto perspective-2000"
+        >
+          <div className="relative group">
+            {/* Glow Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
 
-const TabsFeature = () => {
-  const [activeTab, setActiveTab] = useState(0);
+            <GlassCard className="relative p-2 border-white/20">
+              <img
+                src="/learning-map.png"
+                alt="Tedris Learning Universe"
+                className="w-full h-auto rounded-[1.8rem] shadow-2xl"
+              />
+            </GlassCard>
 
-  const tabs = [
+            {/* Floating UI Elements */}
+            <motion.div
+              style={{ y: y2 }}
+              className="absolute -right-12 top-1/4 bg-slate-900/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] hidden lg:block"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center text-green-400">
+                  <BarChart3 size={24} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Başarı Oranı</p>
+                  <p className="text-2xl font-black text-white">+%42.8</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              style={{ y: y1 }}
+              className="absolute -left-12 bottom-1/4 bg-slate-900/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] hidden lg:block"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Bot size={24} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">AI Asistan</p>
+                  <p className="text-lg font-bold text-white">3 Kritik Eksik Tespit Edildi</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const BentoEcosystem = () => {
+  const personas = [
     {
-      title: "Ders Programı",
-      desc: "Sürükle-bırak özellikli takvim ile tüm özel derslerinizi, etütlerinizi ve okul programınızı tek bir yerden yönetin.",
-      img: "/feature-schedule.png",
-      icon: "📅"
+      id: 'admin',
+      role: 'Yönetici',
+      title: 'Tüm Süreçlere Hâkim Olun',
+      desc: 'Şubeler, öğretmenler ve finansal akışı tek bir merkezden, gerçek zamanlı verilerle yönetin.',
+      icon: <Shield size={32} className="text-blue-400" />,
+      image: '/hero-dashboard.png',
+      color: 'from-blue-500/20 to-indigo-600/20'
     },
     {
-      title: "Soru Bankası",
-      desc: "Kendi sorularınızı ekleyin veya AI ile otomatik soru üretin. Sınırsız filtreleme ile saniyeler içinde quiz oluşturun.",
-      img: "/feature-qbank.png",
-      icon: "📚"
+      id: 'teacher',
+      role: 'Öğretmen',
+      title: 'Süper Güçlerinizi Keşfedin',
+      desc: 'Akıllı planlama ve yapay zeka asistanı ile ders yükünüzü azaltın, veriminizi artırın.',
+      icon: <Zap size={32} className="text-indigo-400" />,
+      image: '/teacher-dashboard.png',
+      color: 'from-indigo-500/20 to-purple-600/20'
     },
     {
-      title: "İçerik Kütüphanesi",
-      desc: "Etkileşimli materyaller, PDF'ler ve video içeriklerini düzenli bir şekilde arşivleyin ve öğrencilere atayın.",
-      img: "/feature-library.png",
-      icon: "🗄️"
+      id: 'student',
+      role: 'Öğrenci',
+      title: 'Öğrenme Galaksine Hoş Geldin',
+      desc: 'Kişisel öğrenme haritanı takip et, SRS sistemi ile öğrendiklerini asla unutma.',
+      icon: <Rocket size={32} className="text-orange-400" />,
+      image: '/student-dashboard.png',
+      color: 'from-orange-500/20 to-red-600/20'
     },
     {
-      title: "Tanı Testleri",
-      desc: "Öğrencinin seviyesini belirlemek için kapsamlı tanı testleri uygulayın ve detaylı analiz raporları alın.",
-      img: "/feature-diagnosis.png",
-      icon: "🩺"
-    },
-    {
-      title: "Branş Çalışmaları",
-      desc: "Türkçe, Matematik gibi branşlara özel çalışma modülleri ile konu eksiklerini nokta atışı tespit edin.",
-      img: "/feature-subjects.png",
-      icon: "🔬"
+      id: 'parent',
+      role: 'Veli',
+      title: 'Huzurlu ve Şeffaf Takip',
+      desc: 'Çocuğunuzun gelişimini anlık bildirimlerle izleyin, başarı yolculuğuna eşlik edin.',
+      icon: <Smile size={32} className="text-green-400" />,
+      image: '/public-share.png', // Or another representative image
+      color: 'from-green-500/20 to-emerald-600/20'
     }
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row gap-12 items-start">
-      {/* Sidebar / Tabs */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-2">
-        {tabs.map((tab, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveTab(idx)}
-            className={`text-left px-6 py-4 rounded-xl transition-all duration-300 flex items-center gap-4 group ${activeTab === idx
-              ? 'bg-white shadow-lg border border-indigo-100 ring-2 ring-indigo-500/50 scale-105 z-10'
-              : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-transparent'
-              }`}
-          >
-            <span className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${activeTab === idx ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300'
-              }`}>
-              {tab.icon}
-            </span>
-            <div>
-              <span className={`block font-bold text-lg ${activeTab === idx ? 'text-indigo-900' : ''}`}>{tab.title}</span>
-              {activeTab === idx && (
-                <p className="text-sm text-slate-500 mt-1 animate-fade-in">{tab.desc}</p>
-              )}
-            </div>
-          </button>
-        ))}
-      </div>
+    <section id="ecosystem" className="py-32 bg-[#050810]">
+      <div className="container mx-auto px-4">
+        <SectionHeading
+          badge="Ürün Ekosistemi"
+          title="Her Rol İçin Kusursuz Deneyim"
+          subtitle="Admin'den öğrenciye, her kullanıcı için özelleşmiş akıllı dashboard'lar ile eğitimde verimliliği zirveye taşıyoruz."
+          light
+        />
 
-      {/* Image Display */}
-      <div className="w-full lg:w-2/3">
-        <div className="relative rounded-2xl bg-white p-2 shadow-2xl border border-slate-200 overflow-hidden min-h-[400px]">
-          {tabs.map((tab, idx) => (
-            <div
-              key={idx}
-              className={`transition-all duration-500 absolute inset-0 p-2 ${activeTab === idx ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-8 z-0 pointer-events-none'
-                }`}
-            >
-              <img
-                src={tab.img}
-                alt={tab.title}
-                className="w-full h-full object-contain object-top rounded-xl shadow-inner border border-slate-100 bg-slate-50"
-              />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {personas.map((p, idx) => (
+            <GlassCard key={p.id} className="group h-[500px] flex flex-col p-8 border-white/5 hover:border-white/20 transition-all">
+              <div className="mb-6 space-y-4">
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${p.color} flex items-center justify-center mb-6 ring-1 ring-white/10 group-hover:scale-110 transition-transform`}>
+                  {p.icon}
+                </div>
+                <span className="text-sm font-bold text-indigo-400 uppercase tracking-widest">{p.role}</span>
+                <h3 className="text-2xl font-bold text-white leading-tight font-montserrat">{p.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{p.desc}</p>
+              </div>
+
+              <div className="mt-auto relative h-40 overflow-hidden rounded-2xl border border-white/10">
+                <img
+                  src={p.image}
+                  alt={p.role}
+                  className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050810] via-transparent to-transparent"></div>
+              </div>
+            </GlassCard>
           ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
-const PricingCard = ({
-  title,
-  price,
-  period,
-  features,
-  recommended = false,
-  buttonText = "Başla",
-  onAction
-}: {
-  title: string,
-  price: string,
-  period?: string,
-  features: string[],
-  recommended?: boolean,
-  buttonText?: string,
-  onAction?: () => void
-}) => (
-  <div className={`relative p-8 rounded-3xl border flex flex-col h-full transition-all duration-300 ${recommended
-    ? 'bg-slate-900 text-white border-slate-800 shadow-2xl scale-105 z-10'
-    : 'bg-white text-slate-900 border-slate-200 hover:border-indigo-100 hover:shadow-xl'
-    }`}>
-    {recommended && (
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
-        En Popüler
-      </div>
-    )}
+const InteractiveFeatures = () => {
+  const [activeTab, setActiveTab] = useState(0);
 
-    <div className="mb-8">
-      <h3 className={`text-xl font-bold mb-2 ${recommended ? 'text-slate-100' : 'text-slate-900'}`}>{title}</h3>
-      <div className="flex items-end gap-1">
-        <span className="text-4xl font-extrabold">{price}</span>
-        {period && <span className={`text-sm mb-1 ${recommended ? 'text-slate-400' : 'text-slate-500'}`}>{period}</span>}
-      </div>
-    </div>
-
-    <ul className="space-y-4 mb-8 flex-1">
-      {features.map((feature, idx) => (
-        <li key={idx} className="flex items-start gap-3 text-sm">
-          <svg className={`w-5 h-5 shrink-0 ${recommended ? 'text-indigo-400' : 'text-indigo-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <span className={recommended ? 'text-slate-300' : 'text-slate-600'}>{feature}</span>
-        </li>
-      ))}
-    </ul>
-
-    <button
-      onClick={onAction}
-      className={`w-full py-4 rounded-xl font-bold transition-all duration-200 ${recommended
-        ? 'bg-white text-slate-900 hover:bg-indigo-50'
-        : 'bg-slate-100 text-slate-900 hover:bg-slate-200 hover:text-indigo-600'
-        }`}
-    >
-      {buttonText}
-    </button>
-  </div>
-);
-
-const PricingSection = ({ onNavigateToAuth }: { onNavigateToAuth: (mode?: 'login' | 'register') => void }) => {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const features = [
+    {
+      title: "Akıllı Program",
+      subtitle: "Smart Schedule",
+      desc: "Yapay zeka, öğrencinin zayıf alanlarını tespit eder ve haftalık programa otomatik telafi seansları ekler.",
+      image: "/feature-schedule.png",
+      icon: <Clock size={24} />
+    },
+    {
+      title: "AI Analiz",
+      subtitle: "Deep Learning Insights",
+      desc: "Her sınavdan sonra gelişmiş istatistikler ve soru bazlı kazanım analizleri ile nokta atışı tespitler yapın.",
+      image: "/showcase-performance.png",
+      icon: <BarChart3 size={24} />
+    },
+    {
+      title: "Soru Bankası",
+      subtitle: "Universal Repository",
+      desc: "Binlerce soru arasından saniyeler içinde quiz oluşturun, benzer soruları AI ile hemen bulun.",
+      image: "/feature-qbank.png",
+      icon: <Cpu size={24} />
+    },
+    {
+      title: "Türkçe Pratik",
+      subtitle: "Language Proficiency",
+      desc: "Okuma hızı, anlama kapasitesi ve yazım hataları için özel olarak geliştirilmiş interaktif modüller.",
+      image: "/feature-subjects.png",
+      icon: <MessageSquare size={24} />
+    }
+  ];
 
   return (
-    <div id="pricing" className="py-24 bg-slate-50 border-t border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4 font-poppins">Şeffaf Fiyatlandırma</h2>
-          <p className="text-slate-600 mb-8">Gizli ücret yok. İhtiyacınıza uygun planı seçin.</p>
+    <section className="py-32 bg-white overflow-hidden">
+      <div className="container mx-auto px-4">
+        <SectionHeading
+          badge="Özellikler"
+          title="Karmaşaya Son Verin"
+          subtitle="Eğitimin her aşamasını dijitalleştiren, birbirine bağlı ve akıllı modüllerimizle kontrolü elinize alın."
+        />
 
-          <div className="inline-flex bg-white rounded-full p-1 border border-slate-200 shadow-sm">
-            <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16 items-center">
+          {/* Side Tabs */}
+          <div className="w-full lg:w-1/3 flex flex-col gap-4">
+            {features.map((f, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveTab(idx)}
+                className={`relative group flex items-start gap-6 p-6 rounded-[2rem] border transition-all duration-500 text-left ${activeTab === idx
+                    ? 'bg-slate-900 border-slate-900 shadow-[0_20px_40px_rgba(15,23,42,0.2)] scale-105 z-10'
+                    : 'bg-slate-50 border-slate-100 hover:border-slate-200 hover:bg-slate-100 grayscale hover:grayscale-0'
+                  }`}
+              >
+                <div className={`p-4 rounded-2xl transition-all ${activeTab === idx ? 'bg-indigo-600 text-white' : 'bg-white shadow-sm text-slate-400'
+                  }`}>
+                  {f.icon}
+                </div>
+                <div>
+                  <h4 className={`text-xl font-bold mb-1 font-montserrat ${activeTab === idx ? 'text-white' : 'text-slate-900'}`}>{f.title}</h4>
+                  <p className={`text-sm mb-3 font-semibold uppercase tracking-widest ${activeTab === idx ? 'text-indigo-400' : 'text-slate-400'}`}>{f.subtitle}</p>
+                  {activeTab === idx && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="text-slate-400 text-sm leading-relaxed"
+                    >
+                      {f.desc}
+                    </motion.p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Screenshot Display */}
+          <div className="w-full lg:w-2/3">
+            <div className="relative aspect-[16/10] bg-slate-100 rounded-[3rem] p-4 shadow-2xl border border-slate-200 overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, scale: 0.95, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 1.05, x: -20 }}
+                  transition={{ duration: 0.5, ease: "circOut" }}
+                  className="w-full h-full"
+                >
+                  <img
+                    src={features[activeTab].image}
+                    alt={features[activeTab].title}
+                    className="w-full h-full object-cover object-top rounded-[2rem] shadow-inner"
+                  />
+                  {/* Fake UI Overlay */}
+                  <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-[2rem]"></div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const AIHighlight = () => (
+  <section className="py-32 bg-[#050810] relative overflow-hidden">
+    <div className="absolute inset-0">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/10 blur-[150px]"></div>
+    </div>
+
+    <div className="container mx-auto px-4 relative z-10">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+        <div className="w-full lg:w-1/2 order-2 lg:order-1">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-indigo-500/20 rounded-[2.5rem] blur-2xl"></div>
+            <GlassCard className="p-2 border-white/20">
+              <img src="/ai-assistant.png" alt="AI Mentor" className="w-full h-auto rounded-3xl" />
+            </GlassCard>
+
+            {/* AI Tags */}
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute -top-6 -right-6 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-xl flex items-center gap-2"
             >
-              Aylık
-            </button>
-            <button
-              onClick={() => setBillingCycle('yearly')}
-              className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'yearly' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900'}`}
-            >
-              Yıllık <span className="text-green-500 text-xs ml-1">(-20%)</span>
-            </button>
+              <BrainCircuit size={20} /> AI Gücü Aktif
+            </motion.div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-center">
-          <PricingCard
-            title="Başlangıç"
-            price="Ücretsiz"
-            features={[
-              "3 Öğrenci Kapasitesi",
-              "Temel Ders Planlama",
-              "Sınırlı Soru Bankası (100 Soru)",
-              "Basit Raporlama",
-              "Veli Uygulaması (Görüntüleme)"
-            ]}
-            buttonText="Ücretsiz Dene"
-            onAction={() => onNavigateToAuth('register')}
+        <div className="w-full lg:w-1/2 order-1 lg:order-2">
+          <SectionHeading
+            badge="Yapay Zeka"
+            title="Eğitimcinin Akıllı Yardımcısı"
+            subtitle="Tedris AI sadece soru çözmez; öğrencinin öğrenme davranışlarını analiz eder ve kişiselleştirilmiş bir mentor gibi eşlik eder."
+            light
           />
 
-          <PricingCard
-            title="Profesyonel"
-            price={billingCycle === 'monthly' ? "₺499" : "₺399"}
-            period="/ay"
-            recommended={true}
-            features={[
-              "Sınırsız Öğrenci",
-              "Tam Yapay Zeka (AI) Erişimi",
-              "Sınırsız Soru Bankası & PDF Analizi",
-              "Otomatik Eksik Konu Tamamlama",
-              "Aralıklı Tekrar Sistemi (SRS)",
-              "Gelişmiş Finansal Takip",
-              "WhatsApp Entegrasyonu"
-            ]}
-            buttonText="Hemen Başla"
-            onAction={() => onNavigateToAuth('register')}
-          />
-
-          <PricingCard
-            title="Kurumsal"
-            price="Özel"
-            features={[
-              "Çoklu Öğretmen Yönetimi",
-              "Şube ve Sınıf Yapısı",
-              "Gelişmiş Yetkilendirme",
-              "Özel Domain (kurumunuz.com)",
-              "API Erişimi",
-              "Öncelikli 7/24 Destek",
-              "Kuruma Özel Eğitim"
-            ]}
-            buttonText="İletişime Geç"
-            onAction={() => window.location.href = 'mailto:satis@tedris.com'}
-          />
+          <div className="space-y-6 mt-8">
+            {[
+              { title: "Güvenli AI Mentor", desc: "Öğrencilerin 7/24 soru sorabileceği, müfredat sınırları içinde kalan güvenli asistan.", icon: <Users size={24} /> },
+              { title: "Otomatik Kompozisyon Analizi", desc: "Yazılı çalışmaları saniyeler içinde, belirlenen kriterlere göre detaylıca puanlar ve öneriler sunar.", icon: <CheckCircle2 size={24} /> },
+              { title: "Eksik Kazanım Tespiti", desc: "Yanlış yapılan her sorunun kök nedenini (kazanım) bulur ve telafi planı oluşturur.", icon: <Target size={24} /> }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex items-start gap-4 p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+              >
+                <div className="p-3 rounded-2xl bg-indigo-500/20 text-indigo-400">
+                  {item.icon}
+                </div>
+                <div>
+                  <h4 className="text-xl font-bold text-white mb-2">{item.title}</h4>
+                  <p className="text-slate-400 text-sm">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
+  </section>
+);
+
+const BentoFeatures = () => {
+  const features = [
+    {
+      title: "SRS Sistemi",
+      desc: "Aralıklı Tekrar ile kalıcı öğrenme.",
+      icon: <BrainCircuit size={40} className="text-red-400" />,
+      size: "lg:col-span-2 text-white bg-gradient-to-br from-red-600/40 to-indigo-900/40 border-red-500/20",
+      image: "/showcase-srs.png"
+    },
+    {
+      title: "Gamification",
+      desc: "Rozetler ve Seriler (Streaks).",
+      icon: <Star size={40} className="text-yellow-400" />,
+      size: "lg:col-span-1 bg-slate-900/40 text-white"
+    },
+    {
+      title: "WhatsApp",
+      desc: "Veli & Öğretmen anlık bilgilendirme.",
+      icon: <MessageSquare size={40} className="text-green-400" />,
+      size: "lg:col-span-1 bg-slate-900/40 text-white"
+    },
+    {
+      title: "Akıllı Araçlar",
+      desc: "Kronometre ve Oturma Planı.",
+      icon: <Layout size={40} className="text-blue-400" />,
+      size: "lg:col-span-2 text-white bg-gradient-to-br from-blue-600/40 to-slate-900/40 border-blue-500/20",
+      image: "/showcase-planning.png"
+    }
+  ];
+
+  return (
+    <section className="py-32 bg-[#0A0F1D]">
+      <div className="container mx-auto px-4">
+        <SectionHeading
+          badge="Detaylar"
+          title="Her Şey Tek Bir Çatıda"
+          subtitle="Modüler yapımız sayesinde ihtiyacınız olan tüm araçlara tek tıkla ulaşın."
+          light
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {features.map((f, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ y: -10 }}
+              className={`relative overflow-hidden rounded-[2.5rem] p-8 border ${f.size} transition-all`}
+            >
+              <div className="relative z-10">
+                <div className="mb-6">{f.icon}</div>
+                <h3 className="text-3xl font-black mb-2 font-montserrat">{f.title}</h3>
+                <p className="text-slate-400 text-lg leading-relaxed">{f.desc}</p>
+              </div>
+              {f.image && (
+                <div className="absolute bottom-[-20px] right-[-20px] w-2/3 opacity-30 group-hover:opacity-50 transition-opacity">
+                  <img src={f.image} alt={f.title} className="rounded-2xl" />
+                </div>
+              )}
+              {/* Background Glow */}
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 blur-3xl rounded-full"></div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 
-const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
+// --- Navbar ---
+
+const Navbar = ({ onAuth }: { onAuth: (m?: 'login' | 'register') => void }) => {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="bg-slate-50 min-h-screen font-sans text-slate-900 selection:bg-indigo-500/30 overflow-x-hidden">
-
-      {/* --- Navigation --- */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3 border-b border-slate-200/50' : 'bg-transparent py-5'}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <TedrisLogo light={false} />
-
-          <div className="hidden md:flex gap-8 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-indigo-600 transition-colors">Özellikler</a>
-            <a href="#solutions" className="hover:text-indigo-600 transition-colors">Çözümler</a>
-            <a href="#pricing" className="hover:text-indigo-600 transition-colors">Fiyatlandırma</a>
-          </div>
-
-          <div className="flex items-center gap-3 sm:gap-4">
-            <button
-              onClick={() => onNavigateToAuth('login')}
-              className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
-            >
-              Giriş
-            </button>
-            <button
-              onClick={() => onNavigateToAuth('register')}
-              className="hidden sm:inline-flex bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-            >
-              Ücretsiz Deneyin
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* --- Hero Section --- */}
-      <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        {/* Modern Abstract Mesh Gradient */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 bg-slate-50">
-          <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] rounded-full bg-indigo-200/20 blur-[120px] animate-pulse"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] rounded-full bg-blue-200/20 blur-[100px]" style={{ animationDelay: '2s' }}></div>
+    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${scrolled ? 'bg-[#0A0F1D]/80 backdrop-blur-2xl border-b border-white/10 py-4' : 'bg-transparent py-8'
+      }`}>
+      <div className="container mx-auto px-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <img src="/logo-full.png" alt="TedrisEDU" className="h-10 w-auto invert brightness-0 sm:brightness-100 sm:invert-0" style={{ filter: 'brightness(0) invert(1)' }} />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wide mb-8 animate-fade-in-up">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
-            Eğitimin Yeni İşletim Sistemi
-          </div>
+        {/* Desktop Links */}
+        <div className="hidden lg:flex items-center gap-10 text-sm font-bold uppercase tracking-widest text-slate-400">
+          <a href="#ecosystem" className="hover:text-white transition-colors">Ekosistem</a>
+          <a href="#features" className="hover:text-white transition-colors">Özellikler</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Fiyatlandırma</a>
+        </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-8 font-poppins max-w-5xl mx-auto">
-            Öğrenci Başarısını <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 animate-gradient-x">Veri ve Yapay Zeka ile Artırın</span>
-          </h1>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onAuth('login')}
+            className="hidden sm:block text-white font-bold text-sm hover:text-indigo-400 transition-colors uppercase tracking-widest"
+          >
+            Giriş
+          </button>
+          <button
+            onClick={() => onAuth('register')}
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm transition-all shadow-lg active:scale-95 uppercase tracking-widest"
+          >
+            Ücretsiz Başla
+          </button>
+          <button className="lg:hidden text-white" onClick={() => setMobileMenuOpen(true)}>
+            <Menu size={28} />
+          </button>
+        </div>
+      </div>
 
-          <p className="text-lg md:text-xl text-slate-500 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Öğrenme haritaları, yapay zeka destekli eksik giderme ve aralıklı tekrar sistemi ile öğrencilerinizi potansiyellerinin zirvesine taşıyın.
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            className="fixed inset-0 bg-[#0A0F1D] z-[200] p-8 flex flex-col"
+          >
+            <div className="flex justify-between items-center mb-16">
+              <img src="/logo-full.png" alt="TedrisEDU" className="h-10 w-auto invert brightness-0" />
+              <button onClick={() => setMobileMenuOpen(false)} className="text-white">
+                <X size={32} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-8 text-2xl font-bold text-white">
+              <a href="#ecosystem" onClick={() => setMobileMenuOpen(false)}>Ekosistem</a>
+              <a href="#features" onClick={() => setMobileMenuOpen(false)}>Özellikler</a>
+              <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Fiyatlandırma</a>
+              <hr className="border-white/10" />
+              <button onClick={() => { onAuth('login'); setMobileMenuOpen(false); }} className="text-left text-indigo-400">Giriş Yap</button>
+            </div>
+            <div className="mt-auto">
+              <button onClick={() => { onAuth('register'); setMobileMenuOpen(false); }} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-bold text-xl">Hemen Kaydol</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
+
+// --- Footer ---
+
+const PremiumFooter = () => (
+  <footer className="bg-[#050810] pt-32 pb-16 border-t border-white/5">
+    <div className="container mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
+        <div className="col-span-1 md:col-span-1">
+          <img src="/logo-full.png" alt="Tedris" className="h-12 w-auto mb-8 invert brightness-0" />
+          <p className="text-slate-500 leading-relaxed mb-8">
+            Eğitimin yeni işletim sistemi. Başarıyı tesadüflere değil, verilere ve yapay zekaya bırakın.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 px-4 sm:px-0">
-            <button
-              onClick={() => onNavigateToAuth('register')}
-              className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 hover:shadow-xl hover:shadow-slate-500/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              Hemen Başlayın
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-            <button
-              onClick={() => onNavigateToAuth('login')}
-              className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 hover:border-slate-300 transition-all duration-300"
-            >
-              Canlı Demo
-            </button>
+          <div className="flex gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-indigo-600 transition-all cursor-pointer flex items-center justify-center">
+                <Rocket size={18} className="text-slate-400 group-hover:text-white" />
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* New Hero Visual - Dashboard Abstract */}
-          <div className="relative max-w-6xl mx-auto mt-12 perspective-2000">
-            <div className="relative bg-white rounded-2xl p-2 shadow-2xl border border-slate-200 overflow-hidden transform rotate-x-6 hover:rotate-x-0 transition-transform duration-1000 group">
-              {/* Click overlay */}
-              <div className="absolute top-0 left-0 w-full h-full bg-slate-900/10 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-              </div>
+        <div>
+          <h4 className="text-white font-bold mb-8 uppercase tracking-widest text-sm">Ürün</h4>
+          <ul className="space-y-4 text-slate-500 text-sm">
+            <li><a href="#" className="hover:text-white transition-colors">Özellikler</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Fiyatlandırma</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">AI Mentor</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Demo İste</a></li>
+          </ul>
+        </div>
 
-              <img src="/showcase-hero.png" alt="Knowledge Graph Dashboard" className="w-full rounded-xl shadow-inner border border-slate-100" />
-            </div>
+        <div>
+          <h4 className="text-white font-bold mb-8 uppercase tracking-widest text-sm">Kurumsal</h4>
+          <ul className="space-y-4 text-slate-500 text-sm">
+            <li><a href="#" className="hover:text-white transition-colors">Biz Kimiz?</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">Haberler</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">İletişim</a></li>
+            <li><a href="#" className="hover:text-white transition-colors">KVKK</a></li>
+          </ul>
+        </div>
 
-            {/* Floating Elements for Context */}
-            <div className="absolute -right-8 top-20 bg-white/90 backdrop-blur shadow-xl p-4 rounded-xl border border-slate-200 hidden lg:block animate-bounce" style={{ animationDuration: '4s' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">🚀</div>
-                <div>
-                  <div className="text-xs text-slate-500 font-bold uppercase">Gelişim Hızı</div>
-                  <div className="text-sm font-bold text-slate-900">%47 Artış <span className="text-green-500 text-xs">bu hafta</span></div>
-                </div>
-              </div>
-            </div>
-
-            <div className="absolute -left-8 bottom-40 bg-white/90 backdrop-blur shadow-xl p-4 rounded-xl border border-slate-200 hidden lg:block animate-bounce" style={{ animationDuration: '5s' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-xl">🧠</div>
-                <div>
-                  <div className="text-xs text-slate-500 font-bold uppercase">AI Analizi</div>
-                  <div className="text-sm font-bold text-slate-900">3 Eksik Konu Belirlendi</div>
-                </div>
-              </div>
-            </div>
+        <div>
+          <h4 className="text-white font-bold mb-8 uppercase tracking-widest text-sm">Haber bülteni</h4>
+          <p className="text-slate-500 text-sm mb-6">En son güncellemelerden haberdar olun.</p>
+          <div className="flex gap-2">
+            <input type="email" placeholder="E-posta" className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 flex-1" />
+            <button className="px-4 py-3 bg-indigo-600 text-white rounded-xl"><ArrowRight size={20} /></button>
           </div>
         </div>
       </div>
 
-      {/* --- Features Bento Grid --- */}
-      <div id="features" className="py-24 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold text-slate-900 mb-4 font-poppins">Eğitimde Teknoloji Devrimi</h2>
-            <p className="text-lg text-slate-600">Sadece bir yönetim paneli değil, öğrencinizin en yakın çalışma arkadaşı.</p>
-          </div>
+      <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+        <p className="text-slate-600 text-sm italic">© 2026 TedrisEdu (Ahmet Duyar). Tüm hakları saklıdır.</p>
+        <div className="flex gap-8 text-xs text-slate-600 uppercase tracking-widest font-bold">
+          <a href="#">Gizlilik</a>
+          <a href="#">Şartlar</a>
+          <a href="#">KVKK</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+);
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Col 1 */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Feature 1: Spaced Repetition */}
-              <div className="group relative overflow-hidden rounded-3xl bg-indigo-600 text-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
-                <div className="absolute top-0 right-0 p-12 opacity-10">
-                  <svg className="w-64 h-64" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z" /></svg>
-                </div>
-                <div className="relative z-10 p-8 md:p-10 flex flex-col md:flex-row items-center gap-8">
-                  <div className="flex-1">
-                    <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl mb-6">🧠</div>
-                    <h3 className="text-2xl font-bold mb-3">Aralıklı Tekrar Sistemi (SRS)</h3>
-                    <p className="text-indigo-100 leading-relaxed mb-6">
-                      Bilimsel olarak kanıtlanmış algoritma ile öğrencilerin unutmaya başladığı anı tespit eder ve konuları tam zamanında tekrar ettirir.
-                    </p>
-                    <ul className="space-y-2 mb-6">
-                      <li className="flex items-center gap-2 text-sm text-indigo-100"><span className="bg-white/20 p-1 rounded-full text-xs">✓</span> Günlük mini quizler</li>
-                      <li className="flex items-center gap-2 text-sm text-indigo-100"><span className="bg-white/20 p-1 rounded-full text-xs">✓</span> Ustalık seviyesi takibi</li>
-                    </ul>
-                  </div>
-                  <div className="w-full md:w-1/2">
-                    <img src="/showcase-srs.png" alt="Aralıklı Tekrar Sistemi" className="rounded-xl shadow-lg border border-white/10 transform group-hover:scale-105 transition-transform duration-500" />
-                  </div>
-                </div>
+// --- Main Page ---
+
+const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToAuth }) => {
+  return (
+    <div className="bg-[#0A0F1D] min-h-screen font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
+      <Navbar onAuth={onNavigateToAuth} />
+
+      <HeroSection onStart={() => onNavigateToAuth('register')} />
+
+      <BentoEcosystem />
+
+      <InteractiveFeatures />
+
+      <AIHighlight />
+
+      <BentoFeatures />
+
+      {/* Pricing Teaser */}
+      <section id="pricing" className="py-32 bg-white relative overflow-hidden">
+        <div className="container mx-auto px-4 text-center">
+          <SectionHeading
+            badge="Fiyatlandırma"
+            title="Her Kurum İçin Bir Tedris"
+            subtitle="Şeffaf ve ölçeklenebilir fiyatlandırma modellerimizle tanışın."
+          />
+          <GlassCard className="max-w-4xl mx-auto p-12 bg-slate-900 border-none shadow-[0_40px_100px_rgba(0,0,0,0.3)]">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+              <div className="text-left">
+                <h3 className="text-4xl font-black text-white mb-4">Profesyonel Paket</h3>
+                <p className="text-slate-400 max-w-sm">Tüm AI özellikleri, sınırsız öğrenci ve gelişmiş analizler dahil.</p>
               </div>
-
-              {/* Feature 2: Performance Analysis */}
-              <div className="group relative overflow-hidden rounded-3xl bg-slate-50 border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
-                <div className="p-8 md:p-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-2xl mb-4">📊</div>
-                      <h3 className="text-xl font-bold text-slate-900">360° Performans Takibi</h3>
-                    </div>
-                    <button className="text-indigo-600 font-semibold text-sm hover:underline">Raporu İncele →</button>
-                  </div>
-                  <p className="text-slate-600 mb-8 max-w-lg">
-                    Test sonuçları, ödev tamamlama oranları ve konu bazlı eksiklik analizi ile öğrencinin durumununtam fotoğrafını çekin.
-                  </p>
-                  <img src="/showcase-performance.png" alt="Performans Analizi" className="w-full rounded-xl shadow-md border border-slate-200" />
-                </div>
+              <div className="flex flex-col items-center">
+                <span className="text-6xl font-black text-white mb-2">₺499<span className="text-xl text-slate-500">/ay</span></span>
+                <button
+                  onClick={() => onNavigateToAuth('register')}
+                  className="w-full px-12 py-5 bg-indigo-600 text-white rounded-2xl font-bold text-xl hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20"
+                >
+                  Hemen Başla
+                </button>
               </div>
             </div>
-
-            {/* Col 2 */}
-            <div className="space-y-8">
-              {/* Feature 3: Planning */}
-              <div className="group relative overflow-hidden rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1 flex flex-col">
-                <div className="p-8 flex-1">
-                  <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-2xl mb-4">📅</div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Akıllı Planlama</h3>
-                  <p className="text-slate-600 text-sm mb-6">
-                    Yapay zeka, öğrencinin zayıf olduğu konuları tespit eder ve haftalık programa otomatik olarak ekler.
-                  </p>
-                  <div className="rounded-xl overflow-hidden shadow-inner border border-slate-100 bg-slate-50 p-2">
-                    <img src="/showcase-planning.png" alt="Akıllı Planlama" className="w-full rounded-lg shadow-sm" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Feature 4: Online Classes/General */}
-              <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 to-white border border-blue-100 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
-                <div className="p-8 pb-0">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mb-4">🎥</div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Canlı Ders Yönetimi</h3>
-                  <p className="text-slate-600 text-sm mb-6">
-                    Online derslerinizi planlayın, linkleri paylaşın ve yoklama alın.
-                  </p>
-
-                  <div className="relative rounded-t-xl overflow-hidden shadow-lg border-t border-x border-slate-200 bg-white flex flex-col">
-                    <div className="w-full h-8 bg-slate-50 border-b border-slate-100 flex items-center px-3 gap-1.5 pl-4 z-10 shrink-0">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-                    </div>
-                    <img
-                      src="/showcase-classes.png"
-                      alt="Online Dersler"
-                      className="w-full h-48 object-cover object-left-top"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Detailed Modules Showcase (Tabs) --- */}
-      <div className="py-24 bg-slate-50 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4 font-poppins">Tüm Eğitim Süreçleriniz Tek Ekranda</h2>
-            <p className="text-lg text-slate-600">
-              Karmaşık excel dosyaları ve farklı uygulamalar arasında kaybolmayın. İhtiyacınız olan her şey parmaklarınızın ucunda.
-            </p>
-          </div>
-
-          <TabsFeature />
-        </div>
-      </div>
-
-      {/* --- Audience Segmentation (Who is it for?) --- */}
-      <div id="solutions" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4 font-poppins">Kimler İçin Uygundur?</h2>
-            <p className="text-slate-600">Farklı ihtiyaçlara özelleştirilmiş modüller.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <PersonaCard
-              icon="🎓"
-              title="Bağımsız Eğitmenler"
-              color="indigo"
-              features={[
-                "Excel tablolarından kurtulun",
-                "Veli iletişimini otomatize edin",
-                "Ders programını cebinizden yönetin",
-                "Markanızı kurumsallaştırın"
-              ]}
-            />
-            <PersonaCard
-              icon="🏛️"
-              title="Butik Kurs & Etüt Merkezleri"
-              color="purple"
-              features={[
-                "Tüm öğretmenleri tek panelden yönetin",
-                "Sınıf ve şube bazlı analizler",
-                "Kurumsal gelir/gider takibi",
-                "Öğretmen maaş hesaplamaları"
-              ]}
-            />
-            <PersonaCard
-              icon="🚀"
-              title="Eğitim Koçları"
-              color="blue"
-              features={[
-                "Öğrenci hedeflerini yakından izleyin",
-                "Haftalık çalışma planları oluşturun",
-                "Gelişim raporlarını görselleştirin",
-                "Motivasyon araçları (Gamification)"
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* --- Pricing Section --- */}
-      <PricingSection onNavigateToAuth={onNavigateToAuth} />
-
-      {/* --- CTA Section --- */}
-      <div className="py-32 bg-white text-center px-4 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold text-slate-900 mb-8 font-poppins tracking-tight">
-            Eğitim İşinizi Büyütmeye <br />Hazır mısınız?
-          </h2>
-          <p className="text-xl text-slate-600 mb-12 max-w-2xl mx-auto">
-            14 gün boyunca tüm özellikleri ücretsiz deneyin. <br />Kredi kartı gerekmez. İptal etmesi kolay.
+          </GlassCard>
+          <p className="mt-12 text-slate-500">
+            Daha büyük kurumlar için <a href="#" className="text-indigo-600 font-bold hover:underline">Kurumsal Paket</a> seçeneklerimize göz atın.
           </p>
-
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => onNavigateToAuth('register')}
-              className="px-10 py-5 bg-indigo-600 text-white rounded-full font-bold text-lg shadow-xl shadow-indigo-500/30 hover:bg-indigo-700 hover:scale-105 transition-all duration-300"
-            >
-              Ücretsiz Hesabınızı Oluşturun
-            </button>
-            <button
-              className="px-10 py-5 bg-white text-slate-700 border border-slate-200 rounded-full font-bold text-lg hover:bg-slate-50 transition-all duration-300"
-            >
-              Satış Ekibiyle Görüşün
-            </button>
-          </div>
         </div>
-      </div>
+      </section>
 
-      {/* --- Footer --- */}
-      <footer className="bg-slate-900 text-slate-300 py-16 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-1">
-            <TedrisLogo light={true} />
-            <p className="mt-6 text-sm text-slate-500">
-              Eğitimciler için geliştirilmiş, yapay zeka destekli yönetim platformu.
-            </p>
-            <div className="mt-6 flex gap-4">
-              {/* Social Icons Placeholder */}
-              <div className="w-8 h-8 rounded-full bg-slate-800 hover:bg-indigo-600 transition-colors cursor-pointer"></div>
-              <div className="w-8 h-8 rounded-full bg-slate-800 hover:bg-indigo-600 transition-colors cursor-pointer"></div>
-              <div className="w-8 h-8 rounded-full bg-slate-800 hover:bg-indigo-600 transition-colors cursor-pointer"></div>
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-white font-bold mb-6">Ürün</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">Özellikler</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Fiyatlandırma</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Güncellemeler</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Yol Haritası</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-bold mb-6">Kurumsal</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">Hakkımızda</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Kariyer</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">İletişim</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-bold mb-6">Yasal</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#" className="hover:text-white transition-colors">Gizlilik Politikası</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Kullanım Şartları</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">KVKK</a></li>
-            </ul>
-          </div>
+      {/* CTA Final */}
+      <section className="py-40 bg-indigo-600 relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-[-50%] left-[-20%] w-[100%] h-[100%] bg-blue-400/20 blur-[150px] rounded-full"></div>
+          <div className="absolute bottom-[-50%] right-[-20%] w-[100%] h-[100%] bg-white/10 blur-[150px] rounded-full"></div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 mt-16 pt-8 border-t border-slate-800 text-center text-xs text-slate-600">
-          © 2024 TedrisEDU Teknoloji A.Ş. Tüm hakları saklıdır.
+
+        <div className="container mx-auto px-4 relative z-10 text-center">
+          <motion.h2
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            className="text-4xl md:text-7xl font-black text-white mb-12 font-montserrat tracking-tighter"
+          >
+            Eğitimde <br className="sm:hidden" /> Dönüşümü <br /> Bugün Başlatın.
+          </motion.h2>
+          <button
+            onClick={() => onNavigateToAuth('register')}
+            className="px-16 py-6 bg-white text-indigo-700 rounded-3xl font-black text-2xl hover:bg-indigo-50 hover:scale-105 active:scale-95 transition-all shadow-2xl"
+          >
+            14 Gün Ücretsiz Deneyin
+          </button>
+          <p className="mt-8 text-white/60 font-medium">Kredi kartı gerekmez. Anında kurulum.</p>
         </div>
-      </footer>
+      </section>
+
+      <PremiumFooter />
 
       <style>{`
-        .perspective-2000 {
-          perspective: 2000px;
-        }
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out forwards;
-        }
+        .perspective-2000 { perspective: 2000px; }
         .animate-gradient-x {
-            background-size: 200% 200%;
-            animation: gradient-x 8s ease infinite;
+           background-size: 200% 200%;
+           animation: gradient-x 8s ease infinite;
         }
         @keyframes gradient-x {
-            0% { background-position: 0% 50% }
-            50% { background-position: 100% 50% }
-            100% { background-position: 0% 50% }
+           0% { background-position: 0% 50% }
+           50% { background-position: 100% 50% }
+           100% { background-position: 0% 50% }
         }
       `}</style>
     </div>

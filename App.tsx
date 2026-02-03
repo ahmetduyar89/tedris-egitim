@@ -157,7 +157,7 @@ const App: React.FC = () => {
             setView('auth');
           }
         } else {
-          setView('auth');
+          setView('website');
         }
       } catch (error) {
         console.error('Error in initializeAuth:', error);
@@ -185,7 +185,7 @@ const App: React.FC = () => {
         if (currentUser) {
           setView('dashboard');
         } else {
-          setView('auth');
+          setView('website');
         }
       }
     };
@@ -285,7 +285,7 @@ const App: React.FC = () => {
             }
           } else {
             setCurrentUser(null);
-            setView('auth');
+            setView('website');
           }
         } catch (error) {
           console.error('[Auth] Error in auth state change:', error);
@@ -356,7 +356,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleNavigateToWebsite = useCallback(() => {
-    setView('auth');
+    setView('website');
   }, []);
 
   const handleNavigateToContent = useCallback((id: string) => {
@@ -398,7 +398,7 @@ const App: React.FC = () => {
         }
         return <ContentViewerPage contentId={contentId} user={currentUser} onBack={handleBackFromContent} />;
       case 'website':
-        return <LoginPage onLogin={handleLogin} onNavigateToWebsite={handleNavigateToWebsite} initialMode={authMode} />;
+        return <LandingPage onNavigateToAuth={handleNavigateToAuth} />;
       case 'parent-signup':
         return <ParentSignupPage onSuccess={() => setView('auth')} onBack={() => setView('auth')} />;
       case 'auth':
@@ -441,7 +441,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="bg-background min-h-screen font-sans text-text-primary">
+      <div className="min-h-screen font-sans">
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Yükleniyor...</div>}>
           {renderContent()}
         </Suspense>

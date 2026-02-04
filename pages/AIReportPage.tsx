@@ -80,7 +80,7 @@ const AIReportPage: React.FC<AIReportPageProps> = ({ user, student, test, allCom
             questions: finalQuestionsWithRecalculation, // The `questions` array should also be updated
             analysis: test.analysis ? {
                 ...test.analysis,
-                question_evaluations: finalQuestionsWithRecalculation,
+                questionEvaluations: finalQuestionsWithRecalculation,
                 summary: { // Update the summary object to reflect changes
                     correct: correctCount,
                     wrong: wrongCount,

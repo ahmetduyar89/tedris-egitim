@@ -20,7 +20,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([Subject.Science]); // Default to Science
+    const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>([Subject.Science]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -40,196 +40,82 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
         }
 
         try {
-            const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
-            const response = await fetch(authUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                },
-                body: JSON.stringify({
+            // 1. Create Student via Edge Function (Secure & Reliable)
+            const { data: authData, error: signupError } = await supabase.functions.invoke('create-student', {
+                body: {
                     email: email.trim(),
                     password: password.trim(),
-                    data: {
-                        name: name.trim(),
-                        role: UserRole.Student
-                    }
-                })
+                    name: name.trim(),
+                    role: UserRole.Student,
+                    grade: grade,
+                    tutorId: tutor.id
+                }
             });
 
-            const authData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(authData.msg || authData.error_description || 'Kayıt oluşturulamadı');
+            if (signupError || !authData?.success) {
+                throw new Error(signupError?.message || authData?.error || 'Öğrenci hesabı oluşturulamadı');
             }
 
-            if (authData.user || authData.id) {
-                const userId = authData.user?.id || authData.id;
+            const userId = authData.userId;
+            let parentId: string | undefined;
+            let actualParentEmail = parentEmail.trim();
 
+            // 2. Create Parent via Edge Function (Optional)
+            if (parentName.trim()) {
+                const finalParentPassword = parentPassword.trim() || 'veli123456';
+                actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
 
-                // The tutor (authenticated user) can insert into 'users' table if policies allow, 
-                // but usually 'users' table handles its own inserts via trigger or the user themselves.
-                // In this app, it seems the tutor inserts the user record.
-                const { error: userError } = await supabase
-                    .from('users')
-                    .insert([{
-                        id: userId,
-                        email: email.trim(),
-                        name: name.trim(),
-                        role: UserRole.Student,
-                        status: 'approved'
-                    }]);
-
-                if (userError) {
-                    console.error("User insert error:", userError);
-                    throw userError;
-                }
-
-                // Create student record using the main client
-                // Note: The tutor should have permission to insert into 'students' for their assigned students
-                const { error: studentError } = await supabase
-                    .from('students')
-                    .insert([{
-                        id: userId,
-                        name: name.trim(),
-                        grade: grade,
-                        tutor_id: tutor.id,
-                        contact: phone.trim(),
-                        parent_name: parentName.trim(),
-                        parent_phone: parentPhone.trim(),
-                        parent_email: parentEmail.trim(),
-                        level: 1,
-                        xp: 0,
-                        learning_loop_status: LearningLoopStatus.Initial,
-                        is_ai_assistant_enabled: true,
-                        subjects: selectedSubjects
-                    }]);
-
-                if (studentError) {
-                    console.error("Student insert error:", studentError);
-                    if (studentError.message?.includes("column \"subjects\" of relation \"students\" does not exist")) {
-                        throw new Error("Veritabanında dersler (subjects) kolonu eksik. Lütfen veritabanı şemasını güncelleyin.");
+                const { data: pAuthData, error: pSignupError } = await supabase.functions.invoke('create-student', {
+                    body: {
+                        email: actualParentEmail,
+                        password: finalParentPassword,
+                        name: parentName.trim(),
+                        role: UserRole.Parent,
+                        phone: parentPhone.trim(),
+                        studentId: userId
                     }
-                    throw studentError;
+                });
+
+                if (pSignupError || !pAuthData?.success) {
+                    console.error('❌ Veli Edge Function hatası:', pSignupError || pAuthData?.error);
+                    alert(`⚠️ Öğrenci eklendi ancak veli hesabı oluşturulamadı.\n\nHata: ${pSignupError?.message || pAuthData?.error}`);
+                } else {
+                    parentId = pAuthData.userId;
+                    alert(`✅ Veli hesabı başarıyla oluşturuldu!\n\nE-posta: ${actualParentEmail}\nŞifre: ${finalParentPassword}`);
                 }
-
-                let parentId: string | undefined;
-                let actualParentEmail = parentEmail.trim();
-                let finalParentPassword = parentPassword.trim();
-
-                // Veli hesabı oluşturma mantığı
-                if (parentName.trim()) {
-                    // Ensure a password exists for auth
-                    finalParentPassword = parentPassword.trim() || 'veli123456';
-                    actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
-
-                    const parentAuthResponse = await fetch(authUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                        },
-                        body: JSON.stringify({
-                            email: actualParentEmail,
-                            password: finalParentPassword,
-                            data: {
-                                name: parentName.trim(),
-                                role: UserRole.Parent
-                            }
-                        })
-                    });
-
-                    const parentAuthData = await parentAuthResponse.json();
-
-                    if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
-                        parentId = parentAuthData.user?.id || parentAuthData.id;
-
-                        // Get actual confirmed email if possible
-                        const confirmedEmail = parentAuthData.user?.email || actualParentEmail;
-                        actualParentEmail = confirmedEmail;
-
-                        // Insert into parents table
-                        await supabase
-                            .from('parents')
-                            .insert([{
-                                id: parentId,
-                                name: parentName.trim(),
-                                phone: parentPhone.trim(),
-                                email: actualParentEmail,
-                                password_hash: 'managed_by_auth'
-                            }]);
-
-                        // Ensure parent is also in the users table
-                        try {
-                            await supabase
-                                .from('users')
-                                .insert([{
-                                    id: parentId,
-                                    email: actualParentEmail,
-                                    name: parentName.trim(),
-                                    role: UserRole.Parent,
-                                    status: 'approved'
-                                }]);
-                        } catch (e) {
-                            console.error('Parent users record exists or failed:', e);
-                        }
-
-                        // Link student to parent
-                        await supabase
-                            .from('students')
-                            .update({ parent_id: parentId })
-                            .eq('id', userId);
-
-                        await supabase
-                            .from('parent_student_relations')
-                            .insert([{
-                                parent_id: parentId,
-                                student_id: userId,
-                                relationship_type: 'vasi'
-                            }]);
-
-                        alert(`✅ Veli hesabı başarıyla oluşturuldu!\n\nE-posta: ${actualParentEmail}\nŞifre: ${finalParentPassword}`);
-                    } else {
-                        const errorMsg = parentAuthData.msg || parentAuthData.error_description || 'Auth hatası';
-                        console.error('❌ Veli Auth oluşturma hatası:', errorMsg);
-                        alert(`⚠️ Öğrenci eklendi ancak veli hesabı oluşturulamadı.\n\nHata: ${errorMsg}`);
-                    }
-                }
-
-                const newStudent: Student = {
-                    id: userId,
-                    name: name.trim(),
-                    grade: grade,
-                    tutorId: tutor.id,
-                    contact: phone.trim(),
-                    parentName: parentName.trim(),
-                    parentPhone: parentPhone.trim(),
-                    parentEmail: actualParentEmail,
-                    parentId: parentId, // State güncellensin
-                    level: 1,
-                    xp: 0,
-                    badges: [],
-                    learningLoopStatus: LearningLoopStatus.Initial,
-                    progressReports: [],
-                    isAiAssistantEnabled: true,
-                    subjects: selectedSubjects,
-                };
-
-                onStudentAdded(newStudent);
-                onClose();
-                alert('Öğrenci başarıyla oluşturuldu!');
             }
+
+            const newStudent: Student = {
+                id: userId,
+                name: name.trim(),
+                grade: grade,
+                tutorId: tutor.id,
+                contact: phone.trim(),
+                parentName: parentName.trim(),
+                parentPhone: parentPhone.trim(),
+                parentEmail: actualParentEmail,
+                parentId: parentId,
+                level: 1,
+                xp: 0,
+                badges: [],
+                learningLoopStatus: LearningLoopStatus.Initial,
+                progressReports: [],
+                isAiAssistantEnabled: true,
+                subjects: selectedSubjects,
+            };
+
+            onStudentAdded(newStudent);
+            onClose();
+            alert('Öğrenci başarıyla oluşturuldu!');
         } catch (error: any) {
-            if (error.message?.includes('User already registered') || error.message?.includes('already exists')) {
+            console.error("Error creating student:", error);
+            if (error.message?.includes('already registered') || error.message?.includes('already exists')) {
                 setError('Bu e-posta adresi zaten kullanılıyor.');
             } else if (error.message?.includes('Password')) {
                 setError('Şifre en az 6 karakter olmalıdır.');
-            } else if (error.code === '42501' || error.message?.includes('row-level security')) {
-                setError('Yetki hatası: Veritabanı güvenlik politikaları (RLS) öğrenci oluşturmanızı engelliyor.');
             } else {
                 setError(error.message || 'Öğrenci oluşturulurken bir hata oluştu.');
             }
-            console.error("Error creating student:", error);
         } finally {
             setIsSubmitting(false);
         }

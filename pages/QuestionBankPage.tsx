@@ -5,6 +5,7 @@ import CreateQuestionBankModal from '../components/CreateQuestionBankModal';
 import AssignQuestionBankModal from '../components/AssignQuestionBankModal';
 import ViewQuestionBankModal from '../components/ViewQuestionBankModal';
 import AssignedTestsManager from '../components/AssignedTestsManager';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface QuestionBankPageProps {
   user: User;
@@ -23,6 +24,7 @@ const QuestionBankPage: React.FC<QuestionBankPageProps> = ({ user, onBack, onLog
   const [filterSubject, setFilterSubject] = useState('');
   const [filterGrade, setFilterGrade] = useState('');
   const [filterUnit, setFilterUnit] = useState('');
+  const [bankToDelete, setBankToDelete] = useState<QuestionBank | null>(null);
 
   const loadQuestionBanks = async () => {
     try {
@@ -93,12 +95,17 @@ const QuestionBankPage: React.FC<QuestionBankPageProps> = ({ user, onBack, onLog
     setFilteredBanks(filtered);
   }, [filterSubject, filterGrade, filterUnit, questionBanks]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bu soru bankasını silmek istediğinizden emin misiniz?')) return;
+  const handleDelete = (bank: QuestionBank) => {
+    setBankToDelete(bank);
+  };
+
+  const confirmDelete = async () => {
+    if (!bankToDelete) return;
 
     try {
-      await db.collection('question_banks').doc(id).delete();
+      await db.collection('question_banks').doc(bankToDelete.id).delete();
       loadQuestionBanks();
+      setBankToDelete(null);
     } catch (error) {
       console.error('Error deleting question bank:', error);
       alert('Soru bankası silinemedi.');
@@ -135,17 +142,15 @@ const QuestionBankPage: React.FC<QuestionBankPageProps> = ({ user, onBack, onLog
             <div className="flex bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => setActiveTab('banks')}
-                className={`flex-1 py-2 px-4 rounded-full font-semibold transition-colors ${
-                  activeTab === 'banks' ? 'bg-primary text-white shadow' : 'text-gray-600'
-                }`}
+                className={`flex-1 py-2 px-4 rounded-full font-semibold transition-colors ${activeTab === 'banks' ? 'bg-primary text-white shadow' : 'text-gray-600'
+                  }`}
               >
                 Soru Bankaları
               </button>
               <button
                 onClick={() => setActiveTab('assignments')}
-                className={`flex-1 py-2 px-4 rounded-full font-semibold transition-colors ${
-                  activeTab === 'assignments' ? 'bg-primary text-white shadow' : 'text-gray-600'
-                }`}
+                className={`flex-1 py-2 px-4 rounded-full font-semibold transition-colors ${activeTab === 'assignments' ? 'bg-primary text-white shadow' : 'text-gray-600'
+                  }`}
               >
                 Atanan Testler
               </button>
@@ -261,7 +266,7 @@ const QuestionBankPage: React.FC<QuestionBankPageProps> = ({ user, onBack, onLog
                       Öğrenciye Ata
                     </button>
                     <button
-                      onClick={() => handleDelete(bank.id)}
+                      onClick={() => handleDelete(bank)}
                       className="px-3 py-2 bg-red-50 text-red-600 rounded-lg font-semibold hover:bg-red-100 transition-colors text-sm"
                     >
                       Sil
@@ -301,6 +306,14 @@ const QuestionBankPage: React.FC<QuestionBankPageProps> = ({ user, onBack, onLog
           onClose={() => setViewingBank(null)}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={!!bankToDelete}
+        title="Soru Bankasını Sil"
+        message={`'${bankToDelete?.title}' soru bankasını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setBankToDelete(null)}
+      />
     </div>
   );
 };

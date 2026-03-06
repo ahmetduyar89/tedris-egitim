@@ -4,6 +4,7 @@ import ContentCard from '../components/ContentCard';
 import UploadContentModal from '../components/UploadContentModal';
 import AssignLibraryContentModal from '../components/AssignLibraryContentModal';
 import ShareContentModal from '../components/ShareContentModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { CURRICULUM } from '../constants';
 import { db } from '../services/dbAdapter';
 
@@ -27,6 +28,7 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
     const [editingItem, setEditingItem] = useState<ContentLibraryItem | null>(null);
     const [assigningItem, setAssigningItem] = useState<ContentLibraryItem | null>(null);
     const [sharingItem, setSharingItem] = useState<ContentLibraryItem | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<ContentLibraryItem | null>(null);
 
     const loadLibrary = useCallback(async () => {
         try {
@@ -57,24 +59,29 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
         }
     };
 
-    const handleDelete = async (item: ContentLibraryItem) => {
-        if (window.confirm(`'${item.title}' içeriğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`)) {
-            try {
-                const batch = db.batch();
-                const libraryItemRef = db.collection('contentLibrary').doc(item.id);
-                batch.delete(libraryItemRef);
+    const handleDelete = (item: ContentLibraryItem) => {
+        setItemToDelete(item);
+    };
 
-                if (item.fileType === ContentType.Interactive && item.interactiveContentId) {
-                    const interactiveContentRef = db.collection('interactiveContent').doc(item.interactiveContentId);
-                    batch.delete(interactiveContentRef);
-                }
+    const confirmDelete = async () => {
+        if (!itemToDelete) return;
 
-                await batch.commit();
-                loadLibrary(); // Reload from firestore
-            } catch (error) {
-                console.error("Error deleting content:", error);
-                alert("İçerik silinirken bir hata oluştu.");
+        try {
+            const batch = db.batch();
+            const libraryItemRef = db.collection('contentLibrary').doc(itemToDelete.id);
+            batch.delete(libraryItemRef);
+
+            if (itemToDelete.fileType === ContentType.Interactive && itemToDelete.interactiveContentId) {
+                const interactiveContentRef = db.collection('interactiveContent').doc(itemToDelete.interactiveContentId);
+                batch.delete(interactiveContentRef);
             }
+
+            await batch.commit();
+            loadLibrary(); // Reload from firestore
+            setItemToDelete(null);
+        } catch (error) {
+            console.error("Error deleting content:", error);
+            alert("İçerik silinirken bir hata oluştu.");
         }
     };
 
@@ -161,6 +168,13 @@ const ContentLibraryPage: React.FC<ContentLibraryPageProps> = ({ user, students,
             {(isUploadModalOpen || editingItem) && <UploadContentModal user={user} onClose={() => { setIsUploadModalOpen(false); setEditingItem(null); }} onUpload={handleUploadComplete} itemToEdit={editingItem} />}
             {assigningItem && <AssignLibraryContentModal isOpen={!!assigningItem} onClose={() => setAssigningItem(null)} contentItem={assigningItem} students={students} />}
             {sharingItem && <ShareContentModal isOpen={!!sharingItem} onClose={() => setSharingItem(null)} contentItem={sharingItem} user={user} />}
+            <ConfirmationModal
+                isOpen={!!itemToDelete}
+                title="İçeriği Sil"
+                message={`'${itemToDelete?.title}' içeriğini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+                onConfirm={confirmDelete}
+                onCancel={() => setItemToDelete(null)}
+            />
         </>
     );
 };

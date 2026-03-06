@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { QuestionBankAssignment, Student, QuestionBank } from '../types';
 import { db } from '../services/dbAdapter';
+import ConfirmationModal from './ConfirmationModal';
 
 interface AssignedTestsManagerProps {
   teacherId: string;
@@ -11,6 +12,7 @@ const AssignedTestsManager: React.FC<AssignedTestsManagerProps> = ({ teacherId }
   const [students, setStudents] = useState<{ [id: string]: Student }>({});
   const [questionBanks, setQuestionBanks] = useState<{ [id: string]: QuestionBank }>({});
   const [loading, setLoading] = useState(true);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     loadAssignments();
@@ -100,13 +102,17 @@ const AssignedTestsManager: React.FC<AssignedTestsManagerProps> = ({ teacherId }
     }
   };
 
-  const handleDelete = async (assignmentId: string) => {
-    if (!confirm('Bu atamayı silmek istediğinize emin misiniz?')) return;
+  const handleDelete = (assignmentId: string) => {
+    setAssignmentToDelete(assignmentId);
+  };
+
+  const confirmDelete = async () => {
+    if (!assignmentToDelete) return;
 
     try {
-      await db.collection('question_bank_assignments').doc(assignmentId).delete();
-      setAssignments(prev => prev.filter(a => a.id !== assignmentId));
-      alert('Atama başarıyla silindi.');
+      await db.collection('question_bank_assignments').doc(assignmentToDelete).delete();
+      setAssignments(prev => prev.filter(a => a.id !== assignmentToDelete));
+      setAssignmentToDelete(null);
     } catch (error) {
       console.error('Error deleting assignment:', error);
       alert('Atama silinirken bir hata oluştu.');
@@ -213,6 +219,14 @@ const AssignedTestsManager: React.FC<AssignedTestsManagerProps> = ({ teacherId }
           })}
         </tbody>
       </table>
+
+      <ConfirmationModal
+        isOpen={!!assignmentToDelete}
+        title="Atamayı Sil"
+        message="Bu atamayı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+        onConfirm={confirmDelete}
+        onCancel={() => setAssignmentToDelete(null)}
+      />
     </div>
   );
 };

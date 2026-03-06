@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Assignment, Submission, AssignmentStatus } from '../types';
-import { db } from '../services/dbAdapter';
+import { db, supabase } from '../services/dbAdapter';
 
 interface SubmitHomeworkPageProps {
     assignment: Assignment;
@@ -115,29 +115,58 @@ const SubmitHomeworkPage: React.FC<SubmitHomeworkPageProps> = ({ assignment, onB
         }
         setIsSubmitting(true);
 
-        const newSubmission: Submission = {
-            id: `sub-${Date.now()}`,
-            assignmentId: assignment.id,
-            studentId: assignment.studentId,
-            submissionText,
-            fileUrl: file ? `/${file.name}` : undefined,
-            submittedAt: new Date().toISOString(),
-            status: AssignmentStatus.Submitted,
-        };
-
         try {
+            let fileUrl: string | undefined = undefined;
+
+            if (file) {
+                // Upload file to Supabase Storage
+                // Path format: student_id/timestamp_filename
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${assignment.studentId}/${Date.now()}.${fileExt}`;
+
+                const { data, error: uploadError } = await supabase.storage
+                    .from('homework-submissions')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    throw uploadError;
+                }
+
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('homework-submissions')
+                    .getPublicUrl(fileName);
+
+                fileUrl = publicUrl;
+            }
+
+            const newSubmission: Submission = {
+                id: `sub-${Date.now()}`,
+                assignmentId: assignment.id,
+                studentId: assignment.studentId,
+                submissionText,
+                fileUrl: fileUrl,
+                submittedAt: new Date().toISOString(),
+                status: AssignmentStatus.Submitted,
+            };
+
             await db.collection('submissions').add({
                 assignment_id: assignment.id,
                 student_id: assignment.studentId,
                 submission_text: submissionText,
-                file_url: file ? `/${file.name}` : null,
+                file_url: fileUrl || null,
                 submitted_at: new Date().toISOString(),
                 status: AssignmentStatus.Submitted
             });
+
             onSubmit(newSubmission);
         } catch (error) {
             console.error("Error submitting homework:", error);
-            alert("Ödev teslim edilirken bir hata oluştu.");
+            const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+            alert(`Ödev teslim edilirken bir hata oluştu: ${errorMessage}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -202,7 +231,7 @@ const SubmitHomeworkPage: React.FC<SubmitHomeworkPageProps> = ({ assignment, onB
                             </div>
                         )}
                     </div>
-                    
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
                             <label className="block text-lg font-semibold text-gray-800 mb-2">Cevabın</label>
@@ -216,15 +245,31 @@ const SubmitHomeworkPage: React.FC<SubmitHomeworkPageProps> = ({ assignment, onB
                             />
                         </div>
                         <div>
-                             <label className="block text-lg font-semibold text-gray-800 mb-2">Dosya Yükle (Opsiyonel)</label>
-                             <input 
-                                type="file" 
-                                onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
-                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
-                                disabled={!!assignment.submission}
-                            />
+                            <label className="block text-lg font-semibold text-gray-800 mb-2">Dosya Yükle (Opsiyonel)</label>
+                            {assignment.submission?.fileUrl && (
+                                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                    <p className="text-sm font-medium text-gray-600 mb-2">Teslim Edilen Dosya:</p>
+                                    {['jpg', 'jpeg', 'png', 'webp'].some(ext => assignment.submission?.fileUrl?.toLowerCase().endsWith(ext)) ? (
+                                        <img src={assignment.submission.fileUrl} alt="Teslim edilen dosya" className="max-h-48 rounded border" />
+                                    ) : (
+                                        <a href={assignment.submission.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1 text-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32a1.5 1.5 0 0 1-2.121-2.121l10.94-10.94" />
+                                            </svg>
+                                            Dosyayı Görüntüle
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                            {!assignment.submission && (
+                                <input
+                                    type="file"
+                                    onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
+                                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-primary hover:file:bg-blue-100"
+                                />
+                            )}
                         </div>
-                        
+
                         {!assignment.submission && (
                             <div className="text-right pt-4">
                                 <button type="submit" disabled={isSubmitting} className="bg-accent text-white font-bold py-3 px-8 rounded-xl hover:bg-green-700 disabled:bg-gray-400 transition-colors">
@@ -232,39 +277,39 @@ const SubmitHomeworkPage: React.FC<SubmitHomeworkPageProps> = ({ assignment, onB
                                 </button>
                             </div>
                         )}
-                         {assignment.submission && assignment.submission.status === AssignmentStatus.Submitted && (
-                             <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-center font-semibold">
-                                 Bu ödevi {new Date(assignment.submission.submittedAt).toLocaleString('tr-TR')} tarihinde teslim ettin. Değerlendirme bekleniyor...
-                             </div>
-                         )}
-                         {assignment.submission && assignment.submission.status === AssignmentStatus.Graded && (
-                             <div className="space-y-4 mt-6">
-                                 <div className="p-6 bg-green-50 rounded-lg border-2 border-green-200">
-                                     <div className="flex items-center justify-between mb-4">
-                                         <h3 className="text-xl font-bold text-green-800">Değerlendirme Tamamlandı</h3>
-                                         <span className="text-3xl font-bold text-green-600">
-                                             {assignment.submission.teacherScore ?? assignment.submission.aiScore}%
-                                         </span>
-                                     </div>
-                                     {assignment.submission.teacherFeedback && (
-                                         <div className="mt-4 p-4 bg-white rounded-lg">
-                                             <h4 className="font-semibold text-gray-800 mb-2">Öğretmen Geri Bildirimi:</h4>
-                                             <p className="text-gray-700 whitespace-pre-wrap">{assignment.submission.teacherFeedback}</p>
-                                         </div>
-                                     )}
-                                     {assignment.submission.aiAnalysis && assignment.submission.aiAnalysis.weakTopics && assignment.submission.aiAnalysis.weakTopics.length > 0 && (
-                                         <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                                             <h4 className="font-semibold text-yellow-800 mb-2">Geliştirilmesi Gereken Konular:</h4>
-                                             <ul className="list-disc list-inside space-y-1">
-                                                 {assignment.submission.aiAnalysis.weakTopics.map((topic, i) => (
-                                                     <li key={i} className="text-yellow-700">{topic}</li>
-                                                 ))}
-                                             </ul>
-                                         </div>
-                                     )}
-                                 </div>
-                             </div>
-                         )}
+                        {assignment.submission && assignment.submission.status === AssignmentStatus.Submitted && (
+                            <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-center font-semibold">
+                                Bu ödevi {new Date(assignment.submission.submittedAt).toLocaleString('tr-TR')} tarihinde teslim ettin. Değerlendirme bekleniyor...
+                            </div>
+                        )}
+                        {assignment.submission && assignment.submission.status === AssignmentStatus.Graded && (
+                            <div className="space-y-4 mt-6">
+                                <div className="p-6 bg-green-50 rounded-lg border-2 border-green-200">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-xl font-bold text-green-800">Değerlendirme Tamamlandı</h3>
+                                        <span className="text-3xl font-bold text-green-600">
+                                            {assignment.submission.teacherScore ?? assignment.submission.aiScore}%
+                                        </span>
+                                    </div>
+                                    {assignment.submission.teacherFeedback && (
+                                        <div className="mt-4 p-4 bg-white rounded-lg">
+                                            <h4 className="font-semibold text-gray-800 mb-2">Öğretmen Geri Bildirimi:</h4>
+                                            <p className="text-gray-700 whitespace-pre-wrap">{assignment.submission.teacherFeedback}</p>
+                                        </div>
+                                    )}
+                                    {assignment.submission.aiAnalysis && assignment.submission.aiAnalysis.weakTopics && assignment.submission.aiAnalysis.weakTopics.length > 0 && (
+                                        <div className="mt-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                            <h4 className="font-semibold text-yellow-800 mb-2">Geliştirilmesi Gereken Konular:</h4>
+                                            <ul className="list-disc list-inside space-y-1">
+                                                {assignment.submission.aiAnalysis.weakTopics.map((topic, i) => (
+                                                    <li key={i} className="text-yellow-700">{topic}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                     </form>
                 </div>

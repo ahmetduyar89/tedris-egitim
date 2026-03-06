@@ -130,13 +130,11 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
             console.log('[PublicSharePage] Content doc data:', contentDoc.exists ? contentDoc.data() : null);
 
             if (!contentDoc.exists) {
-                console.error('[PublicSharePage] Content not found for ID:', shareData.contentId);
                 setError('İçerik bulunamadı.');
                 setIsLoading(false);
                 return;
             }
 
-            console.log('[PublicSharePage] Final content data keys:', Object.keys(contentDoc.data() || {}));
             const contentData = contentDoc.data() || {};
             const content = {
                 id: contentDoc.id,
@@ -145,15 +143,6 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                 htmlContent: contentData.htmlContent || (contentData as any).html_content || ''
             } as ContentLibraryItem;
 
-            console.log('[PublicSharePage] Content loaded successfully:', {
-                id: content.id,
-                title: content.title,
-                fileType: content.fileType,
-                hasHtmlContent: !!content.htmlContent,
-                htmlContentLength: content.htmlContent?.length || 0,
-                fileUrl: content.fileUrl,
-                hasInteractiveContent: !!content.interactiveContentId
-            });
             setContentItem(content);
 
             try {
@@ -161,36 +150,22 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                     viewCount: (shareData.viewCount || 0) + 1,
                     lastViewedAt: new Date().toISOString()
                 });
-                console.log('[PublicSharePage] View count updated successfully');
             } catch (updateError) {
-                console.warn('[PublicSharePage] Failed to update view count (non-critical):', updateError);
+                // Non-critical error, can be ignored or logged silently
             }
 
             if (content.fileType === ContentType.Interactive && content.interactiveContentId) {
-                console.log('[PublicSharePage] Loading interactive content:', content.interactiveContentId);
                 const interactiveDoc = await db.collection('interactiveContent').doc(content.interactiveContentId).get();
                 if (interactiveDoc.exists) {
                     const interactive = { id: interactiveDoc.id, ...interactiveDoc.data() } as InteractiveContent;
-                    console.log('[PublicSharePage] Interactive content loaded:', interactive);
                     setInteractiveContent(interactive);
                 } else {
-                    console.warn('[PublicSharePage] Interactive content not found:', content.interactiveContentId);
+                    // Interactive content not found, can be ignored or logged silently
                 }
             }
 
             setIsLoading(false);
-            console.log('[PublicSharePage] Content loading completed successfully');
         } catch (error) {
-            console.error('[PublicSharePage] Error loading shared content:', error);
-            if (error && typeof error === 'object') {
-                console.error('[PublicSharePage] Error details:', {
-                    message: (error as any).message,
-                    code: (error as any).code,
-                    details: (error as any).details,
-                    hint: (error as any).hint,
-                    stack: (error as any).stack
-                });
-            }
             setError(`İçerik yüklenirken bir hata oluştu: ${(error as any)?.message || 'Bilinmeyen hata'}`);
             setIsLoading(false);
         }
@@ -198,15 +173,11 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
 
     useEffect(() => {
         if (contentItem && contentItem.fileType === ContentType.HTML) {
-            console.log('[PublicSharePage] useEffect triggered for HTML rendering. htmlContent presence:', !!contentItem.htmlContent, 'length:', contentItem.htmlContent?.length || 0);
-
             const timer = setTimeout(() => {
                 const iframe = htmlIframeRef.current;
-                console.log('[PublicSharePage] iframe ref status:', !!iframe);
 
                 if (iframe) {
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-                    console.log('[PublicSharePage] iframe document status:', !!iframeDoc);
 
                     if (iframeDoc) {
                         try {
@@ -295,11 +266,9 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                                 `;
                             }
 
-                            console.log('[PublicSharePage] Writing HTML to iframe, length:', htmlToRender.length);
                             iframeDoc.open();
                             iframeDoc.write(htmlToRender);
                             iframeDoc.close();
-                            console.log('[PublicSharePage] HTML write completed.');
                         } catch (err) {
                             console.error('[PublicSharePage] Error writing to iframe:', err);
                         }

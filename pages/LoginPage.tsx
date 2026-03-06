@@ -90,20 +90,22 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
           // Veli girişi - ad-soyad ve şifre ile
           console.log('🔵 Veli girişi deneniyor...', { name: name.trim() });
           try {
-            // Parents tablosundan veli bilgilerini al
-            // Not: Aynı isimde birden fazla veli olabilir, en son oluşturulanı al
+            const identifier = name.trim();
+            const isEmail = identifier.includes('@');
+
             const { data: parentData, error: parentError } = await supabase
               .from('parents')
               .select('*')
-              .ilike('name', name.trim()) // Case-insensitive arama
-              .order('created_at', { ascending: false }) // En son oluşturulanı al
+              .ilike(isEmail ? 'email' : 'name', identifier) // Email veya Ad-Soyad ile arama
+              .order('created_at', { ascending: false })
               .limit(1)
-              .maybeSingle(); // Tek kayıt al
+              .maybeSingle();
 
             console.log('🔵 Parents tablosu sorgusu:', {
               parentData,
               parentError,
-              searchedName: name.trim()
+              searchedIdentifier: identifier,
+              isEmail
             });
 
             // Hata kontrolü
@@ -116,7 +118,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
 
             // Veli bulunamadı
             if (!parentData) {
-              console.error('❌ Veli bulunamadı. Aranan ad:', name.trim());
+              console.error('❌ Veli bulunamadı. Aranan:', identifier);
 
               // Tüm velileri göster (debug için)
               const { data: allParents } = await supabase
@@ -230,6 +232,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
               return;
             }
 
+            if (userData.role === 'parent') {
+              // Parent identified correctly via generic login
+              onLogin(userData as User);
+              return;
+            }
+
             // For students, also ensure a student record exists
             if (userData.role === 'student') {
               const { data: studentData, error: studentError } = await supabase
@@ -333,7 +341,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToWebsite, ini
           {/* Veli girişi için Ad Soyad */}
           {!isRegisterView && loginType === 'parent' && (
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-gray-700">Ad Soyad</label>
+              <label className="block text-sm font-semibold text-gray-700">Ad Soyad veya E-posta</label>
               <input
                 type="text"
                 value={name}

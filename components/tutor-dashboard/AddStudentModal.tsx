@@ -140,6 +140,24 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                                     password_hash: 'managed_by_auth'
                                 }]);
 
+                            // Ensure parent is also in the users table for consistent role management
+                            try {
+                                const { error: puError } = await supabase
+                                    .from('users')
+                                    .insert([{
+                                        id: parentId,
+                                        email: actualParentEmail,
+                                        name: parentName.trim(),
+                                        role: UserRole.Parent,
+                                        status: 'approved'
+                                    }]);
+                                if (puError && puError.code !== '23505') { // Ignore if already exists
+                                    console.error('❌ Parent user record sync error:', puError);
+                                }
+                            } catch (e) {
+                                console.error('❌ Parent user record sync failed:', e);
+                            }
+
                             // Update student with parent_id
                             await supabase
                                 .from('students')

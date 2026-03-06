@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Student, Subject } from '../../types';
+import { Student, Subject, UserRole } from '../../types';
 import { supabase } from '../../services/dbAdapter';
 
 interface EditStudentModalProps {
@@ -71,10 +71,33 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                                 );
                                 if (authError) console.error('Auth update error:', authError);
 
-                                // Also update parents table if email changed
+                                // Sync email across tables
                                 if (updates.email) {
                                     await supabase.from('parents').update({ email: updates.email }).eq('id', targetId);
                                 }
+                            }
+
+                            // Sync name and ensured existence in users table
+                            try {
+                                const { data: existingUser } = await supabase.from('users').select('id').eq('id', targetId).maybeSingle();
+                                if (!existingUser) {
+                                    await supabase.from('users').insert([{
+                                        id: targetId,
+                                        email: parentEmail.trim() || student.parentEmail || existingParent?.email,
+                                        name: parentName.trim(),
+                                        role: 'parent',
+                                        status: 'approved'
+                                    }]);
+                                } else {
+                                    const userUpdates: any = { name: parentName.trim() };
+                                    if (updates.email) userUpdates.email = updates.email;
+                                    await supabase.from('users').update(userUpdates).eq('id', targetId);
+                                }
+
+                                // Also sync name to parents table
+                                await supabase.from('parents').update({ name: parentName.trim() }).eq('id', targetId);
+                            } catch (err) {
+                                console.error('❌ User sync error:', err);
                             }
                         }
                     }

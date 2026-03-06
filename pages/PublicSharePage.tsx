@@ -212,29 +212,56 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                                     <base href="about:blank">
                                     <style>
-                                        body {
-                                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
-                                            line-height: 1.6;
-                                            color: #333;
-                                            padding: 20px;
-                                            margin: 0;
-                                            background: white;
-                                        }
-                                        h1, h2, h3, h4, h5, h6 {
-                                            margin-top: 24px;
-                                            margin-bottom: 16px;
-                                            font-weight: 600;
-                                            line-height: 1.25;
-                                        }
-                                        h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                        h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
-                                        h3 { font-size: 1.25em; }
-                                        p { margin-bottom: 16px; }
-                                        img { max-width: 100%; height: auto; }
-                                        table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
-                                        table th, table td { border: 1px solid #dfe2e5; padding: 8px 13px; }
-                                        table th { background-color: #f6f8fa; font-weight: 600; }
-                                    </style>
+                                         body {
+                                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+                                             line-height: 1.6;
+                                             color: #333;
+                                             padding: 20px;
+                                             margin: 0;
+                                             background: white;
+                                         }
+                                         h1, h2, h3, h4, h5, h6 {
+                                             margin-top: 24px;
+                                             margin-bottom: 16px;
+                                             font-weight: 600;
+                                             line-height: 1.25;
+                                         }
+                                         h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                         h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; }
+                                         h3 { font-size: 1.25em; }
+                                         p { margin-bottom: 16px; }
+                                         img { max-width: 100%; height: auto; }
+                                         table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+                                         table th, table td { border: 1px solid #dfe2e5; padding: 8px 13px; }
+                                         table th { background-color: #f6f8fa; font-weight: 600; }
+                                         code {
+                                             background-color: #f6f8fa;
+                                             padding: 2px 6px;
+                                             border-radius: 3px;
+                                             font-family: 'Courier New', monospace;
+                                         }
+                                         pre {
+                                             background-color: #f6f8fa;
+                                             padding: 16px;
+                                             border-radius: 6px;
+                                             overflow-x: auto;
+                                             margin-bottom: 16px;
+                                         }
+                                         pre code {
+                                             background: none;
+                                             padding: 0;
+                                         }
+                                         ul, ol { margin-bottom: 16px; padding-left: 2em; }
+                                         li { margin-bottom: 4px; }
+                                         blockquote {
+                                             border-left: 4px solid #dfe2e5;
+                                             padding-left: 16px;
+                                             margin-left: 0;
+                                             color: #6a737d;
+                                         }
+                                         a { color: #0366d6; text-decoration: none; }
+                                         a:hover { text-decoration: underline; }
+                                     </style>
                                     <script>
                                         // Suppress 404 errors from relative paths in console
                                         window.addEventListener('error', function(e) {
@@ -287,12 +314,13 @@ const PublicSharePage: React.FC<PublicSharePageProps> = ({ shareToken }) => {
                 );
             case ContentType.HTML:
                 return (
-                    <div className="bg-white rounded-xl shadow-lg overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
+                    <div className="bg-white rounded-xl shadow-lg border-2 border-gray-100 flex flex-col" style={{ minHeight: '70vh' }}>
                         <iframe
                             ref={htmlIframeRef}
-                            className="w-full h-full border-0"
+                            className="w-full border-0 rounded-xl"
+                            style={{ minHeight: '70vh', flexGrow: 1 }}
                             title={contentItem.title}
-                            sandbox="allow-scripts allow-same-origin allow-forms"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
                         />
                     </div>
                 );

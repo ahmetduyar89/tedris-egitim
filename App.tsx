@@ -29,7 +29,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const checkForPublicShare = () => {
       const path = window.location.pathname;
-      const shareMatch = path.match(/^\/share\/([a-zA-Z0-9]+)$/);
+      const shareMatch = path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/);
       if (shareMatch) {
         console.log('[App] Public share detected, token:', shareMatch[1]);
         setShareToken(shareMatch[1]);
@@ -48,7 +48,7 @@ const App: React.FC = () => {
         return 'test';
       }
 
-      const contentMatch = path.match(/^\/content\/([a-zA-Z0-9]+)$/);
+      const contentMatch = path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/);
       if (contentMatch) {
         console.log('[App] Content view detected, id:', contentMatch[1]);
         setContentId(contentMatch[1]);
@@ -169,14 +169,14 @@ const App: React.FC = () => {
 
     const handlePopState = () => {
       const path = window.location.pathname;
-      if (path.match(/^\/share\/([a-zA-Z0-9]+)$/)) {
-        const match = path.match(/^\/share\/([a-zA-Z0-9]+)$/);
+      if (path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/)) {
+        const match = path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/);
         if (match) {
           setShareToken(match[1]);
           setView('public-share');
         }
-      } else if (path.match(/^\/content\/([a-zA-Z0-9]+)$/)) {
-        const match = path.match(/^\/content\/([a-zA-Z0-9]+)$/);
+      } else if (path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/)) {
+        const match = path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/);
         if (match && currentUser) {
           setContentId(match[1]);
           setView('content-viewer');

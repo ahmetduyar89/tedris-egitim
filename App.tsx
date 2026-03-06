@@ -232,7 +232,14 @@ const App: React.FC = () => {
 
               if (profileData) {
                 setCurrentUser(profileData as User);
-                setView('dashboard');
+
+                // ONLY redirect to dashboard if NOT on a share link, content viewer or test page
+                const path = window.location.pathname;
+                if (!path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/) &&
+                  !path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/) &&
+                  path !== '/notification-test') {
+                  setView('dashboard');
+                }
                 return;
               }
 
@@ -253,7 +260,14 @@ const App: React.FC = () => {
               if (userData) {
                 // Users tablosunda bulundu (öğretmen veya öğrenci)
                 setCurrentUser(userData as User);
-                setView('dashboard');
+
+                // ONLY redirect to dashboard if NOT on a share link, content viewer or test page
+                const path = window.location.pathname;
+                if (!path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/) &&
+                  !path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/) &&
+                  path !== '/notification-test') {
+                  setView('dashboard');
+                }
               } else {
                 // 3. Eğer orada da yoksa parents tablosunda kontrol et
                 const { data: parentData, error: parentError } = await supabase
@@ -271,7 +285,14 @@ const App: React.FC = () => {
                     password: '',
                     role: UserRole.Parent
                   } as User);
-                  setView('dashboard');
+
+                  // ONLY redirect to dashboard if NOT on a share link, content viewer or test page
+                  const path = window.location.pathname;
+                  if (!path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/) &&
+                    !path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/) &&
+                    path !== '/notification-test') {
+                    setView('dashboard');
+                  }
                 } else {
                   console.error('[Auth] User data not found in database!');
                   setCurrentUser(null);
@@ -284,8 +305,21 @@ const App: React.FC = () => {
               setView('auth');
             }
           } else {
+            // No user session
             setCurrentUser(null);
-            setView('website');
+
+            // Do NOT redirect to website if we are on a public share or content viewer page
+            const path = window.location.pathname;
+            const isPublicOrViewer =
+              path.match(/^\/share\/([a-zA-Z0-9]+)\/?$/) ||
+              path.match(/^\/content\/([a-zA-Z0-9]+)\/?$/);
+
+            if (!isPublicOrViewer) {
+              console.log('[Auth] No session, redirecting to website');
+              setView('website');
+            } else {
+              console.log('[Auth] No session but on public/viewer page, staying on current view');
+            }
           }
         } catch (error) {
           console.error('[Auth] Error in auth state change:', error);

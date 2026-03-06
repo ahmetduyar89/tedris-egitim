@@ -50,6 +50,10 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                 body: JSON.stringify({
                     email: email.trim(),
                     password: password.trim(),
+                    data: {
+                        name: name.trim(),
+                        role: UserRole.Student
+                    }
                 })
             });
 
@@ -128,6 +132,10 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                         body: JSON.stringify({
                             email: actualParentEmail,
                             password: finalParentPassword,
+                            data: {
+                                name: parentName.trim(),
+                                role: UserRole.Parent
+                            }
                         })
                     });
 
@@ -136,7 +144,9 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                     if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
                         parentId = parentAuthData.user?.id || parentAuthData.id;
 
-                        actualParentEmail = parentAuthData.user?.email || actualParentEmail;
+                        // Get actual confirmed email if possible
+                        const confirmedEmail = parentAuthData.user?.email || actualParentEmail;
+                        actualParentEmail = confirmedEmail;
 
                         // Insert into parents table
                         await supabase

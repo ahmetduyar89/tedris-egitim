@@ -101,8 +101,29 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                             }
                         }
                     }
-                } catch (parentError) {
+                } catch (parentError: any) {
                     console.error('Parent update error:', parentError);
+                    // Auth update usually fails on client (admin API restricted)
+                    // We must still sync the local tables for Name/Phone/Email
+                    try {
+                        const targetId = student.parentId;
+                        if (targetId) {
+                            // Update parents table
+                            await supabase.from('parents').update({
+                                name: parentName.trim(),
+                                phone: parentPhone.trim(),
+                                email: parentEmail.trim()
+                            }).eq('id', targetId);
+
+                            // Update users table role and identifier
+                            await supabase.from('users').update({
+                                name: parentName.trim(),
+                                email: parentEmail.trim()
+                            }).eq('id', targetId);
+                        }
+                    } catch (syncErr) {
+                        console.error('Local sync failed:', syncErr);
+                    }
                 }
             }
 

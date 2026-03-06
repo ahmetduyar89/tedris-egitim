@@ -110,72 +110,72 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                 }
 
                 if (parentName.trim() && parentPassword.trim()) {
-                    try {
-                        const actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
+                    // Ensure a password exists for auth
+                    const finalParentPassword = parentPassword.trim() || 'veli123456';
+                    const actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
 
-                        const parentAuthResponse = await fetch(authUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                            },
-                            body: JSON.stringify({
+                    const parentAuthResponse = await fetch(authUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+                        },
+                        body: JSON.stringify({
+                            email: actualParentEmail,
+                            password: finalParentPassword,
+                        })
+                    });
+
+                    const parentAuthData = await parentAuthResponse.json();
+
+                    if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
+                        const parentId = parentAuthData.user?.id || parentAuthData.id;
+
+                        // Insert into parents table
+                        await supabase
+                            .from('parents')
+                            .insert([{
+                                id: parentId,
+                                name: parentName.trim(),
+                                phone: parentPhone.trim(),
                                 email: actualParentEmail,
-                                password: parentPassword.trim(),
-                            })
-                        });
+                                password_hash: 'managed_by_auth'
+                            }]);
 
-                        const parentAuthData = await parentAuthResponse.json();
-
-                        if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
-                            const parentId = parentAuthData.user?.id || parentAuthData.id;
-
+                        // Ensure parent is also in the users table
+                        try {
                             await supabase
-                                .from('parents')
+                                .from('users')
                                 .insert([{
                                     id: parentId,
-                                    name: parentName.trim(),
-                                    phone: parentPhone.trim(),
                                     email: actualParentEmail,
-                                    password_hash: 'managed_by_auth'
+                                    name: parentName.trim(),
+                                    role: UserRole.Parent,
+                                    status: 'approved'
                                 }]);
-
-                            // Ensure parent is also in the users table for consistent role management
-                            try {
-                                const { error: puError } = await supabase
-                                    .from('users')
-                                    .insert([{
-                                        id: parentId,
-                                        email: actualParentEmail,
-                                        name: parentName.trim(),
-                                        role: UserRole.Parent,
-                                        status: 'approved'
-                                    }]);
-                                if (puError && puError.code !== '23505') { // Ignore if already exists
-                                    console.error('❌ Parent user record sync error:', puError);
-                                }
-                            } catch (e) {
-                                console.error('❌ Parent user record sync failed:', e);
-                            }
-
-                            // Update student with parent_id
-                            await supabase
-                                .from('students')
-                                .update({ parent_id: parentId })
-                                .eq('id', userId);
-
-                            await supabase
-                                .from('parent_student_relations')
-                                .insert([{
-                                    parent_id: parentId,
-                                    student_id: userId,
-                                    relationship_type: 'vasi'
-                                }]);
-
-                            alert(`✅ Veli hesabı başarıyla oluşturuldu!\n\nGiriş Bilgileri:\nAd-Soyad: ${parentName.trim()}\nŞifre: ${parentPassword.trim()}`);
+                        } catch (e) {
+                            console.error('Parent users record exists or failed:', e);
                         }
-                    } catch (parentError: any) {
-                        console.error('❌ Parent account creation error:', parentError);
+
+                        // Link student to parent
+                        await supabase
+                            .from('students')
+                            .update({ parent_id: parentId })
+                            .eq('id', userId);
+
+                        await supabase
+                            .from('parent_student_relations')
+                            .insert([{
+                                parent_id: parentId,
+                                student_id: userId,
+                                relationship_type: 'vasi'
+                            }]);
+
+                        alert(`✅ Veli hesabı başarıyla oluşturuldu!\n\nE-posta: ${actualParentEmail}\nŞifre: ${finalParentPassword}`);
+                    } else {
+                        const errorMsg = parentAuthData.msg || parentAuthData.error_description || 'Auth hatası';
+                        console.error('❌ Veli Auth oluşturma hatası:', errorMsg);
+                        alert(`⚠️ Öğrenci eklendi ancak veli hesabı oluşturulamadı.\n\nHata: ${errorMsg}`);
                     }
                 }
 

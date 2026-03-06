@@ -6,11 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-interface CreateUserRequest {
-  name: string;
-  email: string;
-  password: string;
-  role: 'student' | 'parent';
+interface UserRequest {
+  action?: 'create' | 'update';
+  userId?: string; // Required for update
+  name?: string;
+  email?: string;
+  password?: string;
+  role?: 'student' | 'parent';
   // Student specific
   grade?: number;
   tutorId?: string;
@@ -65,8 +67,51 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { name, email, password, role, grade, tutorId, phone, studentId }: CreateUserRequest = await req.json();
+    const body: UserRequest = await req.json();
+    const { action = 'create', userId, name, email, password, role, grade, tutorId, phone, studentId } = body;
 
+    if (action === 'update') {
+      if (!userId) return new Response(JSON.stringify({ error: 'userId is required for update' }), { status: 400, headers: corsHeaders });
+
+      const updates: any = {};
+      if (email) updates.email = email;
+      if (password) updates.password = password;
+      if (name || role) {
+        updates.user_metadata = {};
+        if (name) updates.user_metadata.name = name;
+        if (role) updates.user_metadata.role = role;
+      }
+
+      const { error: updateError } = await supabaseClient.auth.admin.updateUserById(userId, updates);
+      if (updateError) throw updateError;
+
+      // Sync tables
+      if (name || email || role) {
+        const userUpdates: any = {};
+        if (name) userUpdates.name = name;
+        if (email) userUpdates.email = email;
+        if (role) userUpdates.role = role;
+        await supabaseClient.from('users').update(userUpdates).eq('id', userId);
+
+        try {
+          await supabaseClient.from('profiles').update(userUpdates).eq('id', userId);
+        } catch (e) { /* ignore */ }
+
+        if (role === 'parent' || (!role && studentId)) {
+          const parentUpdates: any = {};
+          if (name) parentUpdates.name = name;
+          if (email) parentUpdates.email = email;
+          if (phone) parentUpdates.phone = phone;
+          if (Object.keys(parentUpdates).length > 0) {
+            await supabaseClient.from('parents').update(parentUpdates).eq('id', userId);
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
+    }
+
+    // DEFAULT ACTION: CREATE
     if (!name || !email || !password || !role) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
@@ -74,7 +119,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 1. Create Auth User
     const { data: authData, error: signUpError } = await supabaseClient.auth.admin.createUser({
       email,
       password,
@@ -91,13 +135,17 @@ Deno.serve(async (req: Request) => {
 
     const newUserId = authData.user!.id;
 
-    // 2. Insert into profiles table
-    await supabaseClient.from('profiles').upsert({
-      id: newUserId,
-      email,
-      name,
-      role
-    });
+    // 2. Insert into profiles table (Optional safety layer)
+    try {
+      await supabaseClient.from('profiles').upsert({
+        id: newUserId,
+        email,
+        name,
+        role
+      });
+    } catch (e) {
+      console.warn('Profiles table insert failed (might not exist):', e.message);
+    }
 
     // 3. Insert into users table
     const { error: usersError } = await supabaseClient.from('users').insert([{
@@ -109,8 +157,14 @@ Deno.serve(async (req: Request) => {
     }]);
 
     if (usersError) {
-      console.error('Users table error:', usersError);
-      // Proceeding because failure here might be due to existing record or constraint we fix later
+      console.error('Users table error:', usersError.message);
+      // If this fails, the role constraint might still be active despite the SQL run
+      return new Response(JSON.stringify({
+        error: `Users table error: ${usersError.message}. Please ensure you ran the SQL script to allow '${role}' role.`
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // 4. Role-specific table inserts
@@ -125,7 +179,8 @@ Deno.serve(async (req: Request) => {
         learning_loop_status: 'Başlangıç'
       }]);
       if (studentError) {
-        return new Response(JSON.stringify({ error: `Student table: ${studentError.message}` }), {
+        console.error('Student table error:', studentError.message);
+        return new Response(JSON.stringify({ error: `Student table error: ${studentError.message}` }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -140,17 +195,22 @@ Deno.serve(async (req: Request) => {
       }]);
 
       if (parentError) {
-        console.error('Parents table error:', parentError);
+        console.error('Parents table error:', parentError.message);
+        // Don't fail the whole request if only the parents table fails, but log it
       }
 
       // Link to student if provided
       if (studentId) {
-        await supabaseClient.from('students').update({ parent_id: newUserId }).eq('id', studentId);
-        await supabaseClient.from('parent_student_relations').insert([{
-          parent_id: newUserId,
-          student_id: studentId,
-          relationship_type: 'vasi'
-        }]);
+        try {
+          await supabaseClient.from('students').update({ parent_id: newUserId }).eq('id', studentId);
+          await supabaseClient.from('parent_student_relations').insert([{
+            parent_id: newUserId,
+            student_id: studentId,
+            relationship_type: 'vasi'
+          }]);
+        } catch (linkErr) {
+          console.error('Linking error:', linkErr.message);
+        }
       }
     }
 

@@ -49,80 +49,28 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                 throw updateError;
             }
 
-            if (parentName.trim() && parentPassword.trim()) {
-                try {
-                    const { data: existingParent } = await supabase
-                        .from('parents')
-                        .select('id, email')
-                        .eq('name', parentName.trim())
-                        .maybeSingle();
-
-                    if (existingParent || student.parentId) {
-                        const targetId = student.parentId || existingParent?.id;
-                        if (targetId) {
-                            const updates: any = {};
-                            if (parentPassword.trim()) updates.password = parentPassword.trim();
-                            if (parentEmail.trim() && parentEmail.trim() !== (student.parentEmail || existingParent?.email)) updates.email = parentEmail.trim();
-
-                            if (Object.keys(updates).length > 0) {
-                                const { error: authError } = await supabase.auth.admin.updateUserById(
-                                    targetId,
-                                    updates
-                                );
-                                if (authError) console.error('Auth update error:', authError);
-
-                                // Sync email across tables
-                                if (updates.email) {
-                                    await supabase.from('parents').update({ email: updates.email }).eq('id', targetId);
-                                }
-                            }
-
-                            // Sync name and ensured existence in users table
-                            try {
-                                const { data: existingUser } = await supabase.from('users').select('id').eq('id', targetId).maybeSingle();
-                                if (!existingUser) {
-                                    await supabase.from('users').insert([{
-                                        id: targetId,
-                                        email: parentEmail.trim() || student.parentEmail || existingParent?.email,
-                                        name: parentName.trim(),
-                                        role: 'parent',
-                                        status: 'approved'
-                                    }]);
-                                } else {
-                                    const userUpdates: any = { name: parentName.trim() };
-                                    if (updates.email) userUpdates.email = updates.email;
-                                    await supabase.from('users').update(userUpdates).eq('id', targetId);
-                                }
-
-                                // Also sync name to parents table
-                                await supabase.from('parents').update({ name: parentName.trim() }).eq('id', targetId);
-                            } catch (err) {
-                                console.error('❌ User sync error:', err);
-                            }
-                        }
-                    }
-                } catch (parentError: any) {
-                    console.error('Parent update error:', parentError);
-                    // Auth update usually fails on client (admin API restricted)
-                    // We must still sync the local tables for Name/Phone/Email
+            if (parentName.trim()) {
+                const targetId = student.parentId;
+                if (targetId) {
                     try {
-                        const targetId = student.parentId;
-                        if (targetId) {
-                            // Update parents table
-                            await supabase.from('parents').update({
+                        const { error: pUpdateError } = await supabase.functions.invoke('create-student', {
+                            body: {
+                                action: 'update',
+                                userId: targetId,
                                 name: parentName.trim(),
-                                phone: parentPhone.trim(),
-                                email: parentEmail.trim()
-                            }).eq('id', targetId);
+                                email: parentEmail.trim(),
+                                password: parentPassword.trim() || undefined,
+                                role: UserRole.Parent,
+                                phone: parentPhone.trim()
+                            }
+                        });
 
-                            // Update users table role and identifier
-                            await supabase.from('users').update({
-                                name: parentName.trim(),
-                                email: parentEmail.trim()
-                            }).eq('id', targetId);
+                        if (pUpdateError) {
+                            console.error('❌ Veli güncelleme hatası:', pUpdateError);
+                            alert(`⚠️ Veli bilgileri güncellenemedi: ${pUpdateError.message}`);
                         }
-                    } catch (syncErr) {
-                        console.error('Local sync failed:', syncErr);
+                    } catch (err) {
+                        console.error('❌ Parent update exception:', err);
                     }
                 }
             }

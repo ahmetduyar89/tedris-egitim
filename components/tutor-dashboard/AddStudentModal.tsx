@@ -109,10 +109,15 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                     throw studentError;
                 }
 
-                if (parentName.trim() && parentPassword.trim()) {
+                let parentId: string | undefined;
+                let actualParentEmail = parentEmail.trim();
+                let finalParentPassword = parentPassword.trim();
+
+                // Veli hesabı oluşturma mantığı
+                if (parentName.trim()) {
                     // Ensure a password exists for auth
-                    const finalParentPassword = parentPassword.trim() || 'veli123456';
-                    const actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
+                    finalParentPassword = parentPassword.trim() || 'veli123456';
+                    actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
 
                     const parentAuthResponse = await fetch(authUrl, {
                         method: 'POST',
@@ -129,7 +134,9 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                     const parentAuthData = await parentAuthResponse.json();
 
                     if (parentAuthResponse.ok && (parentAuthData.user || parentAuthData.id)) {
-                        const parentId = parentAuthData.user?.id || parentAuthData.id;
+                        parentId = parentAuthData.user?.id || parentAuthData.id;
+
+                        actualParentEmail = parentAuthData.user?.email || actualParentEmail;
 
                         // Insert into parents table
                         await supabase
@@ -187,7 +194,8 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                     contact: phone.trim(),
                     parentName: parentName.trim(),
                     parentPhone: parentPhone.trim(),
-                    parentEmail: parentEmail.trim(),
+                    parentEmail: actualParentEmail,
+                    parentId: parentId, // State güncellensin
                     level: 1,
                     xp: 0,
                     badges: [],

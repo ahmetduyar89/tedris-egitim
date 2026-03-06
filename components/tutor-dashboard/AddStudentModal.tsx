@@ -14,6 +14,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
     const [phone, setPhone] = useState('');
     const [parentName, setParentName] = useState('');
     const [parentPhone, setParentPhone] = useState('');
+    const [parentEmail, setParentEmail] = useState('');
     const [parentPassword, setParentPassword] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -92,6 +93,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                         contact: phone.trim(),
                         parent_name: parentName.trim(),
                         parent_phone: parentPhone.trim(),
+                        parent_email: parentEmail.trim(),
                         level: 1,
                         xp: 0,
                         learning_loop_status: LearningLoopStatus.Initial,
@@ -109,8 +111,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
 
                 if (parentName.trim() && parentPassword.trim()) {
                     try {
-                        const timestamp = Date.now();
-                        const parentEmail = `parent.${userId}.${timestamp}@tedris.app`;
+                        const actualParentEmail = parentEmail.trim() || `parent.${userId}.${Date.now()}@tedris.app`;
 
                         const parentAuthResponse = await fetch(authUrl, {
                             method: 'POST',
@@ -119,7 +120,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                                 'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
                             },
                             body: JSON.stringify({
-                                email: parentEmail,
+                                email: actualParentEmail,
                                 password: parentPassword.trim(),
                             })
                         });
@@ -135,9 +136,15 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                                     id: parentId,
                                     name: parentName.trim(),
                                     phone: parentPhone.trim(),
-                                    email: parentEmail,
+                                    email: actualParentEmail,
                                     password_hash: 'managed_by_auth'
                                 }]);
+
+                            // Update student with parent_id
+                            await supabase
+                                .from('students')
+                                .update({ parent_id: parentId })
+                                .eq('id', userId);
 
                             await supabase
                                 .from('parent_student_relations')
@@ -162,6 +169,7 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                     contact: phone.trim(),
                     parentName: parentName.trim(),
                     parentPhone: parentPhone.trim(),
+                    parentEmail: parentEmail.trim(),
                     level: 1,
                     xp: 0,
                     badges: [],
@@ -279,18 +287,30 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                             />
                         </div>
                     </div>
-                    {parentName.trim() && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <label className="block text-sm font-medium text-blue-900 mb-1">Veli Şifresi</label>
-                            <input
-                                type="password"
-                                value={parentPassword}
-                                onChange={e => setParentPassword(e.target.value)}
-                                className="w-full border border-blue-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white"
-                                placeholder="Veli için şifre belirleyin"
-                            />
-                        </div>
-                    )}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Veli E-posta</label>
+                        <input
+                            type="email"
+                            value={parentEmail}
+                            onChange={e => setParentEmail(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all"
+                            placeholder="veli@ornek.com"
+                        />
+                    </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <label className="block text-sm font-medium text-blue-900 mb-1">Veli Şifresi</label>
+                        <input
+                            type="password"
+                            value={parentPassword}
+                            onChange={e => setParentPassword(e.target.value)}
+                            className="w-full border border-blue-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white"
+                            placeholder={parentName.trim() ? "Veli için şifre belirleyin" : "Önce veli adı giriniz"}
+                            disabled={!parentName.trim()}
+                        />
+                        {!parentName.trim() && (
+                            <p className="text-xs text-blue-600 mt-1 italic">Veli hesabı oluşturmak için önce yukarıya veli adını giriniz.</p>
+                        )}
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci E-posta</label>
                         <input

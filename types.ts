@@ -85,6 +85,9 @@ export interface Student {
   isPremium?: boolean;
   // Multi-Subject support
   subjects?: Subject[];
+  // Parent identification
+  parentId?: string;
+  parentEmail?: string;
 }
 
 // --- Streak System & Motivation ---

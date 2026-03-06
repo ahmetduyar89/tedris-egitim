@@ -167,6 +167,8 @@ CREATE TABLE IF NOT EXISTS students (
   learning_loop_status text DEFAULT 'Başlangıç',
   parent_name text,
   parent_phone text,
+  parent_email text,
+  parent_id uuid,
   subjects text[] DEFAULT '{}'::text[],
   created_at timestamptz DEFAULT now()
 );

@@ -78,7 +78,9 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 learningLoopStatus: row.learning_loop_status,
                 progressReports: [],
                 isAiAssistantEnabled: row.is_ai_assistant_enabled ?? true,
-                subjects: row.subjects || []
+                subjects: row.subjects || [],
+                parentId: row.parent_id,
+                parentEmail: row.parent_email
             })) as Student[];
             setStudents(studentList);
         } catch (error) {

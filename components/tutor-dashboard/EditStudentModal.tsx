@@ -14,6 +14,7 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
     const [phone, setPhone] = useState(student.contact || '');
     const [parentName, setParentName] = useState(student.parentName || '');
     const [parentPhone, setParentPhone] = useState(student.parentPhone || '');
+    const [parentEmail, setParentEmail] = useState(student.parentEmail || '');
     const [parentPassword, setParentPassword] = useState('');
     const [isAiAssistantEnabled, setIsAiAssistantEnabled] = useState(student.isAiAssistantEnabled ?? true);
     const [selectedSubjects, setSelectedSubjects] = useState<Subject[]>(student.subjects || [Subject.Science]);
@@ -35,6 +36,7 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                     contact: phone,
                     parent_name: parentName,
                     parent_phone: parentPhone,
+                    parent_email: parentEmail,
                     subjects: selectedSubjects
                 })
                 .eq('id', student.id);
@@ -55,12 +57,26 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                         .eq('name', parentName.trim())
                         .maybeSingle();
 
-                    if (existingParent) {
-                        const { error: passwordError } = await supabase.auth.admin.updateUserById(
-                            existingParent.id,
-                            { password: parentPassword.trim() }
-                        );
-                        if (passwordError) console.error('Password update error:', passwordError);
+                    if (existingParent || student.parentId) {
+                        const targetId = student.parentId || existingParent?.id;
+                        if (targetId) {
+                            const updates: any = {};
+                            if (parentPassword.trim()) updates.password = parentPassword.trim();
+                            if (parentEmail.trim() && parentEmail.trim() !== (student.parentEmail || existingParent?.email)) updates.email = parentEmail.trim();
+
+                            if (Object.keys(updates).length > 0) {
+                                const { error: authError } = await supabase.auth.admin.updateUserById(
+                                    targetId,
+                                    updates
+                                );
+                                if (authError) console.error('Auth update error:', authError);
+
+                                // Also update parents table if email changed
+                                if (updates.email) {
+                                    await supabase.from('parents').update({ email: updates.email }).eq('id', targetId);
+                                }
+                            }
+                        }
                     }
                 } catch (parentError) {
                     console.error('Parent update error:', parentError);
@@ -75,6 +91,7 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                 contact: phone,
                 parentName,
                 parentPhone,
+                parentEmail,
                 subjects: selectedSubjects
             };
             onStudentUpdated(updatedStudent);
@@ -146,6 +163,30 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                             <input type="tel" value={parentPhone} onChange={e => setParentPhone(e.target.value)} className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all" />
                         </div>
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Veli E-posta</label>
+                        <input
+                            type="email"
+                            value={parentEmail}
+                            onChange={e => setParentEmail(e.target.value)}
+                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary outline-none transition-all"
+                            placeholder="veli@ornek.com"
+                        />
+                    </div>
+
+                    {parentName.trim() && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <label className="block text-sm font-medium text-blue-900 mb-1">Veli Şifresi (Güncellemek için doldurun)</label>
+                            <input
+                                type="password"
+                                value={parentPassword}
+                                onChange={e => setParentPassword(e.target.value)}
+                                className="w-full border border-blue-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white"
+                                placeholder="Yeni şifre belirleyin"
+                            />
+                        </div>
+                    )}
+
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
                         <label className="flex items-center space-x-3 cursor-pointer">
                             <input type="checkbox" checked={isAiAssistantEnabled} onChange={(e) => setIsAiAssistantEnabled(e.target.checked)} className="w-5 h-5 text-primary rounded border-gray-300" />

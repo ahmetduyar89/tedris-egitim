@@ -86,17 +86,38 @@ Deno.serve(async (req: Request) => {
       throw requesterError;
     }
 
-    const isOwner = student.tutor_id === user.id;
     const isAdmin = requester.is_admin === true || requester.role === 'admin';
+    const isTutor = requester.role === 'tutor';
 
-    if (!isOwner && !isAdmin) {
+    if (isTutor && !isAdmin) {
+      console.log(`Tutor ${user.id} requested to remove student ${studentId} from their list.`);
+
+      // Just remove the link in tutor_students
+      const { error: unlinkError } = await adminClient
+        .from('tutor_students')
+        .delete()
+        .eq('tutor_id', user.id)
+        .eq('student_id', studentId);
+
+      if (unlinkError) throw unlinkError;
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Student removed from your list successfully'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!isAdmin) {
       return new Response(JSON.stringify({ error: 'Forbidden: You do not have permission to delete this student' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Deleting student ${studentId} requested by ${user.id}`);
+    console.log(`Admin ${user.id} deleting student ${studentId} entirely.`);
 
     // 2. Delete the user from Supabase Auth
     // Because of ON DELETE CASCADE on students and users tables, this will delete everything.
@@ -104,15 +125,7 @@ Deno.serve(async (req: Request) => {
 
     if (deleteError) {
       console.error('Error deleting student from auth:', deleteError);
-      // If auth delete fails, try manual delete from tables as fallback if it's a DB consistency issue
-      const { error: dbDeleteError } = await adminClient
-        .from('students')
-        .delete()
-        .eq('id', studentId);
-
-      if (dbDeleteError) {
-        throw new Error(`Failed to delete student: ${deleteError.message} (DB error: ${dbDeleteError.message})`);
-      }
+      throw deleteError;
     }
 
     return new Response(JSON.stringify({

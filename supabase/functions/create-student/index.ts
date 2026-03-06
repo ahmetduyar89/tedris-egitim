@@ -119,6 +119,39 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Check if student already exists (Multi-tutor support)
+    if (role === 'student') {
+      const { data: existingUser } = await supabaseClient
+        .from('users')
+        .select('id, role')
+        .eq('email', email.trim())
+        .maybeSingle();
+
+      if (existingUser && existingUser.role === 'student') {
+        console.log('Student already exists, linking to tutor:', existingUser.id);
+
+        // Link to tutor in tutor_students M-M table
+        const { error: linkError } = await supabaseClient
+          .from('tutor_students')
+          .upsert([{
+            tutor_id: tutorId || user.id,
+            student_id: existingUser.id
+          }]);
+
+        if (linkError) {
+          return new Response(JSON.stringify({ error: `Linking failed: ${linkError.message}` }), {
+            status: 500,
+            headers: corsHeaders,
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true, userId: existingUser.id, linked: true }), {
+          status: 200,
+          headers: corsHeaders,
+        });
+      }
+    }
+
     const { data: authData, error: signUpError } = await supabaseClient.auth.admin.createUser({
       email,
       password,
@@ -178,6 +211,15 @@ Deno.serve(async (req: Request) => {
         xp: 0,
         learning_loop_status: 'Başlangıç'
       }]);
+
+      // Also link to tutor in tutor_students M-M table
+      await supabaseClient
+        .from('tutor_students')
+        .upsert([{
+          tutor_id: tutorId || user.id,
+          student_id: newUserId
+        }]);
+
       if (studentError) {
         console.error('Student table error:', studentError.message);
         return new Response(JSON.stringify({ error: `Student table error: ${studentError.message}` }), {

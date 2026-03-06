@@ -104,9 +104,14 @@ const AddStudentModal: React.FC<AddStudentModalProps> = ({ tutor, onClose, onStu
                 subjects: selectedSubjects,
             };
 
+            if (authData.linked) {
+                alert('Bu öğrenci zaten sistemde kayıtlı. Başarıyla listenize eklendi! ✅');
+            } else {
+                alert('Öğrenci başarıyla oluşturuldu! ✅');
+            }
+
             onStudentAdded(newStudent);
             onClose();
-            alert('Öğrenci başarıyla oluşturuldu!');
         } catch (error: any) {
             console.error("Error creating student:", error);
             if (error.message?.includes('already registered') || error.message?.includes('already exists')) {

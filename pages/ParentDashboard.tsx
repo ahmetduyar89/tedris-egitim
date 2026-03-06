@@ -31,7 +31,6 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments' | 'weekly_plan' | 'management' | 'analysis'>('weekly_plan');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isAddingStudent, setIsAddingStudent] = useState(false);
     const [studentScores, setStudentScores] = useState<any[]>([]);
     const [studentProgress, setStudentProgress] = useState(0);
 
@@ -389,15 +388,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 )}
                                 {activeTab === 'management' && (
                                     <div className="space-y-6">
-                                        <div className="flex justify-between items-center">
-                                            <h2 className="text-xl font-bold text-gray-800">Öğrenci Yönetimi</h2>
-                                            <button
-                                                onClick={() => setIsAddingStudent(true)}
-                                                className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark transition-colors font-medium flex items-center gap-2 text-sm"
-                                            >
-                                                <span>+</span> Yeni Öğrenci Ekle
-                                            </button>
-                                        </div>
+                                        <h2 className="text-xl font-bold text-gray-800">Öğrenci Yönetimi</h2>
                                         <div className="grid gap-4">
                                             {students.map(student => (
                                                 <div key={student.id} className="p-4 border rounded-xl flex justify-between items-center bg-gray-50">
@@ -424,212 +415,9 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                 )}
             </div>
 
-            {/* Add Student Modal */}
-            {isAddingStudent && (
-                <AddStudentModal
-                    parent={user}
-                    onClose={() => setIsAddingStudent(false)}
-                    onStudentAdded={(newStudent) => {
-                        setStudents(prev => [...prev, newStudent]);
-                        setSelectedStudent(newStudent);
-                        setIsAddingStudent(false);
-                    }}
-                />
-            )}
         </div>
     );
 };
 
-// AddStudentModal Component for Parents
-const AddStudentModal: React.FC<{ parent: User; onClose: () => void; onStudentAdded: (newStudent: Student) => void }> = ({ parent, onClose, onStudentAdded }) => {
-    const [name, setName] = useState('');
-    const [grade, setGrade] = useState(5);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setIsSubmitting(true);
-
-        if (password.length < 6) {
-            setError('Şifre en az 6 karakter olmalıdır.');
-            setIsSubmitting(false);
-            return;
-        }
-
-        try {
-            // Student signup
-            const authUrl = `${import.meta.env.VITE_SUPABASE_URL}/auth/v1/signup`;
-            const response = await fetch(authUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                },
-                body: JSON.stringify({
-                    email: email.trim(),
-                    password: password.trim(),
-                })
-            });
-
-            const authData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(authData.msg || authData.error_description || 'Kayıt oluşturulamadı');
-            }
-
-            if (authData.user || authData.id) {
-                const userId = authData.user?.id || authData.id;
-
-                const { createClient } = await import('@supabase/supabase-js');
-                const tempClient = createClient(
-                    import.meta.env.VITE_SUPABASE_URL,
-                    import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    {
-                        global: { headers: { Authorization: `Bearer ${authData.access_token}` } },
-                        auth: {
-                            persistSession: false,
-                            autoRefreshToken: false,
-                            detectSessionInUrl: false,
-                            storage: { getItem: () => null, setItem: () => { }, removeItem: () => { } }
-                        }
-                    }
-                );
-
-                // Insert into users table
-                const { error: userError } = await tempClient
-                    .from('users')
-                    .insert([{
-                        id: userId,
-                        email: email.trim(),
-                        name: name.trim(),
-                        role: UserRole.Student,
-                        status: 'approved'
-                    }]);
-
-                if (userError) throw userError;
-
-                // Insert into students table with parent_id
-                const { error: studentError } = await tempClient
-                    .from('students')
-                    .insert([{
-                        id: userId,
-                        name: name.trim(),
-                        grade: grade,
-                        parent_id: parent.id,
-                        level: 1,
-                        xp: 0,
-                        learning_loop_status: 'Başlangıç',
-                        is_ai_assistant_enabled: true
-                    }]);
-
-                if (studentError) throw studentError;
-
-                const newStudent: Student = {
-                    id: userId,
-                    name: name.trim(),
-                    grade: grade,
-                    tutorId: '',
-                    level: 1,
-                    xp: 0,
-                    badges: [],
-                    learningLoopStatus: 'Başlangıç' as any,
-                    progressReports: [],
-                    isAiAssistantEnabled: true,
-                };
-
-                onStudentAdded(newStudent);
-                alert('Öğrenci hesabı başarıyla oluşturuldu!');
-            }
-        } catch (error: any) {
-            setError(error.message || 'Öğrenci oluşturulurken bir hata oluştu.');
-            console.error("Error creating student:", error);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md max-h-[95vh] overflow-y-auto transform transition-all scale-100 font-sans">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">Yeni Öğrenci Ekle</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Adı Soyadı</label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            required
-                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                            placeholder="Ad Soyad"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Sınıf Seviyesi</label>
-                        <select
-                            value={grade}
-                            onChange={e => setGrade(parseInt(e.target.value, 10))}
-                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all bg-white"
-                        >
-                            {[5, 6, 7, 8, 9, 10, 11, 12].map(g => <option key={g} value={g}>{g}. Sınıf</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci E-posta (Giriş için)</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            required
-                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                            placeholder="ornek@ogrenci.com"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Öğrenci Şifresi</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            required
-                            className="w-full border border-gray-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
-                            placeholder="En az 6 karakter"
-                        />
-                    </div>
-                    {error && (
-                        <div className="text-red-600 text-sm bg-red-50 p-3 rounded-xl border border-red-100">
-                            {error}
-                        </div>
-                    )}
-                    <div className="pt-2 flex gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl hover:bg-gray-200 font-medium transition-colors"
-                        >
-                            İptal
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="flex-1 bg-primary text-white px-4 py-3 rounded-xl hover:bg-primary-dark font-medium transition-colors disabled:opacity-50"
-                        >
-                            {isSubmitting ? 'Kaydediliyor...' : 'Öğrenciyi Kaydet'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
 
 export default ParentDashboard;

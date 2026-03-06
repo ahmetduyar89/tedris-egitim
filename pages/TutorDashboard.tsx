@@ -58,30 +58,37 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
         try {
             setIsLoadingStudents(true);
             const { data, error } = await supabase
-                .from('students')
-                .select('*')
+                .from('tutor_students')
+                .select(`
+                    student_id,
+                    students (*)
+                `)
                 .eq('tutor_id', user.id);
 
             if (error) throw error;
 
-            const studentList = (data || []).map(row => ({
-                id: row.id,
-                name: row.name,
-                grade: row.grade,
-                tutorId: row.tutor_id,
-                contact: row.contact,
-                parentName: row.parent_name,
-                parentPhone: row.parent_phone,
-                level: row.level,
-                xp: row.xp,
-                badges: [],
-                learningLoopStatus: row.learning_loop_status,
-                progressReports: [],
-                isAiAssistantEnabled: row.is_ai_assistant_enabled ?? true,
-                subjects: row.subjects || [],
-                parentId: row.parent_id,
-                parentEmail: row.parent_email
-            })) as Student[];
+            const studentList = (data || []).map(item => {
+                const row = item.students as any;
+                if (!row) return null;
+                return {
+                    id: row.id,
+                    name: row.name,
+                    grade: row.grade,
+                    tutorId: row.tutor_id,
+                    contact: row.contact,
+                    parentName: row.parent_name,
+                    parentPhone: row.parent_phone,
+                    level: row.level,
+                    xp: row.xp,
+                    badges: [],
+                    learningLoopStatus: row.learning_loop_status,
+                    progressReports: [],
+                    isAiAssistantEnabled: row.is_ai_assistant_enabled ?? true,
+                    subjects: row.subjects || [],
+                    parentId: row.parent_id,
+                    parentEmail: row.parent_email
+                };
+            }).filter(Boolean) as Student[];
             setStudents(studentList);
         } catch (error) {
             console.error("Error loading students:", error);

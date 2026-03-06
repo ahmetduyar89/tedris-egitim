@@ -49,29 +49,37 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                 throw updateError;
             }
 
+            let finalParentId = student.parentId;
             if (parentName.trim()) {
-                const targetId = student.parentId;
-                if (targetId) {
-                    try {
-                        const { error: pUpdateError } = await supabase.functions.invoke('create-student', {
-                            body: {
-                                action: 'update',
-                                userId: targetId,
-                                name: parentName.trim(),
-                                email: parentEmail.trim(),
-                                password: parentPassword.trim() || undefined,
-                                role: UserRole.Parent,
-                                phone: parentPhone.trim()
-                            }
-                        });
+                const isNewParent = !finalParentId;
+                const finalParentPassword = parentPassword.trim() || (isNewParent ? 'veli123456' : undefined);
+                const actualParentEmail = parentEmail.trim() || (isNewParent ? `parent.${student.id}.${Date.now()}@tedris.app` : undefined);
 
-                        if (pUpdateError) {
-                            console.error('❌ Veli güncelleme hatası:', pUpdateError);
-                            alert(`⚠️ Veli bilgileri güncellenemedi: ${pUpdateError.message}`);
+                try {
+                    const { data: pResponse, error: pError } = await supabase.functions.invoke('create-student', {
+                        body: {
+                            action: isNewParent ? 'create' : 'update',
+                            userId: isNewParent ? undefined : finalParentId,
+                            name: parentName.trim(),
+                            email: actualParentEmail,
+                            password: finalParentPassword,
+                            role: UserRole.Parent,
+                            phone: parentPhone.trim(),
+                            studentId: isNewParent ? student.id : undefined
                         }
-                    } catch (err) {
-                        console.error('❌ Parent update exception:', err);
+                    });
+
+                    if (pError || !pResponse?.success) {
+                        console.error('❌ Veli işlemi hatası:', pError || pResponse?.error);
+                        alert(`⚠️ Veli bilgileri işlenemedi: ${pError?.message || pResponse?.error}`);
+                    } else {
+                        if (isNewParent) {
+                            finalParentId = pResponse.userId;
+                            alert(`✅ Yeni veli hesabı başarıyla oluşturuldu!\n\nE-posta: ${actualParentEmail}\nŞifre: ${finalParentPassword}`);
+                        }
                     }
+                } catch (err) {
+                    console.error('❌ Parent operation exception:', err);
                 }
             }
 
@@ -83,7 +91,8 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
                 contact: phone,
                 parentName,
                 parentPhone,
-                parentEmail,
+                parentEmail: parentEmail.trim() || student.parentEmail,
+                parentId: finalParentId,
                 subjects: selectedSubjects
             };
             onStudentUpdated(updatedStudent);
@@ -168,13 +177,15 @@ const EditStudentModal: React.FC<EditStudentModalProps> = ({ student, onClose, o
 
                     {parentName.trim() && (
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <label className="block text-sm font-medium text-blue-900 mb-1">Veli Şifresi (Güncellemek için doldurun)</label>
+                            <label className="block text-sm font-medium text-blue-900 mb-1">
+                                {student.parentId ? 'Veli Şifresi (Güncellemek için doldurun)' : 'Veli Şifresi (Boş bırakılırsa varsayılan atanır)'}
+                            </label>
                             <input
                                 type="password"
                                 value={parentPassword}
                                 onChange={e => setParentPassword(e.target.value)}
                                 className="w-full border border-blue-300 rounded-xl py-3 px-4 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white"
-                                placeholder="Yeni şifre belirleyin"
+                                placeholder={student.parentId ? "Yeni şifre belirleyin" : "veli123456"}
                             />
                         </div>
                     )}

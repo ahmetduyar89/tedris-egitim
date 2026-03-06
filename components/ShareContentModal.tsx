@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ContentLibraryItem, User } from '../types';
 import { db } from '../services/dbAdapter';
+import ConfirmationModal from './ConfirmationModal';
 
 interface ShareContentModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ const ShareContentModal: React.FC<ShareContentModalProps> = ({ isOpen, onClose, 
     const [isLoading, setIsLoading] = useState(false);
     const [expirationDays, setExpirationDays] = useState<number | ''>('');
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
+    const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -103,12 +105,17 @@ const ShareContentModal: React.FC<ShareContentModalProps> = ({ isOpen, onClose, 
         }
     };
 
-    const deleteLink = async (linkId: string) => {
-        if (!confirm('Bu paylaşım linkini silmek istediğinizden emin misiniz?')) return;
+    const deleteLink = (linkId: string) => {
+        setLinkToDelete(linkId);
+    };
+
+    const confirmDelete = async () => {
+        if (!linkToDelete) return;
 
         try {
-            await db.collection('publicContentShares').doc(linkId).delete();
+            await db.collection('publicContentShares').doc(linkToDelete).delete();
             await loadShareLinks();
+            setLinkToDelete(null);
         } catch (error) {
             console.error('Error deleting link:', error);
             alert('Link silinirken bir hata oluştu.');
@@ -294,6 +301,14 @@ const ShareContentModal: React.FC<ShareContentModalProps> = ({ isOpen, onClose, 
                     </button>
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={!!linkToDelete}
+                title="Paylaşım Linkini Sil"
+                message="Bu paylaşım linkini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+                onConfirm={confirmDelete}
+                onCancel={() => setLinkToDelete(null)}
+            />
         </div>
     );
 };

@@ -4,8 +4,8 @@ import { diagnosisTestManagementService } from '../services/diagnosisTestManagem
 import { DiagnosisTest } from '../types/diagnosisTestTypes';
 import CreateDiagnosisTestPage from './CreateDiagnosisTestPage';
 import AssignDiagnosisTestModal from '../components/AssignDiagnosisTestModal';
-
 import DiagnosisTestResultsView from '../components/DiagnosisTestResultsView';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 interface TeacherDiagnosisTestsPageProps {
     user: User;
@@ -18,6 +18,7 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
     const [isLoading, setIsLoading] = useState(true);
     const [assignModalData, setAssignModalData] = useState<{ id: string; title: string } | null>(null);
     const [selectedTest, setSelectedTest] = useState<DiagnosisTest | null>(null);
+    const [testToDelete, setTestToDelete] = useState<DiagnosisTest | null>(null);
 
     useEffect(() => {
         if (view === 'list') {
@@ -47,18 +48,23 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
         setView('results');
     };
 
-    const handleDeleteTest = async (testId: string) => {
-        if (window.confirm('Bu testi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve testle ilgili tüm veriler (sorular, atamalar, sonuçlar) silinecektir.')) {
-            try {
-                setIsLoading(true);
-                await diagnosisTestManagementService.deleteTest(testId);
-                await loadTests();
-            } catch (error) {
-                console.error('Error deleting test:', error);
-                alert('Test silinirken bir hata oluştu.');
-            } finally {
-                setIsLoading(false);
-            }
+    const handleDeleteTest = (test: DiagnosisTest) => {
+        setTestToDelete(test);
+    };
+
+    const confirmDeleteTest = async () => {
+        if (!testToDelete) return;
+
+        try {
+            setIsLoading(true);
+            await diagnosisTestManagementService.deleteTest(testToDelete.id);
+            await loadTests();
+            setTestToDelete(null);
+        } catch (error) {
+            console.error('Error deleting test:', error);
+            alert('Test silinirken bir hata oluştu.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -183,7 +189,7 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
                                     </button>
 
                                     <button
-                                        onClick={() => handleDeleteTest(test.id)}
+                                        onClick={() => handleDeleteTest(test)}
                                         className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center ml-4"
                                         title="Testi Sil"
                                     >
@@ -210,6 +216,14 @@ const TeacherDiagnosisTestsPage: React.FC<TeacherDiagnosisTestsPageProps> = ({ u
                     }}
                 />
             )}
+
+            <ConfirmationModal
+                isOpen={!!testToDelete}
+                title="Tanı Testini Sil"
+                message={`'${testToDelete?.title}' tanı testini ve ilgili tüm verileri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`}
+                onConfirm={confirmDeleteTest}
+                onCancel={() => setTestToDelete(null)}
+            />
         </div>
     );
 };

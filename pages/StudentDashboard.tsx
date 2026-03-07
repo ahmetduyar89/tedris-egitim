@@ -49,10 +49,11 @@ import LibraryTab from '../components/student-dashboard/LibraryTab';
 import MapTab from '../components/student-dashboard/MapTab';
 import { studentDashboardDataService } from '../services/studentDashboardDataService';
 import { pdfExportService } from '../services/pdfExportService';
+import StudentCoachingTab from '../components/coaching/StudentCoachingTab';
 
 
 type View = 'dashboard' | 'takingTest' | 'reviewPackage' | 'aiAssistant' | 'submitHomework' | 'viewReport' | 'takingPDFTest' | 'takingDiagnosisTest' | 'takingAssessment' | 'adaptiveDashboard';
-type Tab = 'dashboard' | 'adaptive' | 'report' | 'homework' | 'library' | 'map' | 'flashcards';
+type Tab = 'dashboard' | 'adaptive' | 'report' | 'homework' | 'library' | 'map' | 'flashcards' | 'coaching';
 
 const OnlineLessonRoom = React.lazy(() => import('../components/OnlineLessonRoom'));
 
@@ -720,6 +721,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
                   Rapor
                 </button>
               )}
+              <button
+                onClick={() => setActiveTab('coaching')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${activeTab === 'coaching' ? 'bg-primary text-white shadow-md transform scale-105' : 'text-text-secondary hover:bg-gray-100'}`}
+              >
+                Koçluk
+              </button>
             </nav>
           </div>
         </div>
@@ -790,6 +797,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ user, onLogout, onN
             {activeTab === 'flashcards' && (
               <div className="p-4 md:p-8 animate-fade-in">
                 <SpacedRepetitionDashboard studentId={user.id} />
+              </div>
+            )}
+
+            {activeTab === 'coaching' && studentData && (
+              <div className="p-4 md:p-8 animate-fade-in">
+                <StudentCoachingTab studentId={studentData.id} studentName={studentData.name} />
               </div>
             )}
           </div>

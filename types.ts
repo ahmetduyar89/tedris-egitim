@@ -1042,3 +1042,142 @@ export interface CompositionAssignment {
   // Populated fields
   composition?: Composition;
 }
+
+// --- Coaching Module ---
+
+export type LearningStyle = 'visual' | 'auditory' | 'kinesthetic' | 'reading_writing';
+export type GoalType = 'short_term' | 'mid_term' | 'long_term';
+export type GoalCategory = 'academic' | 'behavioral' | 'motivational' | 'organizational';
+export type GoalStatus = 'active' | 'completed' | 'paused' | 'abandoned';
+export type SessionType = 'regular' | 'emergency' | 'review' | 'goal_setting';
+export type HabitFrequency = 'daily' | 'weekdays' | 'weekly';
+
+export interface CoachingProfile {
+  id: string;
+  studentId: string;
+  tutorId: string;
+  learningStyle?: LearningStyle;
+  personalityType?: string;
+  studyHabits: {
+    preferredTime?: string;
+    avgHours?: number;
+    environment?: string;
+    breaks?: string;
+  };
+  strengths: string[];
+  weaknesses: string[];
+  interests: string[];
+  motivationLevel?: number;
+  multipleIntelligence: {
+    linguistic?: number;
+    logical?: number;
+    spatial?: number;
+    musical?: number;
+    bodily?: number;
+    interpersonal?: number;
+    intrapersonal?: number;
+    naturalistic?: number;
+  };
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CoachingGoal {
+  id: string;
+  studentId: string;
+  tutorId: string;
+  title: string;
+  description?: string;
+  goalType: GoalType;
+  category?: GoalCategory;
+  targetValue?: number;
+  currentValue: number;
+  unit?: string;
+  deadline?: string;
+  status: GoalStatus;
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+  // Populated
+  milestones?: CoachingMilestone[];
+}
+
+export interface CoachingMilestone {
+  id: string;
+  goalId: string;
+  title: string;
+  targetDate?: string;
+  completed: boolean;
+  completedAt?: string;
+  notes?: string;
+}
+
+export interface CoachingSession {
+  id: string;
+  studentId: string;
+  tutorId: string;
+  sessionDate: string;
+  durationMinutes?: number;
+  sessionType: SessionType;
+  topicsDiscussed: string[];
+  actionItems: CoachingActionItem[];
+  studentMood?: number;
+  coachNotes?: string;
+  studentFeedback?: string;
+  nextSessionDate?: string;
+  createdAt: string;
+  // Populated
+  studentName?: string;
+}
+
+export interface CoachingActionItem {
+  task: string;
+  deadline?: string;
+  status: 'pending' | 'done';
+}
+
+export interface DailyStudyLog {
+  id: string;
+  studentId: string;
+  logDate: string;
+  entries: StudyLogEntry[];
+  totalMinutes: number;
+  mood?: number;
+  energyLevel?: number;
+  reflection?: string;
+  tutorComment?: string;
+  createdAt: string;
+}
+
+export interface StudyLogEntry {
+  subject: string;
+  topic?: string;
+  durationMinutes: number;
+  type?: string;
+  notes?: string;
+}
+
+export interface CoachingHabit {
+  id: string;
+  studentId: string;
+  tutorId: string;
+  habitName: string;
+  description?: string;
+  frequency: HabitFrequency;
+  targetCount: number;
+  isActive: boolean;
+  createdAt: string;
+  // Computed
+  currentStreak?: number;
+  completionRate?: number;
+}
+
+export interface CoachingHabitLog {
+  id: string;
+  habitId: string;
+  logDate: string;
+  completed: boolean;
+  count: number;
+  notes?: string;
+}

@@ -354,14 +354,14 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-8 z-10 md:pr-4">
-          <div className="flex flex-col items-end">
-            <span className="text-sm text-gray-400 font-medium uppercase tracking-wider mb-0.5">Başarı Oranı</span>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 z-10 md:pr-4 w-full md:w-auto">
+          <div className="flex items-center justify-between md:flex-col md:items-end w-full md:w-auto px-1 md:px-0">
+            <span className="text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-widest md:mb-1">Başarı Oranı</span>
             <div className="flex items-baseline gap-1">
-              <span className={`text-4xl font-black ${weightedAverage >= 70 ? 'text-gray-900' : 'text-gray-700'}`}>%{weightedAverage}</span>
+              <span className={`text-3xl sm:text-4xl font-black ${weightedAverage >= 70 ? 'text-gray-900' : 'text-gray-700'}`}>%{weightedAverage}</span>
             </div>
           </div>
-          <div className={`px-4 py-2 rounded-xl text-sm font-bold border ${performanceLevel.bg} ${performanceLevel.color} ${performanceLevel.border} shadow-sm`}>
+          <div className={`w-full md:w-auto text-center px-4 py-2.5 rounded-xl text-sm font-black border ${performanceLevel.bg} ${performanceLevel.color} ${performanceLevel.border} shadow-sm backdrop-blur-sm`}>
             {performanceLevel.label}
           </div>
         </div>
@@ -370,14 +370,14 @@ const OverallAnalytics: React.FC<OverallAnalyticsProps> = ({
       {/* Stats Grid - Colorful Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {GRID_STATS.map((stat, idx) => (
-          <div key={idx} className={`rounded-2xl p-4 border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${stat.bgInfo}`}>
+          <div key={idx} className={`rounded-2xl p-3 sm:p-4 border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 ${stat.bgInfo} flex flex-col justify-between`}>
             <div className="flex justify-between items-start mb-2">
-              <div className={`text-sm font-bold ${stat.textColors.label}`}>{stat.label}</div>
-              <span className="text-lg opacity-50 grayscale">{stat.icon}</span>
+              <div className={`text-[10px] sm:text-xs font-black uppercase tracking-wider ${stat.textColors.label}`}>{stat.label}</div>
+              <span className="text-base sm:text-lg opacity-40 grayscale">{stat.icon}</span>
             </div>
-            <div className="mt-2">
-              <div className={`text-2xl font-black ${stat.textColors.value}`}>{stat.count}</div>
-              <div className={`text-xs font-semibold mt-1 ${stat.textColors.sub}`}>Ort: %{stat.avg}</div>
+            <div className="mt-1 sm:mt-2">
+              <div className={`text-xl sm:text-2xl font-black ${stat.textColors.value}`}>{stat.count}</div>
+              <div className={`text-[10px] font-bold mt-1 ${stat.textColors.sub}`}>Ort: %{stat.avg}</div>
             </div>
           </div>
         ))}

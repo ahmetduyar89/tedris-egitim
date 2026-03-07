@@ -47,6 +47,7 @@ interface StudentOverviewTabProps {
     diagnosisTestAssignments: DiagnosisTestAssignment[];
     onDeleteDiagnosisTestAssignment: (assignmentId: string) => void;
     studentId: string;
+    onAddPDFTest?: () => void;
 }
 
 const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
@@ -83,7 +84,8 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
     onDeletePDFTest,
     diagnosisTestAssignments,
     onDeleteDiagnosisTestAssignment,
-    studentId
+    studentId,
+    onAddPDFTest
 }) => {
     const [waModal, setWaModal] = useState<{
         isOpen: boolean;
@@ -178,11 +180,22 @@ const StudentOverviewTab: React.FC<StudentOverviewTabProps> = ({
                 <div className="lg:col-span-2 space-y-4">
                     {/* Compact Tests List */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-4 bg-gradient-to-r from-violet-600 to-purple-600 border-b border-purple-500/30">
+                        <div className="p-4 bg-gradient-to-r from-violet-600 to-purple-600 border-b border-purple-500/30 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 <span className="bg-white/20 p-1.5 rounded-lg text-white">📝</span>
                                 Atanmış Testler
                             </h3>
+                            {onAddPDFTest && (
+                                <button
+                                    onClick={onAddPDFTest}
+                                    className="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 border border-white/10 backdrop-blur-sm"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    PDF Test Oluştur
+                                </button>
+                            )}
                         </div>
                         <div className="p-4">
                             {(assignedTests.length > 0 || questionBankAssignments.length > 0 || pdfTests.length > 0 || diagnosisTestAssignments.length > 0) ? (

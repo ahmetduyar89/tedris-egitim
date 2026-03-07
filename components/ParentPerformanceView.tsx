@@ -69,46 +69,46 @@ const ParentPerformanceView: React.FC<ParentPerformanceViewProps> = ({ student }
     return (
         <div className="space-y-6">
             {/* Özet Kartları */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {/* Ortalama Puan */}
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 sm:p-6 border border-blue-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-blue-700">Ortalama Puan</span>
-                        <span className="text-2xl">📊</span>
+                        <span className="text-xs sm:text-sm font-bold text-blue-700 uppercase tracking-wider">Ortalama Puan</span>
+                        <span className="text-xl sm:text-2xl opacity-50 grayscale">📊</span>
                     </div>
-                    <div className="text-3xl font-bold text-blue-900">
+                    <div className="text-2xl sm:text-3xl font-black text-blue-900">
                         {performanceSummary.averageScore}
                     </div>
-                    <div className="text-xs text-blue-600 mt-1">
-                        100 üzerinden
+                    <div className="text-[10px] text-blue-600 mt-1 font-bold">
+                        100 ÜZERİDEN
                     </div>
                 </div>
 
                 {/* Toplam Test */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 sm:p-6 border border-purple-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-purple-700">Toplam Test</span>
-                        <span className="text-2xl">📝</span>
+                        <span className="text-xs sm:text-sm font-bold text-purple-700 uppercase tracking-wider">Toplam Test</span>
+                        <span className="text-xl sm:text-2xl opacity-50 grayscale">📝</span>
                     </div>
-                    <div className="text-3xl font-bold text-purple-900">
+                    <div className="text-2xl sm:text-3xl font-black text-purple-900">
                         {performanceSummary.totalTests}
                     </div>
-                    <div className="text-xs text-purple-600 mt-1">
-                        Tamamlanan test sayısı
+                    <div className="text-[10px] text-purple-600 mt-1 font-bold">
+                        TAMAMLANAN TEST
                     </div>
                 </div>
 
                 {/* Trend */}
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 sm:p-6 border border-green-200 shadow-sm col-span-1 sm:col-span-2 md:col-span-1">
                     <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-green-700">Performans Trendi</span>
-                        <span className="text-2xl">📈</span>
+                        <span className="text-xs sm:text-sm font-bold text-green-700 uppercase tracking-wider">Performans Trendi</span>
+                        <span className="text-xl sm:text-2xl opacity-50 grayscale">📈</span>
                     </div>
-                    <div className="text-lg font-bold text-green-900 mt-2">
+                    <div className="text-base sm:text-lg font-black text-green-900 mt-2">
                         {getTrendIcon(performanceSummary.trend)}
                     </div>
-                    <div className="text-xs text-green-600 mt-1">
-                        Son 5 test bazında
+                    <div className="text-[10px] text-green-600 mt-1 font-bold">
+                        SON 5 TEST BAZLI
                     </div>
                 </div>
             </div>
@@ -175,9 +175,9 @@ const ParentPerformanceView: React.FC<ParentPerformanceViewProps> = ({ student }
                                     <div className="text-xs font-semibold text-gray-700">{test.score}</div>
                                     <div
                                         className={`w-full rounded-t-lg transition-all hover:opacity-80 ${test.score >= 85 ? 'bg-green-500' :
-                                                test.score >= 70 ? 'bg-blue-500' :
-                                                    test.score >= 50 ? 'bg-yellow-500' :
-                                                        'bg-red-500'
+                                            test.score >= 70 ? 'bg-blue-500' :
+                                                test.score >= 50 ? 'bg-yellow-500' :
+                                                    'bg-red-500'
                                             }`}
                                         style={{ height: `${height}%` }}
                                         title={test.title}

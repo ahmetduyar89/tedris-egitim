@@ -20,6 +20,7 @@ import EditStudentModal from '../components/tutor-dashboard/EditStudentModal';
 import ConfirmDeleteModal from '../components/tutor-dashboard/ConfirmDeleteModal';
 import StudentCard from '../components/tutor-dashboard/StudentCard';
 import SidebarContent, { View, TedrisLogo } from '../components/tutor-dashboard/SidebarContent';
+import CoachingDashboard from '../components/coaching/CoachingDashboard';
 
 
 interface TutorDashboardProps {
@@ -320,6 +321,8 @@ const TutorDashboard: React.FC<TutorDashboardProps> = ({ user, onLogout, onNavig
                 return <PrivateLessonSchedule user={user} students={students} />;
             case 'onlineLessons':
                 return <OnlineLessonsPage user={user} />;
+            case 'coaching':
+                return <div className="p-4 md:p-8"><div className="max-w-7xl mx-auto"><CoachingDashboard tutorId={user.id} /></div></div>;
             case 'students':
             default:
                 return renderStudentsList();

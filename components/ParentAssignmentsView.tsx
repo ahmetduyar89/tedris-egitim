@@ -96,22 +96,22 @@ const ParentAssignmentsView: React.FC<ParentAssignmentsViewProps> = ({ student }
         <div className="space-y-6">
             {/* İstatistik Kartları */}
             {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <div className="text-sm font-medium text-blue-700 mb-1">Toplam</div>
-                        <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4 border border-blue-200 shadow-sm">
+                        <div className="text-[10px] sm:text-sm font-bold text-blue-700 uppercase tracking-wider mb-1">Toplam</div>
+                        <div className="text-xl sm:text-2xl font-black text-blue-900">{stats.total}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200">
-                        <div className="text-sm font-medium text-yellow-700 mb-1">Bekleyen</div>
-                        <div className="text-2xl font-bold text-yellow-900">{stats.pending}</div>
+                    <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-3 sm:p-4 border border-yellow-200 shadow-sm">
+                        <div className="text-[10px] sm:text-sm font-bold text-yellow-700 uppercase tracking-wider mb-1">Bekleyen</div>
+                        <div className="text-xl sm:text-2xl font-black text-yellow-900">{stats.pending}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                        <div className="text-sm font-medium text-green-700 mb-1">Tamamlanan</div>
-                        <div className="text-2xl font-bold text-green-900">{stats.completed}</div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 sm:p-4 border border-green-200 shadow-sm">
+                        <div className="text-[10px] sm:text-sm font-bold text-green-700 uppercase tracking-wider mb-1">Tamamlanan</div>
+                        <div className="text-xl sm:text-2xl font-black text-green-900">{stats.completed}</div>
                     </div>
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
-                        <div className="text-sm font-medium text-red-700 mb-1">Gecikmiş</div>
-                        <div className="text-2xl font-bold text-red-900">{stats.overdue}</div>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 sm:p-4 border border-red-200 shadow-sm">
+                        <div className="text-[10px] sm:text-sm font-bold text-red-700 uppercase tracking-wider mb-1">Gecikmiş</div>
+                        <div className="text-xl sm:text-2xl font-black text-red-900">{stats.overdue}</div>
                     </div>
                 </div>
             )}

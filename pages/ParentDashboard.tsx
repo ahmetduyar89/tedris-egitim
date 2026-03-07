@@ -6,6 +6,7 @@ import ParentPerformanceView from '../components/ParentPerformanceView';
 import ParentAssignmentsView from '../components/ParentAssignmentsView';
 import ParentWeeklyPlanView from '../components/ParentWeeklyPlanView';
 import { assessmentService } from '../services/assessmentService';
+import ParentCoachingView from '../components/coaching/ParentCoachingView';
 
 interface ParentDashboardProps {
     user: User;
@@ -29,7 +30,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
     const [students, setStudents] = useState<Student[]>([]);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments' | 'weekly_plan' | 'management' | 'analysis'>('weekly_plan');
+    const [activeTab, setActiveTab] = useState<'lessons' | 'performance' | 'assignments' | 'weekly_plan' | 'management' | 'analysis' | 'coaching'>('weekly_plan');
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [studentScores, setStudentScores] = useState<any[]>([]);
     const [studentProgress, setStudentProgress] = useState(0);
@@ -111,6 +112,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
         { id: 'assignments', label: 'Ödevler', icon: '✏️', color: 'from-orange-500 to-red-500' },
         { id: 'lessons', label: 'Ders Notları', icon: '📖', color: 'from-green-500 to-teal-500' },
         { id: 'management', label: 'Yönetim', icon: '⚙️', color: 'from-gray-500 to-slate-500' },
+        { id: 'coaching', label: 'Koçluk', icon: '🏅', color: 'from-indigo-500 to-purple-600' },
     ];
 
     return (
@@ -131,16 +133,16 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                         </div>
 
                         {/* User Info & Actions */}
-                        <div className="flex items-center gap-4">
-                            <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl">
-                                <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <div className="hidden xs:flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
                                     {user.name.charAt(0)}
                                 </div>
-                                <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                                <span className="hidden sm:inline text-sm font-medium text-gray-700 truncate max-w-[100px]">{user.name}</span>
                             </div>
                             <button
                                 onClick={onLogout}
-                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium"
+                                className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-all duration-200 font-medium"
                             >
                                 Çıkış
                             </button>
@@ -159,7 +161,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                 const student = students.find(s => s.id === e.target.value);
                                 setSelectedStudent(student || null);
                             }}
-                            className="w-full max-w-md px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 font-medium text-gray-700 shadow-sm hover:shadow-md"
+                            className="w-full max-w-full md:max-w-md px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200 font-medium text-gray-700 shadow-sm hover:shadow-md text-sm md:text-base"
                         >
                             {students.map((student) => (
                                 <option key={student.id} value={student.id}>
@@ -173,33 +175,34 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                 {selectedStudent && (
                     <>
                         {/* Student Info Card - Minimal & Colorful */}
-                        <div className="mb-6 bg-gradient-to-r from-primary via-purple-600 to-accent rounded-2xl p-6 shadow-xl">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl border-2 border-white/30">
+                        <div className="mb-6 bg-gradient-to-r from-primary via-purple-600 to-accent rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-bl-full -mr-16 -mt-16 pointer-events-none"></div>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-xl sm:rounded-2xl flex items-center justify-center text-2xl sm:text-3xl border border-white/30">
                                         👨‍🎓
                                     </div>
                                     <div>
-                                        <h1 className="text-2xl font-bold text-white mb-1">
+                                        <h1 className="text-xl sm:text-2xl font-bold text-white mb-0.5 sm:mb-1 leading-tight">
                                             {selectedStudent.name}
                                         </h1>
-                                        <p className="text-white/90 text-sm font-medium">
+                                        <p className="text-white/90 text-xs sm:text-sm font-medium">
                                             {selectedStudent.grade}. Sınıf Öğrencisi
                                         </p>
                                     </div>
                                 </div>
-                                <div className="hidden sm:flex items-center gap-6">
+                                <div className="flex items-center gap-6 sm:gap-8 self-end sm:self-auto px-2 sm:px-0">
                                     <div className="text-center">
-                                        <div className="text-3xl font-bold text-white">
+                                        <div className="text-xl sm:text-3xl font-bold text-white leading-none">
                                             {selectedStudent.level || 1}
                                         </div>
-                                        <div className="text-xs text-white/80 font-medium">Seviye</div>
+                                        <div className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-wider mt-1">Seviye</div>
                                     </div>
                                     <div className="text-center">
-                                        <div className="text-3xl font-bold text-white">
+                                        <div className="text-xl sm:text-3xl font-bold text-white leading-none">
                                             {selectedStudent.xp || 0}
                                         </div>
-                                        <div className="text-xs text-white/80 font-medium">XP</div>
+                                        <div className="text-[10px] sm:text-xs text-white/80 font-bold uppercase tracking-wider mt-1">XP</div>
                                     </div>
                                 </div>
                             </div>
@@ -238,7 +241,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                             {/* Mobile Tabs */}
                             <div className="md:hidden">
                                 <div className="bg-white rounded-2xl p-2 shadow-lg">
-                                    <div className="grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         {tabs.map((tab) => (
                                             <button
                                                 key={tab.id}
@@ -408,6 +411,9 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ user, onLogout }) => 
                                             ))}
                                         </div>
                                     </div>
+                                )}
+                                {activeTab === 'coaching' && (
+                                    <ParentCoachingView studentId={selectedStudent.id} studentName={selectedStudent.name} />
                                 )}
                             </div>
                         </div>

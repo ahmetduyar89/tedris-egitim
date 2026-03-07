@@ -125,22 +125,22 @@ const ParentWeeklyPlanView: React.FC<ParentWeeklyPlanViewProps> = ({ student }) 
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
-                    <div className="text-sm font-medium text-gray-600 mb-1">Toplam Görev</div>
-                    <div className="text-2xl font-bold text-gray-900">{totalTasks}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="bg-white rounded-xl p-3 sm:p-4 border border-gray-200 shadow-sm">
+                    <div className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Toplam Görev</div>
+                    <div className="text-xl sm:text-2xl font-black text-gray-900">{totalTasks}</div>
                 </div>
-                <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <div className="text-sm font-medium text-green-700 mb-1">Tamamlanan</div>
-                    <div className="text-2xl font-bold text-green-900">{completedTasks}</div>
+                <div className="bg-green-50 rounded-xl p-3 sm:p-4 border border-green-200 shadow-sm">
+                    <div className="text-[10px] sm:text-xs font-bold text-green-600 uppercase tracking-widest mb-1">Tamamlanan</div>
+                    <div className="text-xl sm:text-2xl font-black text-green-900">{completedTasks}</div>
                 </div>
-                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                    <div className="text-sm font-medium text-blue-700 mb-1">Devam Eden</div>
-                    <div className="text-2xl font-bold text-blue-900">{inProgressTasks}</div>
+                <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border border-blue-200 shadow-sm">
+                    <div className="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest mb-1">Devam Eden</div>
+                    <div className="text-xl sm:text-2xl font-black text-blue-900">{inProgressTasks}</div>
                 </div>
-                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                    <div className="text-sm font-medium text-yellow-700 mb-1">Bekleyen</div>
-                    <div className="text-2xl font-bold text-yellow-900">{pendingTasks}</div>
+                <div className="bg-yellow-50 rounded-xl p-3 sm:p-4 border border-yellow-200 shadow-sm">
+                    <div className="text-[10px] sm:text-xs font-bold text-yellow-600 uppercase tracking-widest mb-1">Bekleyen</div>
+                    <div className="text-xl sm:text-2xl font-black text-yellow-900">{pendingTasks}</div>
                 </div>
             </div>
 
